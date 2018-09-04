@@ -1,0 +1,9 @@
+function [] = add_eld_menu(hMenuParent, tsELD, settings)
+    import ELD.UI.measure_kymos_eld;
+    hMenuAB = uimenu('Parent', hMenuParent, 'Label', 'ELD');
+    uimenu(...
+        'Parent', hMenuAB, ...
+        'Label', 'Measure ELD for Kymos', ...
+        'Callback', @(~, ~) measure_kymos_eld(tsELD, settings));
+end
+

@@ -1,0 +1,239 @@
+function [] = create_make_selection_ui(selection_callback_fn, hParent, listItemNames, listItemImages, initSelectionMask)
+
+    validateattributes(selection_callback_fn, {'function_handle'}, {'scalar'}, 1);
+    
+    if not(isgraphics(hParent))
+        error('Second argument is not a valid graphics handle');
+    end
+    
+    validateattributes(listItemNames, {'cell'}, {'vector'}, 3);
+    listItemNames = listItemNames(:);
+    
+
+    numItems = length(listItemNames);
+    listItemPrefixes = arrayfun(@(itemNum) ['(', num2str(itemNum), '/', num2str(numItems) ') '], (1:numItems)', 'UniformOutput', false);
+    listItemDisplayNames = strcat(listItemPrefixes, listItemNames);
+    validateattributes(listItemImages, {'cell'}, {'vector', 'numel', numItems}, 4);
+    listItemImages = listItemImages(:);
+    
+    if nargin < 5
+        selectionMask = true(numItems, 1);
+    else
+        validateattributes(initSelectionMask, {'logical'}, {'vector', 'numel', numItems}, 5);
+        selectionMask = initSelectionMask;
+    end
+    
+    lhsNrmLeftPos = 0.04;
+    lhsNrmWidth = 0.2;
+    rhsNrmLeftPos = 0.275;
+    nrmBottomPos = 0.01;
+    listboxNrmHeight = 0.35;
+    listboxTextNrmHeight = 0.02525;
+    buttonNrmHeight = 0.05;
+    rhsButtonGapNrmWidth = 0.025;
+    rhsNumButtonsInRow = 3;
+    nrmWidth = 1.0 - lhsNrmLeftPos - rhsNrmLeftPos;
+    rhsButtonNrmWidth = (nrmWidth - (rhsNumButtonsInRow - 1)*rhsButtonGapNrmWidth)/rhsNumButtonsInRow;
+    sliderNrmHeight = buttonNrmHeight;
+    
+    
+    continueButton = uicontrol( ...
+        'Parent', hParent,...
+        'Style', 'pushbutton', ...
+        'String', 'Continue', ...
+        'Units', 'normalized', ...
+        'Enable', 'on', ...
+        'Position', [lhsNrmLeftPos, nrmBottomPos, 1.0 - 2 * lhsNrmLeftPos, buttonNrmHeight]);
+    
+    lhsCurrBottomPos = nrmBottomPos + buttonNrmHeight + 0.01;
+    rhsCurrBottomPos = lhsCurrBottomPos;
+    
+    resetAllButton = uicontrol( ...
+        'Parent', hParent, ...
+        'Style', 'pushbutton', ...
+        'String', 'Reset All', ...
+        'Enable', 'off', ...
+        'Units', 'normalized', ...
+        'Position', [lhsNrmLeftPos, lhsCurrBottomPos, lhsNrmWidth, buttonNrmHeight]);
+    lhsCurrBottomPos = lhsCurrBottomPos + buttonNrmHeight + 0.01;
+    
+    excludedListbox = uicontrol( ...
+        'Parent', hParent, ...
+        'Style', 'listbox', ...
+        'String', listItemDisplayNames(~selectionMask), ...
+        'Min', 0, ...
+        'Max', 2, ...
+        'Value', [], ...
+        'Enable', 'inactive', ...
+        'Units', 'normalized', ...
+        'Position', [lhsNrmLeftPos, lhsCurrBottomPos, lhsNrmWidth, listboxNrmHeight]);
+    lhsCurrBottomPos = lhsCurrBottomPos + listboxNrmHeight + 0.01;
+    
+    excludedTextlabel = uicontrol( ...
+        'Parent', hParent,...
+        'Style', 'text', ...
+        'String', 'Excluded', ...
+        'Units', 'normalized', ...
+        'Position', [lhsNrmLeftPos, lhsCurrBottomPos, lhsNrmWidth, listboxTextNrmHeight]);
+    lhsCurrBottomPos = lhsCurrBottomPos + listboxTextNrmHeight + 0.01 + 0.005;
+    
+    includedListbox = uicontrol( ...
+        'Parent', hParent, ...
+        'Style', 'listbox', ...
+        'String', listItemDisplayNames(selectionMask), ...
+        'Min', 0, ...
+        'Max', 2, ...
+        'Value', [], ...
+        'Enable', 'inactive', ...
+        'Units', 'normalized', ...
+        'Position', [lhsNrmLeftPos, lhsCurrBottomPos, lhsNrmWidth, listboxNrmHeight]);
+    lhsCurrBottomPos = lhsCurrBottomPos + listboxNrmHeight + 0.01;
+    
+    includedTextlabel = uicontrol( ...
+        'Parent', hParent, ...
+        'Style', 'text', ...
+        'String', 'Included', ...
+        'Units', 'normalized', ...
+        'Position', [lhsNrmLeftPos, lhsCurrBottomPos, lhsNrmWidth, listboxTextNrmHeight]);
+    
+    
+    
+    if numItems > 1
+        currSlider = uicontrol( ...
+            'Parent', hParent, ...
+            'Style', 'slider', ...
+            'Units', 'normalized', ...
+            'Value', 1, ...
+            'Min', 1, ...
+            'Max', numItems, ...
+            'SliderStep', [1/(numItems - 1), 1/(numItems - 1)], ...
+            'Position', [rhsNrmLeftPos, rhsCurrBottomPos, nrmWidth, sliderNrmHeight]);
+    end
+    rhsCurrBottomPos = rhsCurrBottomPos + sliderNrmHeight + 0.025;
+    rhsCurrLeftPos = rhsNrmLeftPos;
+    
+    includeCurrButton = uicontrol( ...
+        'Parent', hParent, ...
+        'Style', 'pushbutton', ...
+        'String', 'Include', ...
+        'Units', 'normalized', ...
+        'Enable', 'off', ...
+        'Position', [rhsCurrLeftPos, rhsCurrBottomPos, rhsButtonNrmWidth, buttonNrmHeight]);
+    rhsCurrLeftPos = rhsCurrLeftPos + rhsButtonNrmWidth + rhsButtonGapNrmWidth;
+
+    resetCurrButton = uicontrol( ...
+        'Parent', hParent, ...
+        'Style', 'pushbutton', ...
+        'String', 'Reset', ...
+        'Units', 'normalized', ...
+        'Enable', 'off', ...
+        'Position', [rhsCurrLeftPos, rhsCurrBottomPos, rhsButtonNrmWidth, buttonNrmHeight]);
+    rhsCurrLeftPos = rhsCurrLeftPos + rhsButtonNrmWidth + rhsButtonGapNrmWidth;
+
+    excludeCurrButton = uicontrol( ...
+        'Parent', hParent,...
+        'Style', 'pushbutton', ...
+        'String', 'Exclude', ...
+        'Units', 'normalized', ...
+        'Enable', 'off', ...
+        'Position', [rhsCurrLeftPos, rhsCurrBottomPos, rhsButtonNrmWidth, buttonNrmHeight]);
+    
+    rhsCurrBottomPos = rhsCurrBottomPos + buttonNrmHeight + 0.025;
+    rhsCurrLeftPos = rhsNrmLeftPos;
+    
+    currDispAxis = axes( ...
+        'Parent', hParent, ...
+        'Units', 'normalized', ...
+        'XTick', [], ...
+        'YTick', [], ...
+        'ZTick', [], ...
+        'Position', [rhsCurrLeftPos, rhsCurrBottomPos, nrmWidth, nrmWidth]);
+
+    set(currSlider, 'Callback', @(hObject, ~, ~) switch_current(round(get(hObject, 'Value'))));
+    set(includeCurrButton, 'Callback', @(~, ~) toggle_curr_selection());
+    set(resetCurrButton, 'Callback', @(~, ~) toggle_curr_selection());
+    set(excludeCurrButton, 'Callback', @(~, ~) toggle_curr_selection());
+    set(resetAllButton, 'Callback', @(~, ~) reset_all());
+    set(continueButton, 'Callback', @(~, ~) continue_callback());
+    
+    currentIdx = 1;
+    switch_current(currentIdx);
+    
+    function reset_all()
+        selectionMask = initSelectionMask;
+        set(includedListbox, 'Value', []);
+        set(excludedListbox, 'Value', []);
+        set(includedListbox, 'String', listItemDisplayNames(selectionMask));
+        set(excludedListbox, 'String', listItemDisplayNames(~selectionMask));
+        set(resetAllButton, 'Enable', 'off');
+        currentIdx = 1;
+        switch_current(currentIdx);
+    end
+    
+    function switch_current(idx)
+        if isempty(idx)
+            return;
+        end
+        currentIdx = idx;
+        
+        if not(get(currSlider, 'Value') == currentIdx)
+            set(currSlider, 'Value', currentIdx);
+        end
+        
+        currListItemName = listItemDisplayNames{currentIdx};
+        isIncluded = selectionMask(currentIdx);
+        if isIncluded
+            set(includeCurrButton, 'Enable', 'off');
+            set(excludeCurrButton, 'Enable', 'on');
+        else
+            set(includeCurrButton, 'Enable', 'on');
+            set(excludeCurrButton, 'Enable', 'off');
+        end
+        if xor(isIncluded, initSelectionMask(currentIdx))
+            set(resetCurrButton, 'Enable', 'on');
+        else
+            set(resetCurrButton, 'Enable', 'off');
+        end
+
+        set(excludedListbox, 'Value', find(cellfun(@(x) strcmp(currListItemName, x), get(excludedListbox, 'String')), 1));
+        set(includedListbox, 'Value', find(cellfun(@(x) strcmp(currListItemName, x), get(includedListbox, 'String')), 1));
+        
+        listItemImage = listItemImages{currentIdx};
+        imshow(listItemImage, 'Parent', currDispAxis);
+        title(currDispAxis, currListItemName);
+    end
+
+    function toggle_curr_selection()
+        selectionMask(currentIdx) = ~selectionMask(currentIdx);
+        set(includedListbox, 'Value', []);
+        set(excludedListbox, 'Value', []);
+        set(includedListbox, 'String', listItemDisplayNames(selectionMask));
+        set(excludedListbox, 'String', listItemDisplayNames(~selectionMask));
+        switch_current(currentIdx);
+        
+        if any(xor(selectionMask, initSelectionMask))
+            set(resetAllButton, 'Enable', 'on');
+        else
+            set(resetAllButton, 'Enable', 'off');
+        end
+    end
+
+
+    function continue_callback()
+        
+        selection_callback_fn(selectionMask);
+    end
+
+%     
+%    function listbox_selection_callback(hObject, eventdata, handles)
+%         % hObject    handle to listbox1 (see GCBO)
+%         % eventdata  reserved - to be defined in a future version of MATLAB
+%         % handles    structure with handles and user data (see GUIDATA)
+%         % Hints: contents = cellstr(get(hObject,'String')) returns contents
+%         % contents{get(hObject,'Value')} returns selected item from listbox1
+%         items = get(hObject,'String');
+%         index_selected = get(hObject,'Value');
+%         item_selected = items(index_selected);
+%         switch_current(item_selected{1});
+%    end
+end

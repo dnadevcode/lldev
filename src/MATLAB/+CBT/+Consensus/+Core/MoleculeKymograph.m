@@ -1,0 +1,36 @@
+classdef MoleculeKymograph < handle
+    % MOLECULEKYMOGRAPH - Molecule Kymograph
+    %
+    % Authors:
+    %  Saair Quaderi (SQ)
+    
+    properties (GetAccess = public, SetAccess = protected)
+        DisplayName = ''
+        UnalignedKymo = NaN(0, 0)
+        AlignedKymo = NaN(0, 0)
+        AlignedKymoMainMoleculeMask = false(0, 0)
+        Barcode = NaN(1, 0)
+        BpsPerPx = NaN
+    end
+    
+    methods
+        function [mk] = MoleculeKymograph(kymoStruct)
+            mk.DisplayName = kymoStruct.displayName;
+            mk.UnalignedKymo = kymoStruct.unalignedKymo;
+            mk.AlignedKymo = kymoStruct.alignedKymos;
+            mk.BpsPerPx = kymoStruct.bpsPerPx;
+            
+%             (...
+%         'passesFilters', passesFilters,...
+%         'filePath', srcFilepaths,...
+%         'displayName', displayNames,...
+%         'unalignedKymo', rawKymos,...
+%         'dataHash', dataHashes,...
+%         'alignedKymos', alignedKymos,...
+%         'alignedKymosStretchFactors', alignedKymosStretchFactors,...
+%         'shiftAlignedKymos', shiftAlignedKymos,...
+%         'bpsPerPx', pixelsWidths_bp,...
+%         'type', dataType...
+        end
+    end
+end
