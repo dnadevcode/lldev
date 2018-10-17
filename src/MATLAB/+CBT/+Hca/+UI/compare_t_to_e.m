@@ -91,6 +91,7 @@ function [lm,cache] = compare_t_to_e( lm,ts, cache )
             import CBT.Hca.UI.get_display_results;
             get_display_results(hcaSessionStruct,sets)
          
+            % additional results
             import CBT.Hca.UI.display_additional_results_ui;
             cache = display_additional_results_ui(ts, cache);
 

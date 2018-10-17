@@ -18,7 +18,7 @@ function [ interpolatedData ] = interpolate_in_fourier_space_random( inputData, 
     newB = zeros(1, newLength);
     newB(1) = inputData(1)*newLength/oldLength;     
 
-    newf = interp1(f2(2:end),fftPr(2:end),f1(2:end));
+    newf = interp1(f2(2:end),fftPr(2:end),f1(2:end),'linear','extrap');
     %figure,plot(newf)
     
     newB(2:length(newf)+1) = newf(1:end);

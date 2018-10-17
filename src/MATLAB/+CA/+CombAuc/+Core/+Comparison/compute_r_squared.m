@@ -29,6 +29,9 @@ function [ rSquared ] = compute_r_squared( data, evdPar, dist )
         case 'exactfull'
             import CA.CombAuc.Core.Comparison.exact_full_PDF;
             distFit = exact_full_PDF(x,evdPar);
+        case 'functional'
+            import CA.CombAuc.Core.Comparison.exact_full_PDF;
+            distFit = exact_full_PDF(x,evdPar);
         otherwise
             distFit = f;
             warning('Unexpected choice of distribution. Nothing computed')

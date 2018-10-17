@@ -11,7 +11,6 @@ function [cache] = display_additional_results_ui(ts,cache)
         len1=len1-1;
     end
     
-
 	tabTitle = 'Additional results';
     [hTabTheoryImport] = ts.create_tab(tabTitle);
     hPanelTheoryImport = uipanel(hTabTheoryImport);
@@ -27,7 +26,6 @@ function [cache] = display_additional_results_ui(ts,cache)
         lm.add_list_items([hcaSessionStruct.names, 'consensus'], [hcaSessionStruct.names, 'consensus'] );
     else
     	lm.add_list_items(hcaSessionStruct.names, hcaSessionStruct.names);
-
     end
     
     import Fancy.UI.FancyList.FancyListMgrBtnSet;
@@ -36,11 +34,6 @@ function [cache] = display_additional_results_ui(ts,cache)
     flmbs1.NUM_BUTTON_COLS = 2;
     flmbs1.add_button(plot_comp(ts));
     flmbs1.add_button(plot_comp_filt(ts));
-%     flmbs1.add_button(save_comp(ts));
-%     flmbs1.add_button(save_comp_filt(ts));
-% 
-
-   % flmbs1.add_button(make_remove_consensus_btn());
     
     flmbs2 = FancyListMgrBtnSet();
     flmbs2.NUM_BUTTON_COLS = 2;
@@ -53,29 +46,22 @@ function [cache] = display_additional_results_ui(ts,cache)
     flmbs3.add_button(plot_one_vs_others_filtered(ts));
 
     flmbs31 = FancyListMgrBtnSet();
-    flmbs31.NUM_BUTTON_COLS = 1;
+    flmbs31.NUM_BUTTON_COLS = 2;
 	flmbs31.add_button(plot_kymo(ts));
-   % flmbs31.add_button(plot_one_vs_others_filtered(ts));
-
+    flmbs31.add_button(plot_infoscore(ts));
     
     flmbs4 = FancyListMgrBtnSet();
-    flmbs4.NUM_BUTTON_COLS = 2;
+    flmbs4.NUM_BUTTON_COLS = 3;
 	flmbs4.add_button(plot_max_cc(ts,'Plot max cc'));
     flmbs4.add_button(plot_max_cc(ts,'Plot max cc filtered'));
+    flmbs4.add_button(plot_cc(ts,'Plot individual cc'));
 
     
     % plots p-values
-     flmbs5 = FancyListMgrBtnSet();
+    flmbs5 = FancyListMgrBtnSet();
     flmbs5.NUM_BUTTON_COLS = 2;
-	flmbs5.add_button(compute_p_plot(ts,'Compute p-values (method 1)'));
-	flmbs5.add_button(plot_p_plot(ts,'Plot p-values (method 1)'));
-
-    % plots p-values, order statistics
-     flmbs6 = FancyListMgrBtnSet();
-    flmbs6.NUM_BUTTON_COLS = 2;
-	flmbs6.add_button(compute_order_p_plot(ts,'Compute p-values (fast upper bound)'));
-	flmbs6.add_button(plot_order_p_plot(ts,'Plot p-values (fast upper bound)'));
-
+	flmbs5.add_button(compute_p_plot(ts,'Compute p-values'));
+	flmbs5.add_button(plot_p_plot(ts,'Plot p-values'));
      % plots p-values, order statistics
     flmbs7 = FancyListMgrBtnSet();
     flmbs7.NUM_BUTTON_COLS = 1;
@@ -134,7 +120,7 @@ function [cache] = display_additional_results_ui(ts,cache)
              [~, selectedIndices] = get_selected_list_items(lm);
              % todo - allow stretching here
              import CBT.Hca.Export.plot_comparison_exp_vs_exp;
-             plot_comparison_exp_vs_exp(selectedIndices,hcaSessionStruct.comparisonStructure   )
+             plot_comparison_exp_vs_exp(selectedIndices,hcaSessionStruct)
        
         end
        
@@ -198,7 +184,37 @@ function [cache] = display_additional_results_ui(ts,cache)
        
     end
 
+    function [btnAddKymos] =plot_infoscore(ts)
+        import Fancy.UI.FancyList.FancyListMgrBtn;
+        btnAddKymos = FancyListMgrBtn(...
+            'Plot infoscore(s)', ...
+            @(~, ~, lm) on_plot_infoscore(lm, ts));
+        
+        
+        function [] = on_plot_infoscore(lm, ts)
+            figure,
+            subplot(2,2,1)
+            plot(cellfun(@(x) x.mean, hcaSessionStruct.informationScores),'*')
+            xlabel('bar nr')
+            title('Mean')
+            subplot(2,2,2)
+            plot(cellfun(@(x) x.std, hcaSessionStruct.informationScores),'*')
+            xlabel('bar nr')
+            title('std. deviation')
 
+            subplot(2,2,3)
+            plot(cellfun(@(x) x.score, hcaSessionStruct.informationScores),'*')
+            xlabel('bar nr')
+            title('info score')
+            
+            defaultMatFilename ='saveinfoscoreshere';
+            [~, matDirpath] = uiputfile('*.txt', 'Save infoscore data as', defaultMatFilename);
+            CBT.Hca.Export.export_infoscores_txt(hcaSessionStruct.informationScores,matDirpath)
+
+        end
+        
+       
+    end
 
    function [btnAddKymos] = plot_max_cc(ts,title)
         import Fancy.UI.FancyList.FancyListMgrBtn;
@@ -249,120 +265,103 @@ function [cache] = display_additional_results_ui(ts,cache)
         end
        
    end
+   function [btnAddKymos] = plot_cc(ts,title)
+        import Fancy.UI.FancyList.FancyListMgrBtn;
+        btnAddKymos = FancyListMgrBtn(...
+            title, ...
+            @(~, ~, lm) on_plot_cc(lm, ts,title));
+        
+        
+        function [] = on_plot_cc(lm, ts,title)
+            defaultMatFilename ='saveccvalshere';
+            [~, matDirpath] = uiputfile('*.txt', 'Save chosen ccvals data as', defaultMatFilename);
+      
+            if size(hcaSessionStruct.theoryGen.theoryNames,2)>size(hcaSessionStruct.theoryGen.theoryNames,1)
+                fasta = hcaSessionStruct.theoryGen.theoryNames';
+            else
+                fasta = hcaSessionStruct.theoryGen.theoryNames;
+            end
+            
+            T = table(fasta);
+            %T = hcaSessionStruct.theoryGen.theoryNames;
+            
+            for i=1:length(hcaSessionStruct.comparedStructure{1})
+                maxccoef = cell2mat(cellfun(@(x) x{i}.maxcoef(1), hcaSessionStruct.comparedStructure,'UniformOutput',0));
+                lengthPx = cell2mat(cellfun(@(x) length(x{i}.bestStretchedBar),hcaSessionStruct.comparedStructure,'UniformOutput',0));
+                pos = cell2mat(cellfun(@(x) x{i}.pos(1), hcaSessionStruct.comparedStructure,'UniformOutput',0));
+                stretch =  cell2mat(cellfun(@(x) x{i}.bestBarStretch,hcaSessionStruct.comparedStructure,'UniformOutput',0));
+                for j=1:length(pos)
+                   if pos(j)<= 0
+                       pos(j) = pos(j)+length(hcaSessionStruct.theoryGen.theoryBarcodes{j});
+                   end
+                end
+                maxcc =maxccoef;
+                
+                N = matlab.lang.makeValidName(hcaSessionStruct.names{i});
+                if length(hcaSessionStruct.comparedStructure) == 1
 
+                    for j =1:length(maxcc)
+                        N = matlab.lang.makeValidName(hcaSessionStruct.names{j});
+                        T2 = table(maxcc(j),lengthPx(j), pos(j), stretch(j) ,'VariableNames',{N ,strcat(['len_'  num2str(j)]),strcat(['pos_'  num2str(j)])});
+                        T = [T T2];
+                    end
+                else
+                    T2 = table(maxcc',lengthPx', pos',stretch' ,'VariableNames',{N,strcat(['len_'  num2str(i)]),strcat(['pos_'  num2str(i)]),strcat(['stretch_'  num2str(i)])});
+                    T = [T T2];
+                end
+            end
+            CBT.Hca.Export.export_cc(T, matDirpath)
+            %https://se.mathworks.com/help/matlab/ref/writetable.html
+            
+%              LastName = {'Smith';'Johnson';'Williams';'Jones';'Brown'};
+%             Age = [38;43;38;40;49];
+%             Height = [71;69;64;67;64];
+%             Weight = [176;163;131;133;119];
+%             BloodPressure = [124 93; 109 77; 125 83; 117 75; 122 80];
+% 
+%             T = table(Age,Height,Weight,BloodPressure,...
+%                 'RowNames',LastName)
+
+        
+        end
+       
+   end
 
    function [btnAddKymos] = compute_p_plot(ts,title)
         import Fancy.UI.FancyList.FancyListMgrBtn;
-        btnAddKymos = FancyListMgrBtn(...
-            title, ...
-            @(~, ~, lm) on_compute_p_plot(lm, ts,title));
-        
+        btnAddKymos = FancyListMgrBtn(title,@(~, ~, lm) on_compute_p_plot(lm, ts,title));
         
         function [] = on_compute_p_plot(lm, ts,title)
         
-            choice = questdlg('Which barcode to randomize?', ...
-            'Barcode randomization', ...
-            'Short (default)','Long (not implemented)', 'Short (default)');
-            sets.pValueChoiceMethod1 = choice;
-            pvalueChoice = ~isequal(choice,'Long');
-            
-            if pvalueChoice == 1
-                import CBT.Hca.UI.get_theory_to_exp_p_values;
-                hcaSessionStruct = get_theory_to_exp_p_values(hcaSessionStruct, sets);
-            else
-                disp('Currently this method is not enabled due to speed restrictions');
-%                 import CBT.Hca.UI.get_theory_to_exp_p_values_long;
-%                 hcaSessionStruct = get_theory_to_exp_p_values_long(hcaSessionStruct, sets);             
+        
+            try 
+                [file,path] = uigetfile({'*.txt'},'load pre-computed p-value file');
+                fullPath = strcat([path,file]);  
+                addpath(genpath(path));
+                import CBT.Hca.Import.load_pval_struct;
+                [ pvalData.len1, pvalData.data ] = load_pval_struct(fullPath);
+            catch
+                 disp('No pre-computed p-value database chosen. Running precompute method... ');
+                 import CBT.Hca.Core.Pvalue.pregenerate_pvalue_db;
+                 pregenerate_pvalue_db('pval.txt',pwd);
             end
             
-            % 
-%             if isequal(title,'Plot p-values')
-%                 maxcoef = cell2mat(cellfun(@(x) x.maxcoef,comparisonStructure,'UniformOutput',0));
-%                 pos = cell2mat(cellfun(@(x) x.pos,comparisonStructure,'UniformOutput',0));
-%                 orientation = cell2mat(cellfun(@(x) x.or,comparisonStructure,'UniformOutput',0));
-%             else
-%                 maxcoef = cell2mat(cellfun(@(x) x.maxcoef,comparisonStructureFiltered,'UniformOutput',0));
-%                 pos = cell2mat(cellfun(@(x) x.pos,comparisonStructureFiltered,'UniformOutput',0));
-%                 orientation = cell2mat(cellfun(@(x) x.or,comparisonStructureFiltered,'UniformOutput',0));
-%             end
-%             
-%             barcodeGenSettings = hcaSessionStruct.theoryGen.sets;
-%             import CA.CombAuc.Core.Zeromodel.generate_random_sequences;
-%             import CA.CombAuc.Core.Comparison.compute_correlation;
-%             import CA.CombAuc.Core.Comparison.generate_evd_par;
-%             import CA.CombAuc.Core.Comparison.cc_fft;
-% 
-%             % double check if this is the one needed
-%             meanFFTest = load('meanFFT_140116.mat');
-%         
-%             meanFFTest = meanFFTest.meanFFTest;      
-%            % expLen = round(mean(cellfun(@length,hcaSessionStruct.comparisonStructure.StretchedBar)));
-%            
-%            % take the length of random barcodes to be mean of length of
-%            % bitmask
-%            expNonBit = round(mean(cellfun(@sum,hcaSessionStruct.comparisonStructure.StretchedBitmask)));
-%             
-%             
-%             [ randomSequences ] = generate_random_sequences(expNonBit,1000,meanFFTest, barcodeGenSettings.psfSigmaWidth_nm/(barcodeGenSettings.pixelWidth_nm/barcodeGenSettings.meanBpExt_nm ),'phase');
-%          
-%          % This is needed if the use bitmasks, we do not for this
-%          % comparison
-%          %expB = ones(1,expLen);
-%          
-%          tic
-%          ccMax = zeros(1,length(randomSequences));
-%          theoryBar = hcaSessionStruct.theoryGen.theoryBarcodes{1}';
-%          parfor i=1:length(randomSequences)
-%             randomSequences{i} = zscore(randomSequences{i}(1:end/2));
-%             [cc1,cc2] =CA.CombAuc.Core.Comparison.cc_fft(randomSequences{i},theoryBar );
-%             ccMax(i) = max([cc1(:);cc2(:)]);
-%     %         import SignalRegistration.XcorrAlign.get_no_crop_lin_circ_xcorrs;
-%     %         [xcorrs, coverageLens, firstOffset] = get_no_crop_lin_circ_xcorrs(randomSequences{i}, hcaSessionStruct.theoryGen.theoryBarcodes{1}', expB,hcaSessionStruct.theoryGen.bitmask{1});
-%     %         ccMax(i) =max(xcorrs(:));
-%         end
-%         [~,rSq,evdPar] = generate_evd_par( ccMax,[],length(randomSequences{1})/5, 'exact2' );
-% 
-%         toc
-%         
-%         import CA.CombAuc.Core.Comparison.compute_p_value;
-%         pvals = compute_p_value(hcaSessionStruct.comparisonStructure.bestXcorr, evdPar, 'exact' );
 
-
-
-        pvals = hcaSessionStruct.pValueResults.pValueMatrix;
-
-% 
-%         fig1 = figure;
-%         plot(pvals,1:length(pvals),'rx')
-%         hold on
-% 
-%         if sets.filterSettings.filter==1
-%             pvalsFiltered = hcaSessionStruct.pValueResults.pValueMatrixFiltered;
-%             plot(pvalsFiltered,1:length(pvalsFiltered),'bo')
-%         end
-%         
-%         ylabel('Barcode nr.','Interpreter','latex')
-%         xlabel('p-value','Interpreter','latex')
-%         legend({'Unfiltered p-value','Filtered p-value'},'Interpreter','latex')
-%       
-        cache('hcaSessionStruct') =hcaSessionStruct ;
-
-        assignin('base','hcaSessionStruct',hcaSessionStruct)
+            hcaSessionStruct.sets = sets;
+            import CBT.Hca.Core.Pvalue.compute_p_val;
+            [ hcaSessionStruct ] = compute_p_val(pvalData, hcaSessionStruct );
+         
+            cache('hcaSessionStruct') =hcaSessionStruct ;
+            assignin('base','hcaSessionStruct',hcaSessionStruct)
         end
    end
 
-
    function [btnAddKymos] = plot_p_plot(ts,title)
         import Fancy.UI.FancyList.FancyListMgrBtn;
-        btnAddKymos = FancyListMgrBtn(...
-            title, ...
-            @(~, ~, lm) on_plot_p_plot(lm, ts,title));
+        btnAddKymos = FancyListMgrBtn(title, @(~, ~, lm) on_plot_p_plot(lm, ts,title));
       
-        
         function [] = on_plot_p_plot(lm, ts,title)
-
         pvals = hcaSessionStruct.pValueResults.pValueMatrix;
-
         savePvals=1;
         if savePvals==1
             defaultMatFilename ='savepvalshere';
@@ -395,7 +394,6 @@ function [cache] = display_additional_results_ui(ts,cache)
             title, ...
             @(~, ~, lm) on_true_positive_statistics(lm, ts,title));
         
-        
         function [] = on_true_positive_statistics(lm, ts,title)
             
             defaultPlace = 0;
@@ -406,11 +404,9 @@ function [cache] = display_additional_results_ui(ts,cache)
             import CBT.Hca.UI.choose_correct_place;
             [ sets.correctChromosome, sets.correctPlace,sets.allowedError,sets.pvaluethresh] = choose_correct_place(defaultChromosome,defaultPlace,defaultError,sets.pvaluethresh,titleText); 
 
-            
             import CBT.Hca.UI.compute_true_positives;
             hcaSessionStruct = compute_true_positives(hcaSessionStruct, sets);
             
-
             cache('hcaSessionStruct') =hcaSessionStruct ;
 
             assignin('base','hcaSessionStruct',hcaSessionStruct)
@@ -418,95 +414,7 @@ function [cache] = display_additional_results_ui(ts,cache)
         end
    end
 
-   function [btnAddKymos] = compute_order_p_plot(ts,title)
-        import Fancy.UI.FancyList.FancyListMgrBtn;
-        btnAddKymos = FancyListMgrBtn(...
-            title, ...
-            @(~, ~, lm) on_compute_order_p_plot(lm, ts,title));
-        
-        
-        function [] = on_compute_order_p_plot(lm, ts,title)
-            
-            choice = questdlg('Which barcode to randomize?', ...
-            'Barcode randomization', ...
-            'Short (default)','Long (not implemented)', 'Short (default)');
-            sets.pValueChoiceMethod2 = choice;
-            pvalueChoice = ~isequal(choice,'Long');
-            
-                
-            if pvalueChoice == 1
-                import CBT.Hca.UI.get_theory_to_exp_p_values_one_barcode;
-                hcaSessionStruct = get_theory_to_exp_p_values_one_barcode(hcaSessionStruct, sets);
-            else
-                disp('Currently this method is not enabled due to speed restrictions');
-
-                import CBT.Hca.UI.get_theory_to_exp_p_values_one_barcode;
-                hcaSessionStruct = get_theory_to_exp_p_values_one_barcode(hcaSessionStruct, sets);       
-            end
-
-            
-% 
-%             pvals = hcaSessionStruct.pValueResultsOneBarcode.pValueMatrix;
-% 
-% 
-%             fig2 = figure;
-%             plot(pvals,1:length(pvals),'rx')
-%             hold on
-% 
-%             if sets.filterSettings.filter==1
-%                 pvalsFiltered = hcaSessionStruct.pValueResultsOneBarcode.pValueMatrixFiltered;
-%                 plot(pvalsFiltered,1:length(pvalsFiltered),'bo')
-%             end
-% 
-%             ylabel('Barcode nr.','Interpreter','latex')
-%             xlabel('p-value','Interpreter','latex')
-%             legend({'Unfiltered p-value','Filtered p-value'},'Interpreter','latex')
-
-            cache('hcaSessionStruct') =hcaSessionStruct ;
-
-            assignin('base','hcaSessionStruct',hcaSessionStruct)
-
-        end
-   end
-
-
-   function [btnAddKymos] = plot_order_p_plot(ts,title)
-        import Fancy.UI.FancyList.FancyListMgrBtn;
-        btnAddKymos = FancyListMgrBtn(...
-            title, ...
-            @(~, ~, lm) on_plot_order_p_plot(lm, ts,title));
-                
-        function [] = on_plot_order_p_plot(lm, ts,title)
-          
-%             import CBT.Hca.UI.get_theory_to_exp_p_values_one_barcode;
-%             hcaSessionStruct = get_theory_to_exp_p_values_one_barcode(hcaSessionStruct, sets);
-%             
-
-            pvals = hcaSessionStruct.pValueResultsOneBarcode.pValueMatrix;
-
-
-            fig2 = figure;
-            plot(pvals,1:length(pvals),'rx')
-            hold on
-
-            if sets.filterSettings.filter==1
-                pvalsFiltered = hcaSessionStruct.pValueResultsOneBarcode.pValueMatrixFiltered;
-                plot(pvalsFiltered,1:length(pvalsFiltered),'bo')
-            end
-
-            ylabel('Barcode nr.','Interpreter','latex')
-            xlabel('p-value','Interpreter','latex')
-            legend({'Unfiltered p-value','Filtered p-value'},'Interpreter','latex')
-
-            cache('hcaSessionStruct') =hcaSessionStruct ;
-
-            assignin('base','hcaSessionStruct',hcaSessionStruct)
-
-        end
-   end
-
-
-    lm.add_button_sets(flmbs1,flmbs2,flmbs3,flmbs31,flmbs4,flmbs5,flmbs6,flmbs7);
+    lm.add_button_sets(flmbs1,flmbs2,flmbs3,flmbs31,flmbs4,flmbs5,flmbs7);
   
     cache('hcaSessionStruct') = hcaSessionStruct;
 end

@@ -14,7 +14,8 @@ function [ comparisonStructure ] = on_compare_theory_to_exp( rawBarcodes,rawBitm
 
     % create the rezult structure
     comparisonStructure = cell(length(rawBarcodes),1);
-    
+    %ccM = cell(length(rawBarcodes),1);
+
     % stretch factors
     stretchFactors = sets.barcodeConsensusSettings.stretchFactors;
 
@@ -34,7 +35,8 @@ function [ comparisonStructure ] = on_compare_theory_to_exp( rawBarcodes,rawBitm
         
         % rezMaz stores the results for one barcode
         rezMax = cell(1,length(stretchFactors));
-        
+        % ccMat save cc values for later calculating the p-value
+        %ccMat = cell(1,length(stretchFactors));
        
         % barTested barcode to be tested
         barTested = rawBarcodes{i};
@@ -74,6 +76,8 @@ function [ comparisonStructure ] = on_compare_theory_to_exp( rawBarcodes,rawBitm
                % [xcorrs, ~, ~] = get_no_crop_lin_circ_xcorrs(barC, theorBar.Value, barB,theorBit.Value);
             end 
             
+            % save the cc values
+            %ccMat{j} = max(xcorrs);
             % now find the maximum score for this stretching parameter
             xcorrMax(j) = max(xcorrs(:));
             [rezMax{j}.maxcoef,rezMax{j}.pos,rezMax{j}.or] = CBT.Hca.UI.Helper.get_best_parameters(xcorrs,length(barC) );
@@ -93,6 +97,8 @@ function [ comparisonStructure ] = on_compare_theory_to_exp( rawBarcodes,rawBitm
            comparisonStructure{i}.bestStretchedBar = interp1(rawBarcodes{i}, linspace(1,length(rawBarcodes{i}),length(rawBarcodes{i})*comparisonStructure{i}.bestBarStretch));
         end
         comparisonStructure{i}.bestStretchedBitmask = rawBitmasks{i}(round(linspace(1,length(rawBitmasks{i}),length(rawBarcodes{i})*comparisonStructure{i}.bestBarStretch)));
+        
+        %comparisonStructure{i}.ccM = max(cell2mat(ccMat'));
     end 
 
 end

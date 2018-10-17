@@ -70,6 +70,8 @@ function [lm,cache] = compute_theory_ui(lm,ts,cache)
                     FASTAData = fastaread(selectedItems{i,2});
                     seq = FASTAData(1).Sequence;
                     name = FASTAData(1).Header;
+                    disp(strcat(['loaded theory sequence ' name] ));
+
 
                     import CBT.Hca.Core.compute_hca_theory_barcode;
                     [theorySeq,bitmask] = compute_hca_theory_barcode(seq,sets.barcodeGenSettings);

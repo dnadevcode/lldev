@@ -19,19 +19,12 @@ function [ parameters ] = compute_distribution_parameters(data, method,x0 )
         case 'gev'   
             parameters = fitdist(data,'GeneralizedExtremeValue'); 
         case 'exactCC'
-             f = @(y) Functions.rootFunction2( y, data );
-            % x0 = [10];
-             
-             parameters = [fsolve(f,x0,optimoptions('fsolve','Display','off'))];
-
+             f = @(y) CA.CombAuc.Core.Functions.rootFunction2( y, data );
+             parameters =[fsolve(f,x0,optimoptions('fsolve','Display','off','TolFun',1e-12))];
         case 'functional'
 
             import CA.CombAuc.Core.Functions.n_fun_test;
             f = @(y) abs(n_fun_test(y,data));
-             
-
-           % x2 = fsolve(f,x0,optimoptions('fsolve','Display','off'));
-           % x2 = fzero(f,x0)
             
             
             x2 = fminbnd(f,2,x0);

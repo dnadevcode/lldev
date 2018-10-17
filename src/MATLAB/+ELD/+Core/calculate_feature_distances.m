@@ -13,9 +13,12 @@ function [ featureDistances, featureDistanceVariances , featureOverlaps] = calcu
     if nargin < 4 || isempty(minOverlap)
         minOverlap = 5;
     end
-    
-%     numI = length(featuresI);
-%     numJ = length(featuresJ);
+
+    if ~isscalar(featuresI) && ~isvector(featuresI)
+        featuresCellArray{end+1} = featuresI;
+        featuresI = numel(featuresCellArray);
+        numFeatures = numFeatures + 1; 
+    end
     
     featureDistancesCalculated = zeros(numFeatures);
     
@@ -66,11 +69,6 @@ function [ featureDistances, featureDistanceVariances , featureOverlaps] = calcu
         end
     end
 
-%     featureOverlaps(logical(eye(size(featureOverlaps)))) = 1;
-%     featureDistances(logical(eye(size(featureOverlaps)))) = 0;
-%     featureSquareDistances(logical(eye(size(featureOverlaps)))) = 0;
-%     featureDistanceVariances(logical(eye(size(featureOverlaps))) = 0;
-
     featureDistances = featureDistances ./ featureOverlaps;
     featureSquareDistances = featureSquareDistances ./ featureOverlaps;
     featureDistanceVariances = featureSquareDistances - featureDistances.^2;
@@ -78,17 +76,12 @@ function [ featureDistances, featureDistanceVariances , featureOverlaps] = calcu
 
     removalMask = zeros(size(featureDistances));
     removalMask(featureOverlaps<minOverlap) = 1;
-%     removalMask(logical(eye(size(removalMask)))) = 0;
 
     removalMask = logical(removalMask);
 
     featureDistances(removalMask) = NaN;
-%     featureSquareDistances(removalMask) = NaN;
     featureDistanceVariances(removalMask) = Inf;
 
     featureDistanceVariances(isnan(featureDistanceVariances)) = Inf;
-    
-
 
 end
-

@@ -16,6 +16,7 @@ function [ hcaSessionStruct ] = combine_chromosome_results( hcaSessionStruct,set
         maxCoefs = arrayfun(@(x) x.maxcoef(1),structTemp);
         [~,indx(i)] = max(maxCoefs);
         hcaSessionStruct.comparisonStructure{i} = hcaSessionStruct.comparedStructure{indx(i)}{i};
+        hcaSessionStruct.comparisonStructure{i}.idx = indx(i);
         hcaSessionStruct.comparisonStructure{i}.pos =  hcaSessionStruct.comparisonStructure{i}.pos+sum(accuLengths(1:indx(i)-1));
         hcaSessionStruct.comparisonStructure{i}.name = hcaSessionStruct.theoryGen.theoryNames{indx(i)};
     end

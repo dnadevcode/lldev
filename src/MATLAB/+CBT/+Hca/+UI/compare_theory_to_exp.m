@@ -19,7 +19,9 @@ function [hcaSessionStruct] = compare_theory_to_exp(hcaSessionStruct, sets )
     %%%%%%%%%%%%%%%%%   
     % unfiltered comparison
     for barNr = 1:length(hcaSessionStruct.theoryGen.theoryBarcodes)
-        import CBT.Hca.UI.Helper.on_compare_theory_to_exp
+        disp(strcat(['comparing to theory barcode ' hcaSessionStruct.theoryGen.theoryNames{barNr}] ));
+
+        import CBT.Hca.UI.Helper.on_compare_theory_to_exp;
         hcaSessionStruct.comparedStructure{barNr} = on_compare_theory_to_exp(rawBarcodes,rawBitmasks, hcaSessionStruct.theoryGen.theoryBarcodes{barNr},hcaSessionStruct.theoryGen.bitmask{barNr},sets);
     end
     
@@ -40,6 +42,8 @@ function [hcaSessionStruct] = compare_theory_to_exp(hcaSessionStruct, sets )
         tic
         hcaSessionStruct.comparedStructureFiltered = cell(1,length(hcaSessionStruct.theoryGen.theoryBarcodes));
         for barNr = 1:length(hcaSessionStruct.theoryGen.theoryBarcodes)
+            disp(strcat(['comparing to theory barcode ' hcaSessionStruct.theoryGen.theoryNames{barNr}] ));
+
             if sets.filterSettings.filterMethod == 0 
                 hcaSessionStruct.comparedStructureFiltered{barNr} = on_compare_theory_to_exp(rawBarcodes,rawBitmasks, hcaSessionStruct.theoryGen.theoryBarcodes{barNr},hcaSessionStruct.theoryGen.bitmask{barNr},sets,1);   
             else  

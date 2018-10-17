@@ -1,9 +1,12 @@
 function hFig = ELD_Gui(settings)
     %ELD: Enzymatic Labeling Distances
     if nargin < 1
-        settings = struct();
-        settings.ELD = struct();
-        settings.ELD.minOverlap = 5; %TODO: put in settings file/prompt (positive integer)
+%         settings = struct();
+%         settings.ELD = struct();
+%         settings.ELD.minOverlap = 5; %TODO: put in settings file/prompt (positive integer)
+%         settings.ELD.confidenceInterval = 2;
+        import ELD.Import.load_eld_kymo_align_settings;
+        settings = load_eld_kymo_align_settings();
     end
     
     % AB_GUI - Autobarcoder GUI

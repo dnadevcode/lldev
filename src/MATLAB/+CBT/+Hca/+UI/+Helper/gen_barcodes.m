@@ -12,14 +12,24 @@ function [ hcaSessionStruct ] = gen_barcodes( hcaSessionStruct, sets )
         % this computes the barcode structure for ssd
         import CBT.Hca.UI.Helper.gen_barcode_data_ssd;
         for i=1:length(hcaSessionStruct.unalignedKymos)  
-            [hcaSessionStruct.barcodeGen{i}] = gen_barcode_data_ssd(hcaSessionStruct.alignedKymo{i}(1:min(end,sets.timeFramesNr),:),hcaSessionStruct.alignedKymBitMask{i}(1:min(end,sets.timeFramesNr),:),hcaSessionStruct.backgroundKym{i}(1:min(end,sets.timeFramesNr),:));
+            try 
+                sets.timeFramesNr;
+                [hcaSessionStruct.barcodeGen{i}] = gen_barcode_data_ssd(hcaSessionStruct.alignedKymo{i}(1:min(end,sets.timeFramesNr),:),hcaSessionStruct.alignedKymBitMask{i}(1:min(end,sets.timeFramesNr),:),hcaSessionStruct.backgroundKym{i}(1:min(end,sets.timeFramesNr),:));
+            catch
+            	[hcaSessionStruct.barcodeGen{i}] = gen_barcode_data_ssd(hcaSessionStruct.alignedKymo{i},hcaSessionStruct.alignedKymBitMask{i},hcaSessionStruct.backgroundKym{i});
+            end
         end
     else
         % this computes barcode structure for nralign or other alignment
         % methods (wpalign)
         import CBT.Hca.UI.Helper.gen_barcode_data;
         for i=1:length(hcaSessionStruct.unalignedKymos) 
-            [hcaSessionStruct.barcodeGen{i}] = gen_barcode_data(hcaSessionStruct.alignedKymo{i}(1:min(end,sets.timeFramesNr),:),sets.barcodeConsensusSettings,sets.filterSettings);
+            try 
+                sets.timeFramesNr;
+                [hcaSessionStruct.barcodeGen{i}] = gen_barcode_data(hcaSessionStruct.alignedKymo{i}(1:min(end,sets.timeFramesNr),:),sets.barcodeConsensusSettings,sets.filterSettings);
+            catch
+                [hcaSessionStruct.barcodeGen{i}] = gen_barcode_data(hcaSessionStruct.alignedKymo{i},sets.barcodeConsensusSettings,sets.filterSettings);
+            end
         end
     end
 
@@ -34,6 +44,13 @@ function [ hcaSessionStruct ] = gen_barcodes( hcaSessionStruct, sets )
     % and bitmasks
     rawBitmasks = cell(1,length(lens));
 
+    % now compute information score
+    informationScores = cell(1,length(hcaSessionStruct.unalignedKymos));
+    for i=1:length(hcaSessionStruct.unalignedKymos)  
+        informationScores{i}.mean = mean(mean(hcaSessionStruct.alignedKymo{i}(:,hcaSessionStruct.barcodeGen{i}.rawBarcodeLeftEdgeIndex:hcaSessionStruct.barcodeGen{i}.rawBarcodeRightEdgeIndex),2));
+        informationScores{i}.std =  std(mean(hcaSessionStruct.alignedKymo{i}(:,hcaSessionStruct.barcodeGen{i}.rawBarcodeLeftEdgeIndex:hcaSessionStruct.barcodeGen{i}.rawBarcodeRightEdgeIndex),2));
+        informationScores{i}.score =  informationScores{i}.mean+3*informationScores{i}.std;
+    end
     % now define filtered barcodes
     
     % if filtered was selected
@@ -45,8 +62,10 @@ function [ hcaSessionStruct ] = gen_barcodes( hcaSessionStruct, sets )
         for i=1:length(hcaSessionStruct.unalignedKymos)
             % the number of timeframes is the minimum between number of time frames and
             % the length of the kymo
-            indx = 1:min(sets.filterSettings.timeFramesNr,size(hcaSessionStruct.alignedKymo{i},1));
+           
+           	indx = 1:min(sets.filterSettings.timeFramesNr,size(hcaSessionStruct.alignedKymo{i},1));
             hcaSessionStruct.alignedKymoFiltered{i} = hcaSessionStruct.alignedKymo{i}(indx,:);
+            
 
             % if we have chosen to filter before stretching
             % here filter size was chosen beforehand
@@ -135,7 +154,7 @@ function [ hcaSessionStruct ] = gen_barcodes( hcaSessionStruct, sets )
     
     hcaSessionStruct.rawBarcodes = rawBarcodes;
     hcaSessionStruct.rawBitmasks = rawBitmasks;
- 
+    hcaSessionStruct.informationScores = informationScores;
             
      if size(rawBarcodesFiltered,2)>size(rawBarcodesFiltered,1)
             rawBarcodesFiltered = rawBarcodesFiltered';

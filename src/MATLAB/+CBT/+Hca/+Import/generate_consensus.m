@@ -38,7 +38,11 @@ function [ consensusStruct ] = generate_consensus( molStruct, sets )
     % of longest barcode. 
     rawBar = zeros(numBarcodes,max(lengths));
     rawBit = zeros(numBarcodes,max(lengths));
-
+    
+    % starting position of barcode
+    rawPos = zeros(numBarcodes,max(lengths));
+    rawPos(:,1) = 1;
+    
     for j=1:numBarcodes
         rawBar(j,1:lengths(1)) = barcodeNormalizationFunction(molStruct.rawBarcodes{j},molStruct.barcodeGen{j}.bgMeanApprox);
         rawBit(j,1:lengths(1)) = molStruct.rawBitmasks{j};
@@ -118,11 +122,14 @@ function [ consensusStruct ] = generate_consensus( molStruct, sets )
              if or(I_row, I_col) == 2
                 rawBar(a(i),:) = fliplr(rawBar(a(i),:));
                 rawBit(a(i),:) = fliplr(rawBit(a(i),:));
+                rawPos(a(i),:) = fliplr(rawPos(a(i),:));
              else
                 shiftInd = -shiftInd;
              end
             rawBar(a(i),:) = circshift(rawBar(a(i),:),[0,shiftInd]);
             rawBit(a(i),:) = circshift(rawBit(a(i),:),[0,shiftInd]);
+            rawPos(a(i),:) = circshift(rawPos(a(i),:),[0,shiftInd]);
+
         end
 
         % I_col+1 was deleted.
@@ -197,6 +204,9 @@ function [ consensusStruct ] = generate_consensus( molStruct, sets )
         consensusStruct.treeStruct.barMatrix{bb} = barToAverage;
         consensusStruct.treeStruct.treeBarcodes{bb} = rawBar2;
         consensusStruct.treeStruct.treeBitmasks{bb} = rawBit2; 
+        consensusStruct.treeStruct.bitMat{bb}= rawBit;
+        consensusStruct.treeStruct.barMat{bb}= rawBar;
+        consensusStruct.treeStruct.rawPos{bb} = rawPos;
      end
 
     consensusStruct.time = datetime;

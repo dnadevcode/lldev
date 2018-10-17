@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+
+## [0.3.0] - 2018-10-17
+### Updates
+- Updated dot-labelled barcodes code in ELD (developed separately)
+- Updated HCA to the newest version (developed separately)
+
+
 ## [0.2.4] - 2018-08-27
 - Fix molecule detection in DBM, because there were some edge cased when it failed
 

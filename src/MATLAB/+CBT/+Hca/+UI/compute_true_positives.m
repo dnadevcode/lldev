@@ -4,7 +4,8 @@ function [hcaSessionStruct] = compute_true_positives(hcaSessionStruct, sets )
 % ? Add to future features list (or fix directly if easy)? 1. Also add statistics for the filtered barcodes? 2. For both filtered and unfiltered add i) how many barcodes that pass consensus hit correct position ii) how many barcodes that passes BOTH consensus and p-value threshold find the correct position. 3. What is the actual p-value threshold? Can I set it myself = ask in the same window as for position in pixel + error? Would be good if possible :)
     lengths =  cellfun(@length, hcaSessionStruct.theoryGen.theoryBarcodes);
     sets.correctPlace = sets.correctPlace +sum(lengths(1:sets.correctChromosome-1));
-
+    
+    
     positions = cell2mat(cellfun(@(x) x.pos(1),hcaSessionStruct.comparisonStructure,'UniformOutput',0));
     left = sets.correctPlace-sets.allowedError;
     right = sets.correctPlace+sets.allowedError;
@@ -90,39 +91,39 @@ function [hcaSessionStruct] = compute_true_positives(hcaSessionStruct, sets )
         end
     end
 
-     pValComp = isfield(hcaSessionStruct,'pValueResults');
-     if pValComp
-        passingPThresh = hcaSessionStruct.pValueResults.pValueMatrixFiltered(1:end-1+withC) < sets.pvaluethresh;
-        disp('Method 1. Filtered barcodes passing p-value thresh')
-        strLine = strcat([num2str(sum(passingPThresh)) ' out of ' num2str(length(passingPThresh))]);
-        disp(strLine);
-        disp('Method 1. Correcly matching filtered barcodes passing p-value thresh')
-        strLine = strcat([num2str(sum(allPos(1:end-1+withC).*passingPThresh')) ' out of ' num2str(sum(passingPThresh))]);
-        disp(strLine)
+  %   pValComp = isfield(hcaSessionStruct,'pValueResults');
+%      if pValComp
+%         passingPThresh = hcaSessionStruct.pValueResults.pValueMatrixFiltered(1:end-1+withC) < sets.pvaluethresh;
+%         disp('Method 1. Filtered barcodes passing p-value thresh')
+%         strLine = strcat([num2str(sum(passingPThresh)) ' out of ' num2str(length(passingPThresh))]);
+%         disp(strLine);
+%         disp('Method 1. Correcly matching filtered barcodes passing p-value thresh')
+%         strLine = strcat([num2str(sum(allPos(1:end-1+withC).*passingPThresh')) ' out of ' num2str(sum(passingPThresh))]);
+%         disp(strLine)
+% 
+%         if withC == 0;
+%             disp('Method 1.  Correctly matching filtered barcodes that pass both the p-value thresh and the consensus threshold')
+%             strLine = strcat([num2str(sum(allPos(sets.filterSettings.barcodesInConsensus).*passingPThresh(sets.filterSettings.barcodesInConsensus)')) ' out of ' num2str(sum(passingPThresh(sets.filterSettings.barcodesInConsensus)))]);
+%             disp(strLine)
+%         end
+%      end
+    
+%      pValComp = isfield(hcaSessionStruct,'pValueResultsOneBarcode');
+%      if pValComp
+%         passingPThresh = hcaSessionStruct.pValueResultsOneBarcode.pValueMatrixFiltered(1:end-1+withC) < sets.pvaluethresh;
+%         disp('Method 2. Filtered barcodes passing p-value thresh')
+%         strLine = strcat([num2str(sum(passingPThresh)) ' out of ' num2str(length(passingPThresh))]);
+%         disp(strLine);
+%         disp('Method 2. Correcly matching filtered barcodes passing p-value thresh')
+%         strLine = strcat([num2str(sum(allPos(1:end-1+withC).*passingPThresh')) ' out of ' num2str(sum(passingPThresh))]);
+%         disp(strLine)
+%              
+%          if withC== 0;
+%              disp('Method 2.  Correctly matching filtered barcodes that pass both the p-value thresh and the consensus threshold')
+%              strLine = strcat([num2str(sum(allPos(sets.filterSettings.barcodesInConsensus).*passingPThresh(sets.filterSettings.barcodesInConsensus)')) ' out of ' num2str(sum(passingPThresh(sets.filterSettings.barcodesInConsensus)))]);
+%              disp(strLine)
+%          end
+%      end
 
-        if withC == 0;
-            disp('Method 1.  Correctly matching filtered barcodes that pass both the p-value thresh and the consensus threshold')
-            strLine = strcat([num2str(sum(allPos(sets.filterSettings.barcodesInConsensus).*passingPThresh(sets.filterSettings.barcodesInConsensus)')) ' out of ' num2str(sum(passingPThresh(sets.filterSettings.barcodesInConsensus)))]);
-            disp(strLine)
-        end
-     end
-    
-     pValComp = isfield(hcaSessionStruct,'pValueResultsOneBarcode');
-     if pValComp
-        passingPThresh = hcaSessionStruct.pValueResultsOneBarcode.pValueMatrixFiltered(1:end-1+withC) < sets.pvaluethresh;
-        disp('Method 2. Filtered barcodes passing p-value thresh')
-        strLine = strcat([num2str(sum(passingPThresh)) ' out of ' num2str(length(passingPThresh))]);
-        disp(strLine);
-        disp('Method 2. Correcly matching filtered barcodes passing p-value thresh')
-        strLine = strcat([num2str(sum(allPos(1:end-1+withC).*passingPThresh')) ' out of ' num2str(sum(passingPThresh))]);
-        disp(strLine)
-             
-         if withC== 0;
-             disp('Method 2.  Correctly matching filtered barcodes that pass both the p-value thresh and the consensus threshold')
-             strLine = strcat([num2str(sum(allPos(sets.filterSettings.barcodesInConsensus).*passingPThresh(sets.filterSettings.barcodesInConsensus)')) ' out of ' num2str(sum(passingPThresh(sets.filterSettings.barcodesInConsensus)))]);
-             disp(strLine)
-         end
-     end
-    
 end
 

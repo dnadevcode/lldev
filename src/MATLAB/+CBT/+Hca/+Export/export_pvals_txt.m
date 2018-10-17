@@ -3,7 +3,7 @@ function [matFilepath] = export_pvals_txt(pValueResults,pvals,matDirpath)
 
     timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
     matFilename = strcat([timestamp '_' 'pvals.txt']);
-    matFilename2 = strcat([timestamp '_' 'rsq.txt']);
+    %matFilename2 = strcat([timestamp '_' 'rsq.txt']);
 
 
 
@@ -23,12 +23,12 @@ function [matFilepath] = export_pvals_txt(pValueResults,pvals,matDirpath)
 %     
     fprintf('Saved pvals data to ''%s''\n', matFilepath);
 
-    matFilepath = fullfile(matDirpath2, matFilename2);
-
-    fileID = fopen(matFilepath,'w'); 
-    fprintf(fileID,'R-squared\n');
-    fprintf(fileID,'%6.3e\n',pValueResults.rsq);
-    fclose(fileID);
+%     matFilepath = fullfile(matDirpath2, matFilename2);
+% 
+%     fileID = fopen(matFilepath,'w'); 
+%     fprintf(fileID,'R-squared\n');
+%     fprintf(fileID,'%6.3e\n',pValueResults.rsq);
+%     fclose(fileID);
 
 
 

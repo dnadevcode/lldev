@@ -16,7 +16,7 @@ switch method
         end
 	case 'exact2'
         import CA.CombAuc.Core.Comparison.compute_distribution_parameters;
-        evdPar = compute_distribution_parameters(ccMax(:),'exact',len);
+        evdPar = compute_distribution_parameters(ccMax(:),'functional',len);
 
         import CA.CombAuc.Core.Comparison.compute_r_squared;
         rSquaredExact = compute_r_squared(ccMax(:), evdPar, 'exactfull' );
@@ -29,14 +29,14 @@ switch method
 %             ppMatrix(iNew,:) = Comparison.compute_p_value(ccMatrix(iNew,:),evdPar,'exact'); 
 %         end    
     case 'gumbel'
-         evdPar =  Comparison.compute_distribution_parameters(ccMax(:),'gumbel',len);
-        rSquaredExact = Comparison.compute_r_squared(ccMax(:), evdPar, 'gumbel' );
-
-        for iNew=1:size(ccMatrix,1)
-           % [ccMax,~] = Comparison.compute_correlation2(length(cutBarRescaled{iNew}), length(comparisonBarcodeRescaled),  'short', psfSigmaWidth,inputData,comparisonBarcodeRescaled);
-            %[evdPar] = Comparison.evd_comparisons(ccMax(:));
-            ppMatrix(iNew,:) = Comparison.compute_p_value(ccMatrix(iNew,:),evdPar,'gumbel'); 
-        end
+         evdPar =  CA.CombAuc.Core.Comparison.compute_distribution_parameters(ccMax(:),'gumbel',len);
+        rSquaredExact = CA.CombAuc.Core.Comparison.compute_r_squared(ccMax(:), evdPar, 'gumbel' );
+        ppMatrix = [];
+%         for iNew=1:size(ccMatrix,1)
+%            % [ccMax,~] = Comparison.compute_correlation2(length(cutBarRescaled{iNew}), length(comparisonBarcodeRescaled),  'short', psfSigmaWidth,inputData,comparisonBarcodeRescaled);
+%             %[evdPar] = Comparison.evd_comparisons(ccMax(:));
+%             ppMatrix(iNew,:) = Comparison.compute_p_value(ccMatrix(iNew,:),evdPar,'gumbel'); 
+%         end
         
 	case 'gev'
          evdPar =  Comparison.compute_distribution_parameters(ccMax(:),'gev',len);

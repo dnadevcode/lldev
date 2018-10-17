@@ -37,7 +37,7 @@ function [ sets ] = set_default_settings_code()
     sets.skipPrechoice = 1;
     sets.prestretchMethod = 1; % 0 - do not prestretch % 1 - prestretch to common length
     sets.barcodeConsensusSettings.skipStretch = 1; %0 - do not stretch,  1 - stretch
-    sets.barcodeConsensusSettings.stretchFactors = [ 0.9700    0.9800    0.9900    1.0000    1.0100    1.0200    1.0300];
+    sets.barcodeConsensusSettings.stretchFactors = [0.95 0.96 0.9700    0.9800    0.9900    1.0000    1.0100    1.0200    1.0300 1.04 1.05];
         % 
     % filter settings
     sets.skipFilterSettings = 1;
@@ -58,6 +58,7 @@ function [ sets ] = set_default_settings_code()
     sets.barcodeGenSettings.concNetropsin_molar = 6;
     sets.barcodeGenSettings.concYOYO1_molar = 0.02;
     sets.barcodeGenSettings.isLinearTF = 0;
+    sets.barcodeGenSettings.psfSigmaWidth_nm = 300;
     sets.barcodeGenSettings.deltaCut = 3;
     sets.barcodeGenSettings.widthSigmasFromMean = 4;
     sets.barcodeGenSettings.yoyo1BindingConstant = 26;

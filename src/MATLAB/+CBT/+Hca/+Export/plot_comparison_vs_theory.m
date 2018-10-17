@@ -23,8 +23,13 @@ function [  ] = plot_comparison_vs_theory(len1,selectedIndices,theoryGen,compari
 %          
 %         bar = theoryGen.theoryBarcodes{1};
 %         barBit =theoryGen.bitmask{1};
-        bar = cell2mat(theoryGen.theoryBarcodes');
-        barBit = cell2mat(theoryGen.bitmask');
+        if size(theoryGen.theoryBarcodes,2)>size(theoryGen.theoryBarcodes,1)
+            bar = cell2mat(theoryGen.theoryBarcodes);
+            barBit = cell2mat(theoryGen.bitmask);
+        else
+            bar = cell2mat(theoryGen.theoryBarcodes');
+            barBit = cell2mat(theoryGen.bitmask');          
+        end
         figure, hold on
     
         b1 = comparisonStructure{ii}.bestStretchedBar;

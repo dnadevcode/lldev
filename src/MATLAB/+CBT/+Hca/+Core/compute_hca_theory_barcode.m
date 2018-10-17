@@ -1,4 +1,4 @@
-function [ theoryCurveUnscaled_pxRes, bitmask] = compute_hca_theory_barcode( seq,sets, overlapLength )
+function [ theoryCurveUnscaled_pxRes, bitmask, probSeq,theorSeq] = compute_hca_theory_barcode( seq,sets, overlapLength )
     % Computes theory barcode for hca
     
     % input 
@@ -35,12 +35,12 @@ function [ theoryCurveUnscaled_pxRes, bitmask] = compute_hca_theory_barcode( seq
         lenDiv = 200000;
     end
     % we divide sequence into parts of equal length
-    seqSet = cell(1,ceil(size(seq,2)/lenDiv));
+    seqSet = cell(1,ceil((size(seq,2)-overlapLength)/lenDiv));
     
     seqSet{1} = [seq(end-overlapLength+1:end) seq(1:lenDiv+overlapLength)];
 
 
-    for i=2:size(seq,2)/lenDiv
+    for i=2:(size(seq,2)-overlapLength)/lenDiv
         seqSet{i}=seq(lenDiv*(i-1)-overlapLength+1:lenDiv*(i)+overlapLength);
     end
     
@@ -62,7 +62,6 @@ function [ theoryCurveUnscaled_pxRes, bitmask] = compute_hca_theory_barcode( seq
     
     tic
     parfor seqNum = 1:numSeqs
-        seqNum
         ntSeq = seqSet{seqNum};
 
         % compute Netropsin & YOYO-1 binding probabilities
@@ -103,18 +102,23 @@ function [ theoryCurveUnscaled_pxRes, bitmask] = compute_hca_theory_barcode( seq
     
     probSeq = zeros(1,length(seq));
     
+    theorSeq = zeros(1,length(seq));
+
     for i=1:length(theoryProb_bpRes)-1
         theoryBar_bpRes = ifft(fft(theoryProb_bpRes{i}).*multF); 
         probSeq(1+(i-1)*lenDiv:(i)*lenDiv) = theoryBar_bpRes(overlapLength+1:end-overlapLength);
+        theorSeq(1+(i-1)*lenDiv:(i)*lenDiv) = theoryProb_bpRes{i}(overlapLength+1:end-overlapLength);
     end
     
     ker = gaussian_kernel(length(theoryProb_bpRes{end}), psfSigmaWidth_bps);
     multF=conj(fft(ker));
     theoryBar_bpRes = ifft(fft(theoryProb_bpRes{end}).*multF); 
     probSeq((length(theoryProb_bpRes)-1)*lenDiv+1:end) = theoryBar_bpRes(overlapLength+1:end-overlapLength);
-    
+    theorSeq((length(theoryProb_bpRes)-1)*lenDiv+1:end) = theoryProb_bpRes{end}(overlapLength+1:end-overlapLength);
+
     if sets.isLinearTF
     	probSeq = probSeq(10001:end-10000);
+        theorSeq = theorSeq(10001:end-10000);
     end
     
     % pixel resoution barcode

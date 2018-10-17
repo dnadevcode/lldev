@@ -18,10 +18,10 @@ function [ feature_map , feature_colormap, organizedFeatures] = organize_feature
     
     organizedFeatures = cell(length(rowsCell),1);
     feature_map = zeros(imgSize);
-    feature_colormap = zeros([imgSize 3]);
+    feature_colormap = ones([imgSize 3]);
     
     import ThirdParty.DistinguishableColors.distinguishable_colors;
-    RGBcolors = distinguishable_colors(length(featuresCellArray),'k');
+    RGBcolors = distinguishable_colors(length(featuresCellArray),'w');
     
     for feature = 1:length(rowsCell)
         

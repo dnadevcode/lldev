@@ -27,6 +27,10 @@ function [ pval ] = compute_p_value( cc, evdPar, method )
          %   vpa(1-vpa(betainc(cc.^2,0.5,evdPar(1)/2-1,'upper'),100),100)
     %        pval = 1 - (0.5+0.5*(1-betainc(cc.^2,0.5,evdPar(1)/2-1,'upper'))).^evdPar(2);
             pval = 1-(0.5+vpa(0.5)*(vpa(1,100)-vpa(betainc(cc.^2,0.5,evdPar(1)/2-1,'upper'),100))).^evdPar(2);
+        case 'functional' 
+            cc(cc< 0) = 0; % so that negative values do not give false results
+            pval = 1-(0.5+vpa(0.5)*(vpa(1,100)-vpa(betainc(cc.^2,0.5,evdPar(1)/2-1,'upper'),100))).^evdPar(2);
+
         case 'cc'
             pval = 0.5-0.5.*sign(cc).*betainc(cc.^2,0.5,evdPar/2-1);
         otherwise

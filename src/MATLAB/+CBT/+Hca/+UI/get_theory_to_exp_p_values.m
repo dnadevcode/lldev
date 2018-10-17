@@ -2,39 +2,35 @@ function [hcaSessionStruct] = get_theory_to_exp_p_values(hcaSessionStruct, sets 
     % the main function to compare fragments of human chromosome vs. theory
     
     % input hcaSessionStruct, sets 
+    % output hcaSessionStruct      
     
-    % output comparisonStructure? (move it outside hcaSessionStruct?)
-        
     disp('Starting computing exp to theory p-values...')
     tic
 
-    % barcodeGenSettings = hcaSessionStruct.theoryGen.sets;
-  %  import CA.CombAuc.Core.Zeromodel.generate_random_sequences;
-    %import CA.CombAuc.Core.Comparison.compute_correlation;
     import CA.CombAuc.Core.Comparison.generate_evd_par;
    % import CA.CombAuc.Core.Comparison.cc_fft;
 
     % double check if this is the one needed
     if  sets.skipNullModelChoice == 0
         sets.nullModelPath = uigetdir(pwd,'Select folder with the pre-computed null model');
-        addpath(genpath( sets.nullModelPath));    
     end
-         
+    
+    addpath(genpath( sets.nullModelPath));    
+
     meanFFTest = load(strcat([sets.nullModelPath '/meanFFT.mat']));
     meanFFTest = meanFFTest.meanFFTEst;   
     
-    
-    
-    meanBpExt_nm =sets.barcodeGenSettings.meanBpExt_nm; % from theory lengths
-    %meanBpExt_nm = 0.274;
-    psfSigmaWidth_bps = sets.barcodeConsensusSettings.psfSigmaWidth_nm/meanBpExt_nm;
-    sets.untrustedBp = round(sets.barcodeConsensusSettings.deltaCut*psfSigmaWidth_bps);
-    pxPerBp = meanBpExt_nm/sets.barcodeConsensusSettings.prestretchPixelWidth_nm;
-    bpPerPx = sets.barcodeConsensusSettings.prestretchPixelWidth_nm/meanBpExt_nm;
+    bpToNm =sets.barcodeGenSettings.meanBpExt_nm; % from theory lengths
+    psfBp = sets.barcodeGenSettings.psfSigmaWidth_nm/bpToNm;
+    sets.untrustedBp = round(sets.barcodeConsensusSettings.deltaCut*psfBp);
+    pxPerBp = bpToNm/sets.barcodeConsensusSettings.prestretchPixelWidth_nm;
+    bpPerPx = 1/pxPerBp;
 
-    refBarcode= hcaSessionStruct.theoryGen.theoryBarcodes{1};
-    refBitmask= hcaSessionStruct.theoryGen.bitmask{1};
+    % might have multiple theory barcodes...
+%     refBarcode= hcaSessionStruct.theoryGen.theoryBarcodes{1};
+%     refBitmask= hcaSessionStruct.theoryGen.bitmask{1};
     sets.askForPvalueSettings=1;
+    
     % don't hardcode this
     if sets.askForPvalueSettings == 1
         sets.contigSettings.numRandBarcodes = 1000;
@@ -47,24 +43,31 @@ function [hcaSessionStruct] = get_theory_to_exp_p_values(hcaSessionStruct, sets 
         lengths = [hcaSessionStruct.lengths mean(hcaSessionStruct.lengths)];
         
         coefs = cell2mat(cellfun(@(x) x.maxcoef(1),hcaSessionStruct.comparisonStructure,'UniformOutput',0));
-        pValueMatrix= ones(1,length(coefs));
+        pValueMatrix = ones(1,length(coefs));
         pValueMatrixFiltered = ones(1,length(coefs));
         rsq = ones(1,length(coefs));
-       % pValueMatrix = CA.CombAuc.Core.Comparison.compute_p_value(coefs,evdPar,'exact'); 
 
         stretchFactors = sets.barcodeConsensusSettings.stretchFactors;
 
+        import CA.CombAuc.Core.Zeromodel.gen_rand_seq;
+        % we want the random sequences to be the same length in px as
+        % the fragment, -untrustedBp, which are at the ends. Then we
+        % round to the closest integer.
+
+        % method using phase randomization. We generate random barcodes
+        % that would be as large as the largest of the fragments.
+        seqLen = ceil(max(lengths)*bpPerPx-2*sets.untrustedBp);
+        [ randomSequences ] = gen_rand_seq(seqLen,sets.contigSettings.numRandBarcodes,meanFFTest,psfBp ,'phase',pxPerBp);
+            
         % make this in a nice function
         for ii=1:length(coefs)
             ii
             disp(strcat(['Computing p-values for bar. nr. ',num2str(ii) ' out of ' num2str(length(coefs)) ]))
-             import CA.CombAuc.Core.Zeromodel.generate_random_sequences;
-            [ randomSequences ] = generate_random_sequences(2*round(lengths(ii)*bpPerPx-2*sets.untrustedBp),sets.contigSettings.numRandBarcodes,meanFFTest,psfSigmaWidth_bps ,'phase',pxPerBp);
-            
+
             ccMax = ones(length(stretchFactors),sets.contigSettings.numRandBarcodes);
 
             for i=1:length(randomSequences)
-                randomSeq = randomSequences{i}(1:round(length(randomSequences{i})/2));
+                randomSeq = randomSequences{i}(1:(lengths(i)-round(2*sets.untrustedBp*pxPerBp)));
                 %randomBit = ones(1,length(randomSeq));
                 for j=1:length(stretchFactors)
                     barC = interp1(randomSeq, linspace(1,length(randomSeq),length(randomSeq)*stretchFactors(j)));
@@ -99,7 +102,7 @@ function [hcaSessionStruct] = get_theory_to_exp_p_values(hcaSessionStruct, sets 
 
         % compute short random barcodes
         import CA.CombAuc.Core.Zeromodel.generate_random_sequences;
-        [ randomSequences ] = generate_random_sequences(2*round(mean(hcaSessionStruct.lengths)*bpPerPx-2*sets.untrustedBp),sets.contigSettings.numRandBarcodes,meanFFTest,psfSigmaWidth_bps ,'phase',pxPerBp);
+        [ randomSequences ] = generate_random_sequences(2*round(mean(hcaSessionStruct.lengths)*bpPerPx-2*sets.untrustedBp),sets.contigSettings.numRandBarcodes,meanFFTest,psfBp ,'phase',pxPerBp);
     %    toc
         stretchFactors = sets.barcodeConsensusSettings.stretchFactors;
         ccMax = ones(length(stretchFactors),sets.contigSettings.numRandBarcodes);

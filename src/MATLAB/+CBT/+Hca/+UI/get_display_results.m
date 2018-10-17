@@ -131,8 +131,13 @@ function [] = get_display_results(hcaSessionStruct,sets)
 %        
 
     % Here take all
-    bar = cell2mat(hcaSessionStruct.theoryGen.theoryBarcodes');
-    barBit = cell2mat(hcaSessionStruct.theoryGen.bitmask');
+    if size(hcaSessionStruct.theoryGen.theoryBarcodes,2)>size(hcaSessionStruct.theoryGen.theoryBarcodes,1)
+        bar = cell2mat(hcaSessionStruct.theoryGen.theoryBarcodes);
+        barBit = cell2mat(hcaSessionStruct.theoryGen.bitmask);
+    else
+        bar = cell2mat(hcaSessionStruct.theoryGen.theoryBarcodes');
+        barBit = cell2mat(hcaSessionStruct.theoryGen.bitmask');     
+    end
    % bar = hcaSessionStruct.theoryGen.theoryBarcodes{1};
    % barBit = hcaSessionStruct.theoryGen.bitmask{1};
     
