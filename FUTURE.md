@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixes
 
 ### Changes
+Move outer files to bin
+Remove AB
+Remove ELD
 
 ### Additions
 - Add HCM things

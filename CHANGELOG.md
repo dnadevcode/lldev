@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## [0.3.1] - 2019-02-27
+- Some bugfixes, added some documentation codes, 
+- Remove HCA since it's in separate repository
+- AB is updated, but should be removed from later version (and put in separate directory)
+- ELD is updated, but should be removed, since we'll have it in separate repository
+
 ## [0.3.0] - 2018-10-17
 ### Updates
 - Updated dot-labelled barcodes code in ELD (developed separately)
