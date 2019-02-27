@@ -1,10 +1,13 @@
-function [bindingExpectedMask, numberOfBindings] = find_sequence_matches(bindingNtSequence, ntSequence)
+function [bindingExpectedMask, numberOfBindings] = find_sequence_matches(bindingNtSequence, ntSequence,bdLen)
     %find_sequence_matches 
     
     % input bindingNtSequence, ntSequence
     % output bindingExpectedMask, numberOfBindings
     % edited 24/10/17 by Albertas Dvirnas /- added comments
     
+    if nargin < 3
+        bdLen = length(bindingNtSequence);
+    end
     % This function finds binding positions for the enzimatic labeled barcodes
     
     % this find sequence reverse complement
@@ -24,7 +27,7 @@ function [bindingExpectedMask, numberOfBindings] = find_sequence_matches(binding
         idxRange = ((1:bindingSeqLen) - 1) + bpStartIdx;
         if (all(ntSequence(idxRange) == bindingNtSequence) ...
             || all(ntSequence(idxRange) == bindingSequenceRC))
-            bindingExpectedMask(idxRange) = true;
+            bindingExpectedMask(idxRange(1:bdLen)) = true;
             numberOfBindings = numberOfBindings + 1;
             bpStartIdx = bpStartIdx + bindingSeqLen;
         else

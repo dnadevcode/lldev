@@ -1,4 +1,11 @@
 function [gradmag] = sobel_radon_edge_fg_method(I)
+    % sobel_radon_edge_fg_method
+	
+    % :param I: input movie
+    %
+    % :returns: gradmag
+    % Example: https://stackoverflow.com/questions/40984804/image-segmentation-matlab
+
     for dimIdx = 3:ndims(I)
         I = mean(I, dimIdx);
     end

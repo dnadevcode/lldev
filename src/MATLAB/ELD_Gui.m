@@ -1,35 +1,38 @@
-function hFig = ELD_Gui(settings)
+function output = ELD_Gui(sets)
+    % ELD_Gui  Enzymatic Labeling Distances
+    %
+    % :param settings: input parameter.
+    % :returns: output
+    
+    % rewritten by Albertas Dvirnas
+    
     %ELD: Enzymatic Labeling Distances
+    output = [];
+    
     if nargin < 1
-%         settings = struct();
-%         settings.ELD = struct();
-%         settings.ELD.minOverlap = 5; %TODO: put in settings file/prompt (positive integer)
-%         settings.ELD.confidenceInterval = 2;
-        import ELD.Import.load_eld_kymo_align_settings;
-        settings = load_eld_kymo_align_settings();
+        [sets] = ELD.Scripts.eld_sets();
     end
     
-    % AB_GUI - Autobarcoder GUI
-    hFig = figure(...
-        'Name', 'Enzymatic Labeling Distances GUI', ...
-        'Units', 'normalized', ...
-        'OuterPosition', [0.05 0.05 0.9 0.9], ...
-        'NumberTitle', 'off', ...
-        'MenuBar', 'none', ...
-        'ToolBar', 'none' ...
-    );
-
-    hMenuParent = hFig;
-    hPanel = uipanel('Parent', hFig);
-    import Fancy.UI.FancyTabs.TabbedScreen;
-    ts = TabbedScreen(hPanel);
-
-    hTabELD = ts.create_tab('ELD');
-    ts.select_tab(hTabELD);
-    hPanelELD = uipanel('Parent', hTabELD);
-    tsELD = TabbedScreen(hPanelELD);
+	% load all the required settings
+    sets = ELD.UI.get_user_settings(sets);
+    
+    import ELD.Processing.process_movie;
+    output = process_movie(sets);
     
     
-    import ELD.UI.add_eld_menu;
-    add_eld_menu(hMenuParent, tsELD, settings);
+%             import ELD.Import.load_eld_kymo_align_settings;
+%         settings = load_eld_kymo_align_settings();
+%         
+       
+figure,subplot(2,1,1)
+  im1 = output.kymo{1}(1:50,:);
+  im2 = output.peakMap(1:50,:);
+  imshowpair(im1,im2)
+  subplot(2,1,2)
+  im1 = output.kymo{1}(500:550,:);
+  im2 = output.peakMap(500:550,:);
+  imshowpair(im1,im2)
+    
+%     import ELD.UI.add_eld_menu;
+%     add_eld_menu(hMenuParent, tsELD, settings);
 end
