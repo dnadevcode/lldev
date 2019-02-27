@@ -1,16 +1,28 @@
-function peakGraph=generate_peak_graph(imgArr,k,peakBitMap)
+function peakGraph=generate_peak_graph(imgSize,k,peakBitMap,peaklocs)
     %This function gives a directed graph in which all nodes correspond to the local
     %maxima and are connected to only one node(if available) below them(the closest one) within a window of
     %(2k+1) pixels centered at the parent node.  The node name is the string
     %version of the linearIndex of the pixels that the node corresponds to.
 
+    
 
-    imgSize=size(imgArr);
+    
+    % num of columns
     cols=imgSize(2);
+   % [I,J] = find(peakBitMap);
+    
+    % find all indices
     peakIndices=find(peakBitMap);
+    
+    % create an empty linear map
     linearMap=zeros(imgSize);
+    
+    % put ordered indices on the map
     linearMap(peakIndices)=peakIndices;
+    
+    % now put them in rows and cols
     [peakRows,peakColumns]=find(linearMap);
+    
     lastRowsIndices=(peakRows==imgSize(1));
     peakRows(lastRowsIndices)=[];
     peakColumns(lastRowsIndices)=[];

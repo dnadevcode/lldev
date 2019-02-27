@@ -31,8 +31,9 @@ function [lm] = launch_kymo_import_ui(hPanelKymoImport, tsELD)
         
         function [] = on_add_kymos_directly(lm, ts)
 
-            import OldDBM.General.Import.import_raw_kymos;
-            [rawKymos, rawKymoFilepaths] = import_raw_kymos();
+%             import OldDBM.General.Import.import_raw_kymos;
+            import ELD.Import.import_kymos;
+            [rawKymos, rawKymoFilepaths] = import_kymos();
 
             % todo: generate kymo structs directly instead of using data
             %  wrapper
@@ -46,6 +47,8 @@ function [lm] = launch_kymo_import_ui(hPanelKymoImport, tsELD)
             import OldDBM.General.Export.extract_kymo_structs;
             kymoStructs = extract_kymo_structs(dbmODW);
             
+%             import ELD.UI.kymo_name_correction;
+%             kymoStructs = kymo_name_correction(kymoStructs);
             
             unalignedKymos = cellfun(...
                 @(kymoStruct) kymoStruct.unalignedKymo, ...
@@ -55,6 +58,7 @@ function [lm] = launch_kymo_import_ui(hPanelKymoImport, tsELD)
                 @(kymoStruct) kymoStruct.displayName, ...
                 kymoStructs, ...
                 'UniformOutput', false);
+                  
             
             hTabUnalignedKymos = get_unaligned_kymos_tab(ts);
             hPanelUnalignedKymos = uipanel('Parent', hTabUnalignedKymos);
