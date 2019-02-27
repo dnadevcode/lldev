@@ -1,4 +1,7 @@
 function [kymosEdgePts] = translate_kymos_edge_coords(kymosEdgeIdxs, rRot, cRot)
+   
+    fprintf('Translating kymograph edge coordinates\n');
+
     numKymos = length(kymosEdgeIdxs);
     kymosEdgePts = cell(numKymos, 1);
     for kymoNum = 1:numKymos
@@ -24,4 +27,6 @@ function [kymosEdgePts] = translate_kymos_edge_coords(kymosEdgeIdxs, rRot, cRot)
         end
         kymosEdgePts{kymoNum} = cat(3, startEdgePts, endEdgePts);
     end
+    
+	fprintf('Translated kymograph edge coordinates\n');
 end

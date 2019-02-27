@@ -1,7 +1,10 @@
 function run_movie_to_kymos(tsAB, settings)
 
+
     
+
     make_movie_selection_screen(tsAB, settings);
+    
     function make_movie_selection_screen(tsAB, settings)
         import Microscopy.UI.MovieImportScreen;
         mis = MovieImportScreen(tsAB);
@@ -23,54 +26,54 @@ function run_movie_to_kymos(tsAB, settings)
         function [] = on_movie_selection(gsMovObj, movieNum, numMovies, displayNames)
             movieDisplayName = displayNames{movieNum};
             
-            if (length(loadedMask) < numMovies)
-                numOldMovies = length(loadedMask);
-                numNewMovies = numMovies - numOldMovies;
-                loadedMask = [loadedMask; false(numNewMovies, 1)];
-                assignin('base', 'displayNames', displayNames);
-                
-
-                newMovieDisplayNames = displayNames(end + 1 - (1:numNewMovies));
-                fprintf('Waiting for response to movie metadata prompt...\n');
-                
-                hBpsPerPixelTab = tsAB.create_tab('bps/pixel');
-                hBpsPerPixelPanel = uipanel(...
-                    'Parent', hBpsPerPixelTab, ...
-                    'Position', [0, 0, 1, 1]);
-                tsAB.select_tab(hBpsPerPixelTab);
-                import OldDBM.General.Import.prompt_files_bps_per_pixel;
-                [bpsPerPx, ~] = prompt_files_bps_per_pixel(newMovieDisplayNames, hBpsPerPixelPanel);
-                delete(hBpsPerPixelTab);
-                waitfor(hBpsPerPixelTab);
-                for newMovieNum = 1:numNewMovies
-                    bpsPerPxMap(newMovieDisplayNames{newMovieNum}) = bpsPerPx(newMovieNum);
-                end
-            end
-            fprintf('Processing movie...\n');
-            
-            loadedMask(movieNum)= true;
-            
-
-            import AB.Core.run_movie_processing;
-            [tsCurrMov, barcodes, barcodeDisplayNames, mprs] = run_movie_processing(tsAB, movieDisplayName, gsMovObj, settings);
-            
-
-            hTabConsensuses = tsCurrMov.create_tab('Consensuses');
-            hPanelConsensuses = uipanel(hTabConsensuses);
-            import Fancy.UI.FancyTabs.TabbedScreen;
-            tsConsensuses = TabbedScreen(hPanelConsensuses);
-
-            % TODO: Use bps/pixel for movie processing
-            bpsPerPx = bpsPerPxMap(movieDisplayName);
-            import AB.Core.run_len_clustered_consensusing;
-            [mprs.lenClusterNums, mprs.clusterMeanCenters, mprs.consensusInputs, mprs.consensusStructs, cache] = run_len_clustered_consensusing(tsConsensuses, barcodes, bpsPerPx, barcodeDisplayNames, settings.consensus, cache);
-            
-            
-            fprintf('Saving result for ''%s'' in base workspace\n', movieDisplayName);
-            tic
-            assignin('base', sprintf('movieProcessingResultsStruct_%d',  movieNum), mprs);
-            toc
-            fprintf('Saved result in base workspace\n');
+%             if (length(loadedMask) < numMovies)
+%                 numOldMovies = length(loadedMask);
+%                 numNewMovies = numMovies - numOldMovies;
+%                 loadedMask = [loadedMask; false(numNewMovies, 1)];
+%                 assignin('base', 'displayNames', displayNames);
+%                 
+% 
+%                 newMovieDisplayNames = displayNames(end + 1 - (1:numNewMovies));
+%                 fprintf('Waiting for response to movie metadata prompt...\n');
+%                 
+%                 hBpsPerPixelTab = tsAB.create_tab('bps/pixel');
+%                 hBpsPerPixelPanel = uipanel(...
+%                     'Parent', hBpsPerPixelTab, ...
+%                     'Position', [0, 0, 1, 1]);
+%                 tsAB.select_tab(hBpsPerPixelTab);
+%                 import OldDBM.General.Import.prompt_files_bps_per_pixel;
+%                 [bpsPerPx, ~] = prompt_files_bps_per_pixel(newMovieDisplayNames, hBpsPerPixelPanel);
+%                 delete(hBpsPerPixelTab);
+%                 waitfor(hBpsPerPixelTab);
+%                 for newMovieNum = 1:numNewMovies
+%                     bpsPerPxMap(newMovieDisplayNames{newMovieNum}) = bpsPerPx(newMovieNum);
+%                 end
+%             end
+%             fprintf('Processing movie...\n');
+%             
+%             loadedMask(movieNum)= true;
+%             
+% 
+%             import AB.Core.run_movie_processing;
+%             [tsCurrMov, barcodes, barcodeDisplayNames, mprs] = run_movie_processing(tsAB, movieDisplayName, gsMovObj, settings);
+%             
+% 
+%             hTabConsensuses = tsCurrMov.create_tab('Consensuses');
+%             hPanelConsensuses = uipanel(hTabConsensuses);
+%             import Fancy.UI.FancyTabs.TabbedScreen;
+%             tsConsensuses = TabbedScreen(hPanelConsensuses);
+% 
+%             % TODO: Use bps/pixel for movie processing
+%             bpsPerPx = bpsPerPxMap(movieDisplayName);
+%             import AB.Core.run_len_clustered_consensusing;
+%             [mprs.lenClusterNums, mprs.clusterMeanCenters, mprs.consensusInputs, mprs.consensusStructs, cache] = run_len_clustered_consensusing(tsConsensuses, barcodes, bpsPerPx, barcodeDisplayNames, settings.consensus, cache);
+%             
+%             
+%             fprintf('Saving result for ''%s'' in base workspace\n', movieDisplayName);
+%             tic
+%             assignin('base', sprintf('movieProcessingResultsStruct_%d',  movieNum), mprs);
+%             toc
+%             fprintf('Saved result in base workspace\n');
         end
         
         function [] = on_movie_selections_init()

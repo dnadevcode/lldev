@@ -47,7 +47,7 @@ function [interpVals, xyCoordsInterp] = img_profile(img, xyCoords, numSamples)
         maxCumDist = max(cumDists);
         interpCumDists = 0:(maxCumDist/(numSamples - 1)):maxCumDist;
         try
-            xyCoordsInterp = interp1(cumDists, xyCoordsInterp, interpCumDists);
+            xyCoordsInterp = interp1(cumDists, xyCoordsInterp, interpCumDists,'linear','extrap');
         catch e
             throw e
         end
