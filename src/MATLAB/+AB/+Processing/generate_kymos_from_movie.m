@@ -1,4 +1,4 @@
-function [ abStruct] = generate_kymos_from_movie(movie3d, kymoMolEdgeIdxs, rRot, cRot, movieFold, kymo, filename )
+function [ abStruct] = generate_kymos_from_movie(movie3d, kymoMolEdgeIdxs, rRot, cRot, movieFold, kymo, filename,sets )
 % generate_kymos_from_movie
 
 % :param movie3d: input movie, should be 3d array
@@ -10,11 +10,11 @@ function [ abStruct] = generate_kymos_from_movie(movie3d, kymoMolEdgeIdxs, rRot,
     
     %kymos = [];
  
-        % extracting kymos
-        import AB.Processing.extract_kymos;
-        [flattenedKymos,layeredKymos, kymosMasks, kymosCenterXYCoords] = extract_kymos(movie3d, rRot, cRot, kymoMolEdgeIdxs,kymo.avgL);
-        tmp_numKymos = length(layeredKymos);
-        
+    % extracting kymos
+    import AB.Processing.extract_kymos;
+    [flattenedKymos,layeredKymos, kymosMasks, kymosCenterXYCoords] = extract_kymos(movie3d, rRot, cRot, kymoMolEdgeIdxs,kymo.avgL, sets);
+    tmp_numKymos = length(layeredKymos);
+
         
    % end
     
@@ -48,7 +48,7 @@ function [ abStruct] = generate_kymos_from_movie(movie3d, kymoMolEdgeIdxs, rRot,
 %         for i=1:length(abStruct.flattenedKymos)
 %             abStruct.flattenedKymos{i} = [randVals abStruct.flattenedKymos{i} randVals];
 %         end
-        image8Bit= [zeros(size(image8Bit,1),50) image8Bit zeros(size(image8Bit,1),50)];
+     %   image8Bit= [zeros(size(image8Bit,1),50) image8Bit zeros(size(image8Bit,1),50)];
 
         imwrite(image8Bit,fold);
     end

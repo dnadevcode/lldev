@@ -45,19 +45,8 @@ function output = AB_Gui(sets)
 
         % generate kymos
         import AB.Processing.generate_kymos_from_movie;
-        abStruct = generate_kymos_from_movie(movie3d,kymosMolEdgeIdxs, rRot, cRot,sets.moviefilefold{idx},sets.kymo,sets.filenames{idx});
-%         
-%         % TODO: this is temporary hack to add noise to left and right. later change hca
-%         % so that we don't need to detect edges there!
-%         currRng = rng(); % so that current rng state can be restored
-%         % temporarily set to produce predictable pseudorandom values for reproducibility
-%         rng(rng(0, 'twister'));  
-%         randVals = randn([size(abStruct.flattenedKymos{1},1), 50]) .*3* nanstd(movieRot(:)) + nanmean(movieRot(:));
-%         rng(currRng); % restore rng state
-%         for i=1:length(abStruct.flattenedKymos)
-%             abStruct.flattenedKymos{i} = [randVals abStruct.flattenedKymos{i} randVals];
-%         end
-    
+        abStruct = generate_kymos_from_movie(movie3d,kymosMolEdgeIdxs, rRot, cRot,sets.moviefilefold{idx},sets.kymo,sets.filenames{idx},sets);
+
         kymos = [kymos; abStruct.flattenedKymos];
         barcodes = [barcodes; abStruct.barcodes];
         backgrounds = [backgrounds; abStruct.backgrounds];
@@ -67,13 +56,14 @@ function output = AB_Gui(sets)
     
     % here save kymo's to some temporary folder so we can filter out
 
-    % generate consensus. here we can use kymos from all the movies
-    import AB.Processing.compute_cluster_consensus;
-    [lC, clusterMeanCenters, consensusInputs, consensusStructs] = compute_cluster_consensus(barcodes,backgrounds, barcodeDisplayNames, sets.consensus);
-    
-    
-    import AB.UI.plot_consensus;
-    hfig = plot_consensus(consensusStructs);
-   
-    %output  = movieProcessingResultsStruct;
+    if sets.consensus.generate 
+        % generate consensus. here we can use kymos from all the movies
+        import AB.Processing.compute_cluster_consensus;
+        [lC, clusterMeanCenters, consensusInputs, consensusStructs] = compute_cluster_consensus(barcodes,backgrounds, barcodeDisplayNames, sets.consensus);
+
+
+        import AB.UI.plot_consensus;
+        hfig = plot_consensus(consensusStructs);
+
+    end
 end

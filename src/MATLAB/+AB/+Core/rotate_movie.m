@@ -27,10 +27,10 @@ function [movieRot, rRot, cRot, segmentFrameRot] = rotate_movie(movieIn, rotatio
     % the coordinates. todo: do both
     rotationSamplingMethod = 'nearest';
 
-    % rotate the X coordinate matrix
+    % rotate the Y coordinate matrix
     rRot = imrotate(r, rotationAngle, rotationSamplingMethod, bboxMode);
     
-    % rotate the Y coordinate matrix
+    % rotate the X coordinate matrix
     cRot = imrotate(c, rotationAngle, rotationSamplingMethod, bboxMode);
     
     % we care only abound indices that were in original grid. These are the

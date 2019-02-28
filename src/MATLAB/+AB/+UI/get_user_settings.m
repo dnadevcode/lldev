@@ -15,11 +15,21 @@ function [ sets ] = get_user_settings( sets )
         uiwait(gcf);  
         
         dd = cache('selectedItems');
-        %sets.moviefilefold{1} = '/home/albyback/git/rawData/automation/sample n21 tif files to Albertas/';
         sets.filenames = dd(1:end/2);
         sets.moviefilefold = dd((end/2+1):end);
     end
     
+      
+    if sets.chooseSettings
+        prompt = {'Compute consensus for clusters(beta)','Prompt consensus settings'};
+        title = 'Input';
+        dims = [1 35];
+        definput = {'0','0'};
+        answer = inputdlg(prompt,title,dims,definput);
+        
+        sets.consensus.generate = logical(str2double(answer{1}));
+        sets.consensus.promtsetsconsensus = logical(str2double(answer{1}));
+    end 
     
     
     if sets.promtsetsconsensus
