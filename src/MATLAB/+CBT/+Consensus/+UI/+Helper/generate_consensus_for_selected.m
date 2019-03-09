@@ -16,6 +16,14 @@ function [consensusStruct, cache] = generate_consensus_for_selected(lm, cache)
 
     rawBarcodeLens = cellfun(@length, rawBarcodes);
 
+    % Show (in the Command window) which barcodes that are too short, 
+    for i = 1:length(rawBarcodeLens)
+        if rawBarcodeLens(i) < 10
+            onePixelWarningMessage = strcat('!!!*** ',displayNames{i}, ' is only ', num2str(rawBarcodeLens(i)), ' pixels',' ***!!!');
+            fprintf('\n %s \n\n',onePixelWarningMessage);
+        end
+    end
+
     import CBT.Consensus.UI.Helper.make_barcode_consensus_settings;
     barcodeConsensusSettings = make_barcode_consensus_settings(rawBarcodeLens);
     if isempty(barcodeConsensusSettings)
