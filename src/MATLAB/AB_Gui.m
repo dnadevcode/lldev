@@ -25,6 +25,7 @@ function output = AB_Gui(sets)
     kymos = {};
     backgrounds = {};
     barcodeDisplayNames = {};
+    abStruct = {};
     
     % loop over movie file folder
     for idx = 1:length(sets.moviefilefold)
@@ -45,14 +46,19 @@ function output = AB_Gui(sets)
 
         % generate kymos
         import AB.Processing.generate_kymos_from_movie;
-        abStruct = generate_kymos_from_movie(movie3d,kymosMolEdgeIdxs, rRot, cRot,sets.moviefilefold{idx},sets.kymo,sets.filenames{idx},sets);
+        abStruct{idx} = generate_kymos_from_movie(movie3d,kymosMolEdgeIdxs, rRot, cRot,sets.moviefilefold{idx},sets.kymo,sets.filenames{idx},sets);
 
-        kymos = [kymos; abStruct.flattenedKymos];
-        barcodes = [barcodes; abStruct.barcodes];
-        backgrounds = [backgrounds; abStruct.backgrounds];
-        barcodeDisplayNames = [barcodeDisplayNames; abStruct.barcodeDisplayNames];
+        kymos = [kymos; abStruct{idx}.flattenedKymos];
+        barcodes = [barcodes; abStruct{idx}.barcodes];
+        backgrounds = [backgrounds; abStruct{idx}.backgrounds];
+        barcodeDisplayNames = [barcodeDisplayNames; abStruct{idx}.barcodeDisplayNames];
     end
 
+    
+	assignin('base','abStruct',abStruct)
+
+    %#ok<*ASGLU>
+    
     
     % here save kymo's to some temporary folder so we can filter out
 

@@ -10,6 +10,8 @@ function [ abStruct] = generate_kymos_from_movie(movie3d, kymoMolEdgeIdxs, rRot,
     
     %kymos = [];
  
+    % unit test for extracting kymos
+    
     % extracting kymos
     import AB.Processing.extract_kymos;
     [flattenedKymos,layeredKymos, kymosMasks, kymosCenterXYCoords] = extract_kymos(movie3d, rRot, cRot, kymoMolEdgeIdxs,kymo.avgL, sets);
@@ -69,7 +71,7 @@ function [ abStruct] = generate_kymos_from_movie(movie3d, kymoMolEdgeIdxs, rRot,
     % Hack to save all variables in current workspace as fields in a struct
     vars_to_save = feval(@(allvars) allvars(~strncmp('tmp_', allvars, 4)), who());
     abStruct = eval(['var2struct(', strjoin(vars_to_save, ', '),');']);
-	assignin('base','abStruct',abStruct)
+	%assignin('base','abStruct',abStruct)
 
     %#ok<*ASGLU>
     

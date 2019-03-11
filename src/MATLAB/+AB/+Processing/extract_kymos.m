@@ -23,14 +23,16 @@ function [flattenedKymos, layeredKymos, kymosMasks, kymosCenterXYCoords] = extra
     % kymograph. If not possible, add noise
     sideDist = sets.preprocessing.kymoEdgeDetection.sideDist;
    % bgDist = sets.preprocessing.kymoEdgeDetection.bgDist;
-    bgDist = 3;
+    bgDistL = 3; % left
+	bgDistR = 3; % right
+
       
     % store flattened kymo's
     flattenedKymos = cell(nK, 1);
        
     % how many columns to consider. Typically avgL=2 but could be
     % different. 
-    kymoCols = [(-(avgL)-bgDist-avgL:-(avgL)-bgDist) -(avgL):(avgL) (avgL+bgDist:avgL+bgDist+avgL-1)] ;
+    kymoCols = [(-(avgL)-bgDistL-1:-(avgL)-1) -(avgL):(avgL) (avgL+1:avgL+bgDistR)] ;
    
     % number of timeframes
     numFrames = size(movieArr,3);
@@ -47,6 +49,8 @@ function [flattenedKymos, layeredKymos, kymosMasks, kymosCenterXYCoords] = extra
         % the timeframe where kymo ends
         maxRow = max(kymoMolEdgeIdxs{kymoNum}(:,1,2));
         
+    
+            
         % here if minRow-sideDist < 1 or maxRow+sideDist>1, we we should
         % add noise
         coordsRow = ((minRow-sideDist):(maxRow+sideDist));
@@ -63,7 +67,8 @@ function [flattenedKymos, layeredKymos, kymosMasks, kymosCenterXYCoords] = extra
         rowIdx = zeros(numFrames,2);
         
         for j=1:numFrames
-           rowIdx(j,:) =  kymoMolEdgeIdxs{kymoNum}(j,1,:)+sideDist;
+           % left and right row indices
+           rowIdx(j,:) =  kymoMolEdgeIdxs{kymoNum}(j,1,:);
            bitRow(j,rowIdx(j,1):rowIdx(j,2)) = 1;
            
            % center coordinates
@@ -113,12 +118,15 @@ function [flattenedKymos, layeredKymos, kymosMasks, kymosCenterXYCoords] = extra
         %rowForNoise = [meanCol-avgL-1 meanCol+avgL+1];
         
         % compute the nanmean of the layered kymographs
-        flattenedKymos{kymoNum} = nanmean(layeredKymos{kymoNum}(:,:,2:end-1),3); 
+        flattenedKymos{kymoNum} = nanmean(layeredKymos{kymoNum}(:,:,bgDistL+1:end-bgDistR),3);  % changed
         % background kymo is taken from two adjacent rows which are
         % non-zero
         %bgrKymos{kymoNum} = nanmean(layeredKymos{kymoNum}(:,:,[1,end]),3);
+        
+        % in case not enough rows, this would gives us trouble?
         bgrKymos{kymoNum} = nanmean(layeredKymos{kymoNum}(:,:,[1:avgL+1,end-avgL+1:end]),3);
         randVals = bgrKymos{kymoNum}(find(~isnan(bgrKymos{kymoNum})));
+        
         [a,b]=find(isnan(flattenedKymos{kymoNum}));
         
         % take random values (probably want to fix the ring

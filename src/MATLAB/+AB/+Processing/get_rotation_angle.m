@@ -14,14 +14,14 @@ function [rotationAngle] = get_rotation_angle(movieIn, rotationSettings)
     I = double(nanmean(movieIn, 3));
 %     
 %     % Find gradient image using Sobel, http://homepages.inf.ed.ac.uk/rbf/HIPR2/sobel.htm
-% 	hy = fspecial('sobel');
-%     Iy = imfilter(I, hy, 'replicate');
-%     Ix = imfilter(I, hy', 'replicate');
-%     gradmag = abs(Ix)+abs(Iy);
-%     %gradmag = sqrt(Ix.^2 + Iy.^2);
-%     toc
+	hy = fspecial('sobel');
+    Iy = imfilter(I, hy, 'replicate');
+    Ix = imfilter(I, hy', 'replicate');
+    gradmag = abs(Ix)+abs(Iy);
+    %gradmag = sqrt(Ix.^2 + Iy.^2);
+    toc
     
-    gradmag = edge(I,'Sobel');
+    %gradmag = edge(I,'Sobel');
 
    
     fprintf('Computed gradient image\n');
@@ -41,7 +41,7 @@ function [rotationAngle] = get_rotation_angle(movieIn, rotationSettings)
    % fprintf('Detecting edge angle\n');
   %  tic
     import OptMap.MovieKymoExtraction.detect_angle_with_radon_transform;
-    [rotationAngle] = detect_angle_with_radon_transform(gradmag, rotationSettings.numAngleCandidates, rotationSettings.angleOffset);
+    [rotationAngle] = detect_angle_with_radon_transform(I, rotationSettings.numAngleCandidates, rotationSettings.angleOffset);
     rotationAngle = mod(-rotationAngle, 360);
    % toc
 end
