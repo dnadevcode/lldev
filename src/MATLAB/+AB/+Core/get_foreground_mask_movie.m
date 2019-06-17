@@ -15,7 +15,7 @@ function [fgMaskMov] = get_foreground_mask_movie(movieRotCyc, foregroundMaskingS
     movieRotCycAmp = movieRotCyc;
     movieRotCycAmp(nanMask) = randVals;
     
-    import AB.Core.amplify_movie;
+    import AB.Processing.amplify_movie;
     szInit = size(movieRotCycAmp);
     [movieRotCycAmp] = amplify_movie(movieRotCycAmp, maxAmpDist);
     
@@ -24,9 +24,12 @@ function [fgMaskMov] = get_foreground_mask_movie(movieRotCyc, foregroundMaskingS
     % substract the mean
     a = movieRotCycAmp - mean(movieRotCycAmp(:));
     
-    %colSignalVect = sum(permute(sum(a, 1), [4 2 3 1]));
-	colSignalVect = sum(sum(a,3), 1); % hacky fix for AB_Run to work
-
+    if length(size(a)) > 3
+        colSignalVect = sum(permute(sum(a, 1), [4 2 3 1]));
+    else
+        colSignalVect = sum(sum(a,3), 1); % hacky fix for AB_Run to work
+    end
+    
     maxSigmaNonBlip = 3;
     minValDistBetweenAdjLocalExtrema = 0;
     

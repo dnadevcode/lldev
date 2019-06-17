@@ -1,0 +1,7 @@
+name: renv
+channels:
+  - defaults
+  - conda-forge
+  - r
+dependencies:
+  - rstudio

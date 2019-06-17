@@ -69,7 +69,7 @@ function [flattenedKymos, layeredKymos, kymosMasks, kymosCenterXYCoords] = extra
         for j=1:numFrames
            % left and right row indices
            rowIdx(j,:) =  kymoMolEdgeIdxs{kymoNum}(j,1,:);
-           bitRow(j,rowIdx(j,1):rowIdx(j,2)) = 1;
+           bitRow(j,(rowIdx(j,1):rowIdx(j,2))-minRow+sideDist+1) = 1;
            
            % center coordinates
            xyC = round([mean(kymoMolEdgeIdxs{kymoNum}(j,1,:)),mean(kymoMolEdgeIdxs{kymoNum}(j,2,:))]);

@@ -6,7 +6,7 @@ function [ sets ] = ab_sets()
     % folders
 %     sets.moviefilefold{1} = '';
 %     sets.filenames{1} = '';
-    sets.kymo.avgL = 3; % this*2+1 pixels are averaged to compute the kymograph
+    sets.kymo.avgL = 7; % this*2+1 pixels are averaged to compute the kymograph
     
     %%
     
