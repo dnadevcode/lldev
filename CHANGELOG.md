@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.3.4] - 2019-06-17
+- Fixed a bug with one AB source file that was in the wrong directory
 ## [0.3.2] - 2019-02-28
 - Added support to AB gui to extract too long fragments
 ## [0.3.1] - 2019-02-27
