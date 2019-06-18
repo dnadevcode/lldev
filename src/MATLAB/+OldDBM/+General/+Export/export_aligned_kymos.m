@@ -19,6 +19,8 @@ function [] = export_aligned_kymos(dbmODW, defaultOutputDirpath)
         alignedKymo = alignedKymos{alignedKymoNum};
         fileMoleculeIdx = alignedKymoFileMoleculeIdxs(alignedKymoNum);
         outputAlignedKymoFilepath = fullfile(outputDirpath, [srcFilename '_molecule_' num2str(fileMoleculeIdx) '_aligned_kymograph.tif']);
-        imwrite(alignedKymo, outputAlignedKymoFilepath, 'tif');
+        alignedKymo = alignedKymo-min(alignedKymo(:)); % shift data such that the smallest element of A is 0
+        alignedKymo = alignedKymo/max(alignedKymo(:));
+        imwrite(alignedKymo, outputAlignedKymoFilepath);
     end
 end
