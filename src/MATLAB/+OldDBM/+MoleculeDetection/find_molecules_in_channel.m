@@ -29,7 +29,7 @@ function [moleculeEdgeIdxs, channelMoleculeLabeling, closestFits] = find_molecul
     %   Saair Quaderi
 
     if nargin < 3
-        filterEdgeMolecules = true;
+        filterEdgeMolecules = false;
     end
     
 
@@ -59,10 +59,10 @@ function [moleculeEdgeIdxs, channelMoleculeLabeling, closestFits] = find_molecul
         currIdx = idxsSorted(firstApproxNum);
         startEdgeFirstApprox = moleculeEdgeIdxs_firstApprox(currIdx, 1);
         endEdgeFirstApprox = moleculeEdgeIdxs_firstApprox(currIdx, 2);
-        if (startEdgeFirstApprox == 1) || (endEdgeFirstApprox == curveLen)
-            remainderCurve(startEdgeFirstApprox:endEdgeFirstApprox) = 0;
-            continue;
-        end
+%         if (startEdgeFirstApprox == 1) || (endEdgeFirstApprox == curveLen)
+%             remainderCurve(startEdgeFirstApprox:endEdgeFirstApprox) = 0;
+%             continue;
+%         end
         
         tmpCurve = remainderCurve;
         tmpCurve(1:(startEdgeFirstApprox - 1)) = 0;

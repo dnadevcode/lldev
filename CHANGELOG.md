@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.3.6] - 2019-09-25
+- Fixed a bug in find molecule position, that ignored all molecules rather close to edges
 ## [0.3.4] - 2019-06-17
 - Fixed a bug with one AB source file that was in the wrong directory
 ## [0.3.2] - 2019-02-28
