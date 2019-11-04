@@ -4,3 +4,9 @@ OutputFiles/
 DataCache/
 data/
 src/MATLAB/Tests
+src/MATLAB/+Tests/
+Test
+src/MATLAB/+Scripts/
+IntensityCurves
+src/C/Comparison/
+

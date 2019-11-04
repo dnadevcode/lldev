@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0/3/7] - 2019-11-03
+- Fixed experimental consensus import in CBT, so that many can be imported at the same time
+- Fixed name error in SVD so that mex functions could be compiled
 ## [0.3.6] - 2019-09-25
 - Fixed a bug in find molecule position, that ignored all molecules rather close to edges
 ## [0.3.4] - 2019-06-17
