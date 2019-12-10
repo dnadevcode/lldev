@@ -58,7 +58,7 @@ classdef DataWrapper < handle
             end
             
             minMoleculeLengthEstimateThresh_px = 0;
-            if isfield(dbmODW.DBMMainstruct, 'minMoleculeLengthEstimateThresh_px')
+            if isfield(dbmODW.DBMMainstruct, 'filterLength')
                minMoleculeLengthEstimateThresh_px = dbmODW.DBMMainstruct.filterLength;
             end
             
@@ -264,7 +264,7 @@ classdef DataWrapper < handle
 
                 passesMoleculeLengthFilter = isnan(moleculeLengthEstimate_px) | (moleculeLengthEstimate_px < minMoleculeLengthEstimateThresh_px);
 
-                passesMoleculeLengthFilterVect(moleculeNum) = passesMoleculeLengthFilter;
+                passesMoleculeLengthFilterVect(moleculeNum) = ~passesMoleculeLengthFilter;
             end
 
             passesFiltersVect = passesInfoScoreFilterVect & passesMoleculeLengthFilterVect;
@@ -561,10 +561,20 @@ classdef DataWrapper < handle
         
 
         function [moleculeLength] = get_molecule_length(dbmODW, fileIdx, fileMoleculeIdx)
+            % compute molecule length
             [moleculeStruct] = dbmODW.get_molecule_struct(fileIdx, fileMoleculeIdx);
-            moleculeLength = NaN;
             if isfield(moleculeStruct, 'length') && not(isempty(moleculeStruct.length))
                 moleculeLength = moleculeStruct.length;
+            else
+                % use fast Otsu based length estimation on the first row of
+                % the kymograph
+                import OptMap.MoleculeDetection.EdgeDetection.get_default_edge_detection_settings;
+                edgeDetectionSettings = get_default_edge_detection_settings(1);
+
+                import OptMap.MoleculeDetection.EdgeDetection.approx_main_kymo_molecule_edges;
+                [kymoMoleculeLeftEdgeIdxs, kymoMoleculeRightEdgeIdxs, ~] = approx_main_kymo_molecule_edges(moleculeStruct.kymograph(1,:), edgeDetectionSettings);
+                % estimated molecule length is rightedge-leftedge+1
+                moleculeLength = kymoMoleculeRightEdgeIdxs-kymoMoleculeLeftEdgeIdxs+1;
             end
         end
         
