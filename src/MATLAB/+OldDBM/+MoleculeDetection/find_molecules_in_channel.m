@@ -1,4 +1,4 @@
-function [moleculeEdgeIdxs, channelMoleculeLabeling, closestFits] = find_molecules_in_channel(channelIntensityCurve, signalThreshold, filterEdgeMolecules)
+function [moleculeEdgeIdxs, channelMoleculeLabeling, closestFits] = find_molecules_in_channel(channelIntensityCurve, signalThreshold)
     % FIND_MOLECULES_IN_CHANNEL - given a 1D intensity curve (curve), and a threshold
     %	(signalThreshold), detects a molecule (assumed to be a continuous bright
     %	region which is brighter 'on average' than the signalTreshold.
@@ -10,8 +10,7 @@ function [moleculeEdgeIdxs, channelMoleculeLabeling, closestFits] = find_molecul
     %     the intensity threshold for a region to be considered a
     %     molecule
     %   filterEdgeMolecules
-    %     true if molecules found at the very start or very end should
-    %     be filtered out and false otherwise
+    %     true if molecules closer than colSidePadding should be removed
     %
     % Outputs: 
     %	moleculeEdgeIdxs
@@ -29,7 +28,7 @@ function [moleculeEdgeIdxs, channelMoleculeLabeling, closestFits] = find_molecul
     %   Saair Quaderi
 
     if nargin < 3
-        filterEdgeMolecules = false;
+        filterEdgeMolecules = true;
     end
     
 
@@ -52,6 +51,7 @@ function [moleculeEdgeIdxs, channelMoleculeLabeling, closestFits] = find_molecul
     
     closestFits = [];
     moleculeEdgeIdxs = [];
+    moleculeLocs = []; % locations of molecules, so that they would be in correct order
     remainderCurve = channelIntensityCurve;
     channelMoleculeLabeling = zeros(size(channelIntensityCurve));
     curveLabelNum = 0;
@@ -106,6 +106,16 @@ function [moleculeEdgeIdxs, channelMoleculeLabeling, closestFits] = find_molecul
         channelMoleculeLabeling(currIdxs) = curveLabelNum;
         closestFits = [closestFits; {closestCurrFit}];
         moleculeEdgeIdxs = [moleculeEdgeIdxs; newestEdgeIdxs]; %#ok<AGROW>
+        moleculeLocs = [moleculeLocs currIdx];
         remainderCurve(currIdxs) = 0;
     end
+    % now keep the proper sorting of the molecules, so switch back based on
+    % moleculeLocs
+    try
+        [a,b] = sort(moleculeLocs);
+        moleculeEdgeIdxs(a,:) = moleculeEdgeIdxs(b,:);
+        channelMoleculeLabeling(a,:) = channelMoleculeLabeling(b,:);
+        closestFits(a,:) = closestFits(b,:);
+    end
+   
 end

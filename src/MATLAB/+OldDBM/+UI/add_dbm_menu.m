@@ -2,6 +2,7 @@ function [] = add_dbm_menu(hMenuParent, tsDBM)
     import OldDBM.General.DataWrapper;
     dbmODW = DataWrapper();
 
+    % Get default settings path
     import OldDBM.General.SettingsWrapper;
     defaultSettingsFilepath = SettingsWrapper.get_default_DBM_ini_filepath();
     if not(exist(defaultSettingsFilepath, 'file'))
@@ -9,6 +10,7 @@ function [] = add_dbm_menu(hMenuParent, tsDBM)
     end
     dbmOSW = SettingsWrapper.import_dbm_settings_from_ini(defaultSettingsFilepath);
 
+    %Create UI TAB
     hMenuDBM = uimenu( ...
         'Parent', hMenuParent, ...
         'Label', 'DBM');
@@ -24,7 +26,7 @@ function [] = add_dbm_menu(hMenuParent, tsDBM)
     uimenu( ...
         'Parent', hMenuImport, ...
         'Label', 'Load Movie(s) (tif-format)', ...
-        'Callback', @(~, ~) on_load_movies(dbmODW, tsDBM), 'Accelerator', 'L');
+        'Callback', @(~, ~) on_load_movies(dbmODW, dbmOSW, tsDBM), 'Accelerator', 'L');
     uimenu( ...
         'Parent', hMenuImport, ...
         'Label', 'Load Raw Kymograph(s)', ...
@@ -58,14 +60,17 @@ function [] = add_dbm_menu(hMenuParent, tsDBM)
     %     'Label', 'Molecule Statistics', ...
     %     'Callback', @(~, ~) DBM_Gui.export_molecule_analyses(dbmODW, dbmOSW));
 
-    % Settings menu
-    hMenuSettings = uimenu( ...
-        'Parent', hMenuDBM, ...
-        'Label','&Change Settings');
-    uimenu( ...
-        'Parent', hMenuSettings, ...
-        'Label', 'Update Filter Settings', ...
-        'Callback', {@(~, ~) dbmODW.update_filter_settings()});
+    % Settings menu: better to change DBM.ini, so we are certain what
+    % settings are loaded, user selection might results in
+    % errors/mistyping.
+    %     % Settings menu
+    %     hMenuSettings = uimenu( ...
+    %         'Parent', hMenuDBM, ...
+    %         'Label','&Change Settings');
+    %     uimenu( ...
+    %         'Parent', hMenuSettings, ...
+    %         'Label', 'Update Filter Settings', ...
+    %         'Callback', {@(~, ~) dbmODW.update_filter_settings()});
 
 
     % Kymographs menu
@@ -335,11 +340,12 @@ function [] = add_dbm_menu(hMenuParent, tsDBM)
         on_update_home_screen(dbmODW, tsDBM);
     end
 
-    function [] = on_load_movies(dbmODW, tsDBM)
-        averagingWindowWidth = dbmODW.get_averaging_window_width();
+    function [] = on_load_movies(dbmODW, dbmOSW, tsDBM)
+        % this is in DBM.ini
+        % averagingWindowWidth = dbmODW.get_averaging_window_width();
 
         import OldDBM.General.Import.import_movies;
-        [fileCells, fileMoleculeCells, pixelsWidths_bps] = import_movies(averagingWindowWidth, tsDBM);
+        [fileCells, fileMoleculeCells, pixelsWidths_bps] = import_movies(tsDBM,dbmOSW);
 
         dbmODW.DBMMainstruct.fileCell = fileCells;
         dbmODW.DBMMainstruct.fileMoleculeCell = fileMoleculeCells;

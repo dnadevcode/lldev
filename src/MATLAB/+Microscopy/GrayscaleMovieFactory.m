@@ -77,8 +77,11 @@ classdef (Sealed) GrayscaleMovieFactory < handle
             gsMovF.KeepMovieObjsSlim = false;
         end
         
-        function [failMsg, gsMovObj] = load_grayscale_movie_from_tiff(gsMovF, srcTiffFilepath)
+        function [failMsg, gsMovObj] = load_grayscale_movie_from_tiff(gsMovF, fitRangeToCleanedDataMode, srcTiffFilepath)
             if nargin < 2
+                fitRangeToCleanedDataMode =  gsMovF.FitRangeToCleanedDataMode;
+            end
+            if nargin < 3
                 srcTiffFilepath = [];
             end
             if isempty(srcTiffFilepath)
@@ -92,7 +95,6 @@ classdef (Sealed) GrayscaleMovieFactory < handle
                 failMsg = 'No tiff file was specified to make the movie from';
                 return;
             end
-            fitRangeToCleanedDataMode = gsMovF.FitRangeToCleanedDataMode;
             keepMovieObjSlim = gsMovF.KeepMovieObjsSlim;
             storageMode = gsMovF.StorageMode;
             
@@ -100,7 +102,8 @@ classdef (Sealed) GrayscaleMovieFactory < handle
             import Microscopy.Import.import_single_unbroken_tiff_vid_segment;
             [rawDataArr, rawValRange, gsMovC] = import_single_unbroken_tiff_vid_segment(srcTiffFilepath);
 
-
+            
+%             fitRangeToCleanedDataMode = 0; % TODO: make this work for single frame with 1
             if fitRangeToCleanedDataMode
                 import Microscopy.cleanup_movie;
                 [cleanedDataArr, cleanupDetails] = cleanup_movie(permute(rawDataArr, [1 2 4 3]));
