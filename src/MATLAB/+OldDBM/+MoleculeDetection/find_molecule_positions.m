@@ -12,6 +12,7 @@ function [rowEdgeIdxs, colCenterIdxs] = find_molecule_positions(rotatedMovie, fg
     end
     
 
+    
     import AB.Core.get_foreground_mask_movie;
     [fgMaskMov] = get_foreground_mask_movie(permute(rotatedMovie, [1 2 4 3]), fgMaskingSettings);
     
@@ -23,9 +24,11 @@ function [rowEdgeIdxs, colCenterIdxs] = find_molecule_positions(rotatedMovie, fg
     % check that molecules are long enough. This might still remove some
     % good molecules if they move too much, so could reduce the
     % minMoleculeLength parameter..
-    zeroColumns = sum(imgFgMask) <  fgMaskingSettings.minMoleculeLength;
+    imgFgMask(rotatedMovie(:,:,1)==0) = 0;
+    % check here already if some columns have molecules too short. But still the molecules can be too short even though 
+    % they have been found to be long enough here
+    zeroColumns = sum(imgFgMask) <  fgMaskingSettings.minMoleculeLength; 
     imgFgMask(:, zeroColumns) = 0;
-    
 
     meanRotatedMovieFrame = mean(mean(rotatedMovie, 4), 3);
 
@@ -99,8 +102,10 @@ function [rowEdgeIdxs, colCenterIdxs] = find_molecule_positions(rotatedMovie, fg
         channelsColCenterIdxs{detectedChannelNum} = detectedChannelCenterPosIdxs(detectedChannelNum) + zeros([size(channelRowEdgeIdxs, 1), 1]);
     end
     
-    fprintf(strcat(['Removed ' num2str(molsTooClose) ' molecules that were too close to each other. Adjust rowSidePadding to reduce the amount of excluded molecules...\n']));
-
+    if molsTooClose > 0
+        fprintf(strcat(['Removed ' num2str(molsTooClose) ' molecules that were too close to each other. Adjust rowSidePadding to reduce the amount of excluded molecules...\n']));
+    end
+    
     rowEdgeIdxs = vertcat(channelsRowEdgeIdxs{:});
     colCenterIdxs = vertcat(channelsColCenterIdxs{:});
     

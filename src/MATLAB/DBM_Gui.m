@@ -1,5 +1,5 @@
 function [] = DBM_Gui()
-    % DBM_GUI - DNA Barcode Matchmaker (DBM) GUI
+    % DBM_GUI - DNA Barcode Matchmaker (DBM) for nanochannels GUI
 
     hFig = figure(...
         'Name', 'DNA Barcode Matchmaker', ...

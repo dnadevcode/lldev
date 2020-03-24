@@ -42,7 +42,11 @@ classdef GrayscaleMovie < handle
         function [gsMovObj] = GrayscaleMovie(gsMovC, rawDataArr, rawValRange)
             validateattributes(gsMovC, {'Microscopy.GrayscaleMovieContext'}, {'scalar'}, 1);
             
-            validateattributes(rawDataArr, {'double'}, {'ndims', 4, 'size', [NaN, NaN, 1, NaN], 'nonempty'}, 2);
+            try
+                validateattributes(rawDataArr, {'double'}, {'ndims', 4, 'size', [NaN, NaN, 1, NaN], 'nonempty'}, 2);
+            catch
+                validateattributes(rawDataArr, {'double'}, {'ndims', 2, 'size', [NaN, NaN, 1, NaN], 'nonempty'}, 2);
+            end
             
             if nargin < 3
                 rawValRange = [];
