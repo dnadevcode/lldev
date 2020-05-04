@@ -150,7 +150,7 @@ classdef DataWrapper < handle
                 rowCenterIdx = dbmODW.DBMMainstruct.fileCell{fileIdx}.locs(fileMoleculeIdx);
                 rowStartIdx = rowCenterIdx - floor(windowWidth/2);
                 rowEndIdx = rowCenterIdx + floor(windowWidth/2);
-                moleculeRectPosition = [colStartIdx, rowStartIdx, colEndIdx - colStartIdx, rowEndIdx - rowStartIdx];
+                moleculeRectPosition = [colStartIdx, rowStartIdx-1, colEndIdx - colStartIdx+1, rowEndIdx - rowStartIdx+2];
             catch
             end
         end

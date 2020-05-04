@@ -1,40 +1,25 @@
-function [ movie ] = simulate_molecule_movie( sets )
+function [ movie ] = simulate_molecule_movie( setsFile )
     % simulate_molecule_movie for tool testing
     %
     % :param settings: input parameter.
     % :returns: output
     
-    % rewritten by Albertas Dvirnas
-    
-    sets.angle = 75.8; % general angle in the movie
-    sets.anglevariance = 0; % should all molecules have the same angle?
-    
-    sets.xdim = 512; % xdimension, i.e. columns
-    sets.ydim = 512;  % ydim, i.e. rows
-    
-	sets.framenum = 20;  % number of frames
-    sets.framemov = 2; % maximal molecule movement between frames
-    
-    sets.stretch = 0.05; % +- this percentage of stretching 
-	sets.length = 100; % +- this percentage of stretching 
-	sets.psf = 300/130; % +- this percentage of stretching 
-    
-    sets.nummols = 10; 
-    
-    sets.varsignal = (0.5/3).^2; % variance signal
-	sets.varnoise = sets.varsignal;  % variance noise. how good signal to noise we want?
-
+    %input settings
+    import Fancy.IO.ini2struct;
+    sets = ini2struct(setsFile);
+       
+    sets.varnoise = sets.varsignal;  % variance noise. how good signal to noise we want?
     snr = sets.varsignal/sets.varnoise ;
-    
+    sigma = sets.psf  ; %// Define sigma here
+
+    % make output directory
+    mkdir(sets.outfold);
+ 
     movie = zeros(sets.ydim,sets.xdim,sets.framenum );
     
-    sets.zeros = 10;
-    
-    sets.channeldif = 10; % minimum px distance between channels
-    
+  
     % Gaussian filter
     N = 11; %// Define size of Gaussian mask
-    sigma = sets.psf  ; %// Define sigma here
 
     %// Generate Gaussian mask
     ind = -floor(N/2) : floor(N/2);
@@ -52,7 +37,7 @@ function [ movie ] = simulate_molecule_movie( sets )
     randv = cell(1,sets.nummols);
     
     % actual theory barcode. here random
-    rv = normrnd(0.5,sqrt(sets.varsignal), 1,sets.length);
+    rv = normrnd(sets.signalMean,sqrt(sets.varsignal), 1,sets.length);
     
     % y position
     posy = sets.channeldif*randperm(round(sets.ydim/sets.channeldif),sets.nummols);
@@ -61,7 +46,9 @@ function [ movie ] = simulate_molecule_movie( sets )
         % x position
         posx(j) = randi( sets.xdim ,1);
         % actual molecule before applying filter
-        randv{j} = [zeros(1,sets.zeros) rv zeros(1,sets.zeros)];
+        intfac = 1+2*sets.intensityChange*rand-sets.intensityChange;
+
+        randv{j} = [zeros(1,sets.zeros) intfac*rv zeros(1,sets.zeros)];
     end
     
     mv = cell(1,sets.framenum);
@@ -74,7 +61,7 @@ function [ movie ] = simulate_molecule_movie( sets )
             % newpos
             posx(j) = max(1,posx(j)+randi(2*sets.framemov)-sets.framemov-1);
             % new strfac
-            strfac = 0.1*rand-0.05;
+            strfac = 2*sets.stretch*rand-sets.stretch;
             vq = interp1(1:length(randv{j}),randv{j},1:1/(1+strfac):length(randv{j}));
 
             img(posy(j),posx(j):min(posx(j)+length(vq)-1,sets.xdim)) = vq(1:length(posx(j):min(posx(j)+length(vq)-1,sets.xdim)));
@@ -88,14 +75,14 @@ function [ movie ] = simulate_molecule_movie( sets )
 
 
         [mv{i},out_ref] = imwarp(out,tform_r);
-        mv{i} = mv{i}+normrnd(0.4,sqrt(sets.varnoise), size(mv{i},1),size(mv{i},2));
+        mv{i} = mv{i}+normrnd(sets.noiseMean,sqrt(sets.varnoise), size(mv{i},1),size(mv{i},2));
     end  
     
-    ff = '/home/albyback/git/rawData/AB/sim/';
-   % ff = '/media/albyback/My Passport/DATA/AB_Testing/sim/';
-  %  figure,imshow(mv{4},[])
+    ff = sets.outfold;
+
     
-    foldful = strcat( [ ff num2str(snr) '_' num2str(randi(100)) '_movie.tif']);
+    
+    foldful = fullfile( ff,strcat([ num2str(snr) '_' num2str(randi(100)) '_movie.tif']));
     imwrite(mv{1},foldful)
     for i =2:length(mv)
         imwrite(mv{i},foldful,'WriteMode','append');

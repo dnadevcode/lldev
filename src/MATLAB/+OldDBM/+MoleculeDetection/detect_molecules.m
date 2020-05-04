@@ -70,45 +70,58 @@ function [grayscaleVideoRescaled, miniRotatedMoviesCoords, colCenterIdxs, rowEdg
 %         rotatedMovie = grayscaleVideoRescaled;
         grayscaleVideoRescaled = rot90(grayscaleVideoRescaled, ninetyDegRotations);
         if finetunedRotation ~= 0
-           % warning('Movie data is being rotated via bilinear interpolation');
-            bboxMode = 'crop';
-            % should we have crop/loose here?
-            grayscaleVideoRescaled = imrotate(grayscaleVideoRescaled, finetunedRotation, 'bilinear',bboxMode);
-            
-%             add zeros to the edges since bilinear interpolation does not
-%             deal well with these
-            c = zeros(szMovieIn(1),szMovieIn(2));
-            c(2:end-1,2:end-1) = 1;
-            
-            % create a Cartesian grid 
-%             [c, r] = meshgrid((1:szMovieIn(2)), (1:szMovieIn(1)));
-% 
-    %     % method for coordinate matrix should be 'nearest' to avoid artifacts
-    %     % when doing bilinear interpolation (then between 200 and 0 there's
-    %     % 100, while in fact it should be 0. Note that this only allows us to
-    %     % see where there are nonzero pixels, though we can't use them to index
-    %     % the coordinates. todo: do both
-            rotationSamplingMethod = 'nearest';
-
-            % rotate the X coordinate matrix
-            segmentFrameRot = imrotate(c, finetunedRotation, rotationSamplingMethod, bboxMode);
-
-            % rotate the Y coordinate matrix
-%             cRot = imrotate(c, rotationAngle, rotationSamplingMethod, bboxMode);
-
-            % we care only abound indices that were in original grid. These are the
-            % points that have length(y)>=r>=1, length(x)>c>=1. 
-            % can we find cases where extra points are denoted as non zero?
-%             segmentFrameRot = (rRot >= 1) & (rRot <= szMovieIn(1)) & (cRot >= 1) & (cRot <= szMovieIn(2));
-            for i=1:size(grayscaleVideoRescaled,3)
-                tempImg = grayscaleVideoRescaled(:,:,i);
-                tempImg(~segmentFrameRot) = 0;
-                grayscaleVideoRescaled(:,:,i) = tempImg;
-            end
-            
-            
-        
+            warning('Movie data is being rotated via bilinear interpolation');
+            grayscaleVideoRescaled = imrotate(grayscaleVideoRescaled, finetunedRotation, 'bilinear','crop');
         end
+    
+% 
+%         ninetyDegRotations = round(rotationAngle/90);
+%         finetunedRotation = rotationAngle - ninetyDegRotations*90;
+%         % ninetyDegRotations = ninetyDegRotations + 1; % Orient Channels Vertically
+%         ninetyDegRotations = mod(ninetyDegRotations, 4);
+% 
+% %         rotatedMovie = grayscaleVideoRescaled;
+%         grayscaleVideoRescaled = rot90(grayscaleVideoRescaled, ninetyDegRotations);
+%         if finetunedRotation ~= 0
+%            % warning('Movie data is being rotated via bilinear interpolation');
+%             bboxMode = 'crop';
+%             % should we have crop/loose here?
+%             grayscaleVideoRescaled = imrotate(grayscaleVideoRescaled, finetunedRotation, 'bilinear',bboxMode);
+%             
+% %             add zeros to the edges since bilinear interpolation does not
+% %             deal well with these
+%             c = zeros(szMovieIn(1),szMovieIn(2));
+%             c(2:end-1,2:end-1) = 1;
+%             
+%             % create a Cartesian grid 
+% %             [c, r] = meshgrid((1:szMovieIn(2)), (1:szMovieIn(1)));
+% % 
+%     %     % method for coordinate matrix should be 'nearest' to avoid artifacts
+%     %     % when doing bilinear interpolation (then between 200 and 0 there's
+%     %     % 100, while in fact it should be 0. Note that this only allows us to
+%     %     % see where there are nonzero pixels, though we can't use them to index
+%     %     % the coordinates. todo: do both
+%             rotationSamplingMethod = 'nearest';
+% 
+%             % rotate the X coordinate matrix
+%             segmentFrameRot = imrotate(c, finetunedRotation, rotationSamplingMethod, bboxMode);
+% 
+%             % rotate the Y coordinate matrix
+% %             cRot = imrotate(c, rotationAngle, rotationSamplingMethod, bboxMode);
+% 
+%             % we care only abound indices that were in original grid. These are the
+%             % points that have length(y)>=r>=1, length(x)>c>=1. 
+%             % can we find cases where extra points are denoted as non zero?
+% %             segmentFrameRot = (rRot >= 1) & (rRot <= szMovieIn(1)) & (cRot >= 1) & (cRot <= szMovieIn(2));
+%             for i=1:size(grayscaleVideoRescaled,3)
+%                 tempImg = grayscaleVideoRescaled(:,:,i);
+%                 tempImg(~segmentFrameRot) = 0;
+%                 grayscaleVideoRescaled(:,:,i) = tempImg;
+%             end
+%             
+%             
+%         
+%         end
        
     end
         

@@ -15,7 +15,7 @@ function [rowEdgeIdxs, colCenterIdxs] = find_molecule_positions(rotatedMovie, fg
     
     import AB.Core.get_foreground_mask_movie;
     [fgMaskMov] = get_foreground_mask_movie(permute(rotatedMovie, [1 2 4 3]), fgMaskingSettings);
-    
+
     %
     % check for pixels that are signal in each frame
     % how to quantify how many molecules we remove by this
@@ -74,13 +74,13 @@ function [rowEdgeIdxs, colCenterIdxs] = find_molecule_positions(rotatedMovie, fg
 %         channelIntensityCurve2 = meanRotatedMovieFrame(:, detectedChannelCenterPosIdxs(detectedChannelNum));
 %         figure,plot(channelIntensityCurve)
         % Locate the individual molecules
-        [channelRowEdgeIdxs, channelMoleculeLabeling, closestFits] = find_molecules_in_channel(channelIntensityCurve, signalThreshold);
+        [channelRowEdgeIdxs, channelMoleculeLabeling, closestFits] = find_molecules_in_channel(channelIntensityCurve, signalThreshold,fgMaskingSettings.filterEdgeMolecules);
 %         plot_closest_fit([], channelIntensityCurve, channelMoleculeLabeling, closestFits);
 
         % check differences between left and right edges
         
        
-        if fgMaskingSettings.filterEdgeMolecules
+        if fgMaskingSettings.filterCloseMolecules
             
             failsFilter = ones(1,size(channelRowEdgeIdxs,1));
             for i=1:size(channelRowEdgeIdxs,1)-1

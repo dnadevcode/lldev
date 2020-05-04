@@ -1,4 +1,4 @@
-function [] = add_dbm_menu(hMenuParent, tsDBM,dbmOSW)
+function [] = add_dbm_menu(hMenuParent, tsDBM,dbmOSW,dbmODW)
 
     if nargin < 3
         % Get default settings path
@@ -10,9 +10,10 @@ function [] = add_dbm_menu(hMenuParent, tsDBM,dbmOSW)
         dbmOSW = SettingsWrapper.import_dbm_settings_from_ini(defaultSettingsFilepath);
     end
     
-    import OldDBM.General.DataWrapper;
-    dbmODW = DataWrapper();
-
+    if nargin < 4
+        import OldDBM.General.DataWrapper;
+        dbmODW = DataWrapper();
+    end
 
     %Create UI TAB
     hMenuDBM = uimenu( ...
@@ -105,7 +106,7 @@ function [] = add_dbm_menu(hMenuParent, tsDBM,dbmOSW)
     uimenu( ...
         'Parent', hMenuStatistics, ...
         'Label', 'Calculate molecule lengths and intensities', ...
-        'Callback', @(~, ~) on_calc_molecule_lengths_and_intensity(dbmODW, tsDBM));
+        'Callback', @(~, ~) on_calc_molecule_lengths_and_intensity(dbmODW, tsDBM,dbmOSW));
 
     import OldDBM.Kymo.UI.disp_raw_kymos_centers_of_mass;
     uimenu( ...
@@ -123,6 +124,9 @@ function [] = add_dbm_menu(hMenuParent, tsDBM,dbmOSW)
     %     'Label','Plot InfoScore Hists', ...
     %     'Callback', @(~, ~) on_plot_infoscore_hist(dbmODW, tsDBM));
     
+    if nargin == 4
+        on_update_home_screen(dbmODW, tsDBM);
+    end
     
     function [sessionGui] = get_session_object(tsDBM)
         hasValidGuiTF = tsDBM.has_valid_gui();
@@ -348,8 +352,26 @@ function [] = add_dbm_menu(hMenuParent, tsDBM,dbmOSW)
         % this is in DBM.ini
         % averagingWindowWidth = dbmODW.get_averaging_window_width();
 
-        import OldDBM.General.Import.import_movies;
-        [fileCells, fileMoleculeCells, pixelsWidths_bps] = import_movies(tsDBM,dbmOSW);
+            switch dbmOSW.DBMSettingsstruct.dbmtool
+                case 'old'
+
+                     import OldDBM.General.Import.import_movies;
+                    [fileCells, fileMoleculeCells, pixelsWidths_bps] = import_movies([],dbmOSW);     
+                case 'corr'
+                    % maybe make these into "cases"
+                    import DBM4.import_movies;
+                    %         import OldDBM.General.Import.import_movies;
+                    [fileCells, fileMoleculeCells, pixelsWidths_bps] = DBM4.import_movies( dbmOSW.DBMSettingsstruct);     
+                otherwise
+                    % default to something..
+            end
+%         
+%         import DBM4.import_movies;
+%         %         import OldDBM.General.Import.import_movies;
+%         [fileCells, fileMoleculeCells, pixelsWidths_bps] = DBM4.import_movies(sets);     
+%         %      
+%         import OldDBM.General.Import.import_movies;
+%         [fileCells, fileMoleculeCells, pixelsWidths_bps] = import_movies(tsDBM,dbmOSW);
 
         dbmODW.DBMMainstruct.fileCell = fileCells;
         dbmODW.DBMMainstruct.fileMoleculeCell = fileMoleculeCells;
@@ -365,6 +387,7 @@ function [] = add_dbm_menu(hMenuParent, tsDBM,dbmOSW)
 
         import OldDBM.General.Import.import_raw_kymos;
         [rawKymos, rawKymoFilepaths] = import_raw_kymos(defaultRawKymoDirpath);
+
         
         numFiles = numel(rawKymos);
         pixelsWidths_bps = zeros(numFiles,1) - 1;
@@ -378,7 +401,7 @@ function [] = add_dbm_menu(hMenuParent, tsDBM,dbmOSW)
         on_update_home_screen(dbmODW, tsDBM);
     end
 
-    function [] = on_calc_molecule_lengths_and_intensity(dbmODW, tsDBM)
+    function [] = on_calc_molecule_lengths_and_intensity(dbmODW, tsDBM,dbmOSW)
 
         import OldDBM.Kymo.UI.prompt_kymo_analysis_method;
         [kymoAnalysisMethod, shouldSaveTF] = prompt_kymo_analysis_method();
@@ -392,7 +415,7 @@ function [] = add_dbm_menu(hMenuParent, tsDBM,dbmOSW)
         end
 %         import OldDBM.Kymo.UI.run_calc_plot_save_kymo_analysis;
         import DBM4.run_calc_plot_save_kymo_analysis;
-        run_calc_plot_save_kymo_analysis(tsDBM, dbmODW, skipDoubleTanhAdjustmentTF, shouldSaveTF,dbmOSW.DBMSettingsstruct);
+        run_calc_plot_save_kymo_analysis(tsDBM, dbmODW, skipDoubleTanhAdjustmentTF, shouldSaveTF,dbmOSW.DBMSettingsstruct)
         
     end
 

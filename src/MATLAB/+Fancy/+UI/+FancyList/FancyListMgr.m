@@ -267,7 +267,28 @@ classdef FancyListMgr < handle
             set(flm.ItemsListbox, 'Value', []);
         end
         
+        function [] = update_list_items(flm, textItems, valueItems)
+            % update list items without removing anything or de-selecting
+            % anything
+            selectedItems = flm.get_selected_indices();
 
+            flm.deselect_all();
+            textItems = textItems(:);
+            valueItems = valueItems(:);
+            numItems = length(textItems);
+            
+            import Fancy.AppMgr.AppDataPoolMgr;
+            dataItemIDs = arrayfun(@uint64, (1:numItems)', 'UniformOutput', false);
+            AppDataPoolMgr.clear_data_pool(flm.ListDispNamesFromIdxDataPoolID);
+            AppDataPoolMgr.clear_data_pool(flm.ListValsFromIdxDataPoolID);
+            AppDataPoolMgr.update_data_items(flm.ListDispNamesFromIdxDataPoolID, dataItemIDs, textItems)
+            AppDataPoolMgr.update_data_items(flm.ListValsFromIdxDataPoolID, dataItemIDs, valueItems)
+            
+            set(flm.ItemsListbox, 'String', textItems);
+            
+            flm.select_some(selectedItems);
+        end
+        
         function [] = set_list_items(flm, textItems, valueItems)
             flm.deselect_all();
             textItems = textItems(:);
@@ -282,6 +303,7 @@ classdef FancyListMgr < handle
             AppDataPoolMgr.update_data_items(flm.ListValsFromIdxDataPoolID, dataItemIDs, valueItems)
             
             set(flm.ItemsListbox, 'String', textItems);
+            
         end
         
         function [] = add_list_items(flm, newTextItems, newValueItems)

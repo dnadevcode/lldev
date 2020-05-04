@@ -3,7 +3,7 @@ function [fgMaskMovB] = get_foreground_mask_movie(movieRotCyc, foregroundMasking
     
     
     % make sure that 0's are treated as nan's when finding the foreground
-    movieRotCyc(movieRotCyc==0) = nan;
+%     movieRotCyc(movieRotCyc==0) = nan;
     
     nanMask = isnan(movieRotCyc);
     

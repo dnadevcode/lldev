@@ -3,6 +3,9 @@ function [lm, kymoNames, alignedKymos] = ensure_alignment_for_selected_kymos(lm)
     
     % input lm
     % output lm, kymoNames, alignedKymos
+    
+    % all indices
+    allIndices = lm.get_all_indices();
 
     selectedIndices = lm.get_selected_indices();
     kymoNames = cell(0, 1);
@@ -23,6 +26,7 @@ function [lm, kymoNames, alignedKymos] = ensure_alignment_for_selected_kymos(lm)
     end
     trueValueList = lm.get_true_value_list();
     import CBT.Consensus.Import.Helper.ensure_alignment_at_index;
+    % should not be passing the whole truevalue list here!
     numSelected = length(selectedIndices);
     alignedKymos = cell(numSelected, 1);
     for selectedIdx = 1:numSelected
@@ -30,7 +34,9 @@ function [lm, kymoNames, alignedKymos] = ensure_alignment_for_selected_kymos(lm)
         [~, kymoStruct, trueValueList] = ensure_alignment_at_index(kymoIndex, lm, trueValueList, true);
         alignedKymos{selectedIdx} = kymoStruct.alignedKymo;
     end
+    % select the ones update for updating display
 	kymoNames = lm.get_diplay_names(selectedIndices);
-%     lm.set_list_items(kymoNames, trueValueList);
+    % but update all items
+	lm.update_list_items( lm.get_diplay_names(allIndices), trueValueList);
     fprintf('Kymograph alignments are complete!\n');
 end

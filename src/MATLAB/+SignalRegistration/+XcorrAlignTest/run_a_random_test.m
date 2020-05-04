@@ -1,7 +1,9 @@
 function [] = run_a_random_test(circularA, circularB, flipVal, allowExtraCropping, lens)
     import SignalRegistration.XcorrAlignTest.test_inputs;
     import SignalRegistration.XcorrAlignTest.get_random_test_inputs;
-
+    
+    % but function get_random_test_inputs does not exist..
+    
     if nargin < 1
         circularA = logical(randi([0, 1]));
     end

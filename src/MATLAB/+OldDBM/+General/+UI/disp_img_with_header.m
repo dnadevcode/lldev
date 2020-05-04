@@ -1,5 +1,14 @@
 function [] = disp_img_with_header(hAxis, imgArr, imgHeaderText)
-    imagesc(imgArr, 'Parent', hAxis);
+
+    cutout = 0.01;
+    num_to_cut = ceil( numel(imgArr) * cutout / 2);
+    sorted_data = sort(imgArr(:));
+    cmin = sorted_data( num_to_cut );
+    cmax = sorted_data( end - num_to_cut + 1);
+    % imagesc(data, [cmin, cmax]);
+
+
+    imagesc(imgArr, 'Parent', hAxis, [cmin cmax]);
     hold(hAxis, 'on');
     colormap(hAxis, gray());
     

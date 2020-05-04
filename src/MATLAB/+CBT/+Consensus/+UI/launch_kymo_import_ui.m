@@ -34,8 +34,12 @@ function [lm] = launch_kymo_import_ui(hPanelKymoImport, tsCBC)
             import OldDBM.General.Import.import_raw_kymos;
             [rawKymos, rawKymoFilepaths] = import_raw_kymos();
 
-            import OldDBM.General.Import.prompt_files_bps_per_pixel_wrapper;
-            [pixelsWidths_bps] = prompt_files_bps_per_pixel_wrapper(rawKymoFilepaths, ts);
+            % remove pixel width / bp selection
+            numFiles = length(rawKymoFilepaths);
+            pixelsWidths_bps = zeros(numFiles,1) - 1;
+
+%             import OldDBM.General.Import.prompt_files_bps_per_pixel_wrapper;
+%             [pixelsWidths_bps] = prompt_files_bps_per_pixel_wrapper(rawKymoFilepaths, ts);
 
             % todo: generate kymo structs directly instead of using data
             %  wrapper
