@@ -1,4 +1,4 @@
-function [moleculeEdgeIdxs, channelMoleculeLabeling, closestFits] = find_molecules_in_channel(channelIntensityCurve, signalThreshold)
+function [moleculeEdgeIdxs, channelMoleculeLabeling, closestFits] = find_molecules_in_channel(channelIntensityCurve, signalThreshold,filterEdgeMolecules)
     % FIND_MOLECULES_IN_CHANNEL - given a 1D intensity curve (curve), and a threshold
     %	(signalThreshold), detects a molecule (assumed to be a continuous bright
     %	region which is brighter 'on average' than the signalTreshold.
@@ -28,7 +28,7 @@ function [moleculeEdgeIdxs, channelMoleculeLabeling, closestFits] = find_molecul
     %   Saair Quaderi
 
     if nargin < 3
-        filterEdgeMolecules = true;
+        filterEdgeMolecules = false;
     end
     
 
@@ -55,6 +55,7 @@ function [moleculeEdgeIdxs, channelMoleculeLabeling, closestFits] = find_molecul
     remainderCurve = channelIntensityCurve;
     channelMoleculeLabeling = zeros(size(channelIntensityCurve));
     curveLabelNum = 0;
+%     numBadMols = 0;
     for firstApproxNum = 1:firstApproxCount
         currIdx = idxsSorted(firstApproxNum);
         startEdgeFirstApprox = moleculeEdgeIdxs_firstApprox(currIdx, 1);
@@ -92,9 +93,21 @@ function [moleculeEdgeIdxs, channelMoleculeLabeling, closestFits] = find_molecul
         badRegionStart = newestEdgeIdxs(1) < 1;
         badRegionEnd = newestEdgeIdxs(2) > curveLen;
         thresholdDeficit = max(0, signalThreshold - signalAboveNoise);
-        if badRegionStart || badRegionEnd || (thresholdDeficit > 0)
-            remainderCurve(startEdgeFirstApprox:endEdgeFirstApprox) = 0;
-            continue;
+        if filterEdgeMolecules
+            if badRegionStart || badRegionEnd || (thresholdDeficit > 0)
+                remainderCurve(startEdgeFirstApprox:endEdgeFirstApprox) = 0;
+    %             numBadMols = numBadMols+1; % if edges are not remved, this should be included!!
+                continue;
+            end
+        else
+            % todo : also somehow add information that this molecule is
+            % touching the edge
+            if newestEdgeIdxs(1) < 1
+                newestEdgeIdxs(1) = 1;
+            end
+            if newestEdgeIdxs(2) > curveLen
+                newestEdgeIdxs(2) = curveLen;
+            end
         end
         
         % Extend the coordinates forward and backward until we hit a zero
@@ -106,7 +119,7 @@ function [moleculeEdgeIdxs, channelMoleculeLabeling, closestFits] = find_molecul
         channelMoleculeLabeling(currIdxs) = curveLabelNum;
         closestFits = [closestFits; {closestCurrFit}];
         moleculeEdgeIdxs = [moleculeEdgeIdxs; newestEdgeIdxs]; %#ok<AGROW>
-        moleculeLocs = [moleculeLocs currIdx];
+        moleculeLocs = [moleculeLocs curveLabelNum];
         remainderCurve(currIdxs) = 0;
     end
     % now keep the proper sorting of the molecules, so switch back based on

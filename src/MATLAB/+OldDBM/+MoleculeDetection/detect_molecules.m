@@ -30,6 +30,8 @@ function [grayscaleVideoRescaled, miniRotatedMoviesCoords, colCenterIdxs, rowEdg
     rowSidePadding = settings.rowSidePadding;
     fgMaskingSettings = settings.fgMaskingSettings;
     fgMaskingSettings.rowSidePadding = rowSidePadding;
+    
+
     % 
 %     fgMaskingSettings.filterEdgeMolecules = averagingWindowSideExtensionWidth;
     % fgMaskingSettings.numThresholds = 2;
@@ -43,7 +45,9 @@ function [grayscaleVideoRescaled, miniRotatedMoviesCoords, colCenterIdxs, rowEdg
     % scale the movie to [0,1]
     
     grayscaleVideoRescaled = (grayscaleVideo - minVal)./(maxVal - minVal);
-    
+   
+    szMovieIn = size(grayscaleVideo);
+
     clear grayscaleVideo;
     
     % get an amplification kernel
@@ -69,7 +73,60 @@ function [grayscaleVideoRescaled, miniRotatedMoviesCoords, colCenterIdxs, rowEdg
             warning('Movie data is being rotated via bilinear interpolation');
             grayscaleVideoRescaled = imrotate(grayscaleVideoRescaled, finetunedRotation, 'bilinear','crop');
         end
+    
+% 
+%         ninetyDegRotations = round(rotationAngle/90);
+%         finetunedRotation = rotationAngle - ninetyDegRotations*90;
+%         % ninetyDegRotations = ninetyDegRotations + 1; % Orient Channels Vertically
+%         ninetyDegRotations = mod(ninetyDegRotations, 4);
+% 
+% %         rotatedMovie = grayscaleVideoRescaled;
+%         grayscaleVideoRescaled = rot90(grayscaleVideoRescaled, ninetyDegRotations);
+%         if finetunedRotation ~= 0
+%            % warning('Movie data is being rotated via bilinear interpolation');
+%             bboxMode = 'crop';
+%             % should we have crop/loose here?
+%             grayscaleVideoRescaled = imrotate(grayscaleVideoRescaled, finetunedRotation, 'bilinear',bboxMode);
+%             
+% %             add zeros to the edges since bilinear interpolation does not
+% %             deal well with these
+%             c = zeros(szMovieIn(1),szMovieIn(2));
+%             c(2:end-1,2:end-1) = 1;
+%             
+%             % create a Cartesian grid 
+% %             [c, r] = meshgrid((1:szMovieIn(2)), (1:szMovieIn(1)));
+% % 
+%     %     % method for coordinate matrix should be 'nearest' to avoid artifacts
+%     %     % when doing bilinear interpolation (then between 200 and 0 there's
+%     %     % 100, while in fact it should be 0. Note that this only allows us to
+%     %     % see where there are nonzero pixels, though we can't use them to index
+%     %     % the coordinates. todo: do both
+%             rotationSamplingMethod = 'nearest';
+% 
+%             % rotate the X coordinate matrix
+%             segmentFrameRot = imrotate(c, finetunedRotation, rotationSamplingMethod, bboxMode);
+% 
+%             % rotate the Y coordinate matrix
+% %             cRot = imrotate(c, rotationAngle, rotationSamplingMethod, bboxMode);
+% 
+%             % we care only abound indices that were in original grid. These are the
+%             % points that have length(y)>=r>=1, length(x)>c>=1. 
+%             % can we find cases where extra points are denoted as non zero?
+% %             segmentFrameRot = (rRot >= 1) & (rRot <= szMovieIn(1)) & (cRot >= 1) & (cRot <= szMovieIn(2));
+%             for i=1:size(grayscaleVideoRescaled,3)
+%                 tempImg = grayscaleVideoRescaled(:,:,i);
+%                 tempImg(~segmentFrameRot) = 0;
+%                 grayscaleVideoRescaled(:,:,i) = tempImg;
+%             end
+%             
+%             
+%         
+%         end
+       
     end
+        
+
+%     end
     % rotatedAmplifiedMovie = amplifiedGrayscaleMovie;
     % rotatedAmplifiedMovie = rot90(rotatedAmplifiedMovie, ninetyDegRotations);
     % if finetunedRotation ~= 0
@@ -95,7 +152,7 @@ function [grayscaleVideoRescaled, miniRotatedMoviesCoords, colCenterIdxs, rowEdg
         miniRotatedMoviesCoords = {};
     else
         colSidePadding = averagingWindowSideExtensionWidth;
-        rotatedMovieSz = size(grayscaleVideoRescaled);
+        [rotatedMovieSz(1), rotatedMovieSz(2), rotatedMovieSz(3)] = size(grayscaleVideoRescaled);
 
         import OldDBM.MoleculeDetection.get_molecule_movie_coords;
         [miniRotatedMoviesCoords] = get_molecule_movie_coords(rowEdgeIdxs, colCenterIdxs, rotatedMovieSz, rowSidePadding, colSidePadding);

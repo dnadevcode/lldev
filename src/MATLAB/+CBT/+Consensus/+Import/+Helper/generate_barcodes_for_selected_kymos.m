@@ -29,7 +29,7 @@ function [kymoStructs] = generate_barcodes_for_selected_kymos(lm, skipConfirmati
         kymoIndex = selectedIndices(selectedIdx);
         [kymoStructs{selectedIdx},  trueValueList] = ensure_barcode_generated_at_index(kymoIndex, lm, trueValueList);
     end
- %   lm.set_list_items(lm.get_diplay_names(selectedIndices), trueValueList);
+    lm.update_list_items(lm.get_diplay_names(lm.get_all_indices), trueValueList);
     if not(skipSuccessMessage)
         fprintf('Barcode generations are complete!\n');
     end

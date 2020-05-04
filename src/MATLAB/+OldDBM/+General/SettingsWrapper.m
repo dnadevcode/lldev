@@ -117,7 +117,7 @@ classdef SettingsWrapper < handle
             %
             % Authors:
             %  Saair Quaderi (refactoring)
-            %  Tobias Ambjörnsson
+            %  Tobias Ambjï¿½rnsson
             %
             import OldDBM.General.SettingsWrapper;
 
@@ -205,8 +205,8 @@ classdef SettingsWrapper < handle
             import Fancy.IO.mkdirp;
             mkdirp(fileParamsDBM.dirs.outputs)
 
-            outputDirTypes = {'sessions', 'rawKymos' 'alignedKymos' 'analyses', 'fileInfo', 'consensus', 'stats'};
-            defaultDefaultOutputDirs = {'Sessions', 'RawKymos', 'AlignedKymos', 'Analyses', 'FileInfo', 'Consensus', 'Stats'};
+            outputDirTypes = {'sessions', 'rawKymos','pngs','rawChannels', 'alignedKymos', 'analyses', 'fileInfo', 'consensus', 'stats'};
+            defaultDefaultOutputDirs = {'Sessions', 'RawKymos','PNG','RawChannels', 'AlignedKymos', 'Analyses', 'FileInfo', 'Consensus', 'Stats'};
 
             for sectionFieldNameIdx=1:length(outputDirTypes)
                 outputDirType = outputDirTypes{sectionFieldNameIdx};

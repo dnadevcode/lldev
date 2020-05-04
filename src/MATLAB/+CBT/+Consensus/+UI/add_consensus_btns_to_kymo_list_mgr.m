@@ -25,7 +25,7 @@ function [] = add_consensus_btns_to_kymo_list_mgr(lm, ts, cache)
     function [lm] = on_ensure_alignment_for_selected_kymos(lm, ts)
         import CBT.Consensus.Import.Helper.ensure_alignment_for_selected_kymos;
         [lm, kymoNames, alignedKymos] = ensure_alignment_for_selected_kymos(lm);
-
+%         v = lm.get_true_value_list();
         hTabSelectedAlignedKymos = get_aligned_selected_kymos_tab(ts);
         hPanelAlignedKymos = uipanel('Parent', hTabSelectedAlignedKymos);
         delete(allchild(hPanelAlignedKymos));

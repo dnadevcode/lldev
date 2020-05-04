@@ -1,14 +1,18 @@
-function [] = add_dbm_menu(hMenuParent, tsDBM)
+function [] = add_dbm_menu(hMenuParent, tsDBM,dbmOSW)
+
+    if nargin < 3
+        % Get default settings path
+        import OldDBM.General.SettingsWrapper;
+        defaultSettingsFilepath = SettingsWrapper.get_default_DBM_ini_filepath();
+        if not(exist(defaultSettingsFilepath, 'file'))
+            defaultSettingsFilepath = '';
+        end
+        dbmOSW = SettingsWrapper.import_dbm_settings_from_ini(defaultSettingsFilepath);
+    end
+    
     import OldDBM.General.DataWrapper;
     dbmODW = DataWrapper();
 
-    % Get default settings path
-    import OldDBM.General.SettingsWrapper;
-    defaultSettingsFilepath = SettingsWrapper.get_default_DBM_ini_filepath();
-    if not(exist(defaultSettingsFilepath, 'file'))
-        defaultSettingsFilepath = '';
-    end
-    dbmOSW = SettingsWrapper.import_dbm_settings_from_ini(defaultSettingsFilepath);
 
     %Create UI TAB
     hMenuDBM = uimenu( ...
@@ -361,9 +365,12 @@ function [] = add_dbm_menu(hMenuParent, tsDBM)
 
         import OldDBM.General.Import.import_raw_kymos;
         [rawKymos, rawKymoFilepaths] = import_raw_kymos(defaultRawKymoDirpath);
+        
+        numFiles = numel(rawKymos);
+        pixelsWidths_bps = zeros(numFiles,1) - 1;
 
-        import OldDBM.General.Import.prompt_files_bps_per_pixel_wrapper;
-        [pixelsWidths_bps] = prompt_files_bps_per_pixel_wrapper(rawKymoFilepaths, tsDBM);
+%         import OldDBM.General.Import.prompt_files_bps_per_pixel_wrapper;
+%         [pixelsWidths_bps] = prompt_files_bps_per_pixel_wrapper(rawKymoFilepaths, tsDBM);
         
         import OldDBM.General.Import.set_raw_kymo_data;
         set_raw_kymo_data(dbmODW, rawKymos, rawKymoFilepaths, pixelsWidths_bps);
@@ -383,8 +390,10 @@ function [] = add_dbm_menu(hMenuParent, tsDBM)
             otherwise
                 return;
         end
-        import OldDBM.Kymo.UI.run_calc_plot_save_kymo_analysis;
-        run_calc_plot_save_kymo_analysis(tsDBM, dbmODW, skipDoubleTanhAdjustmentTF, shouldSaveTF)
+%         import OldDBM.Kymo.UI.run_calc_plot_save_kymo_analysis;
+        import DBM4.run_calc_plot_save_kymo_analysis;
+        run_calc_plot_save_kymo_analysis(tsDBM, dbmODW, skipDoubleTanhAdjustmentTF, shouldSaveTF,dbmOSW.DBMSettingsstruct);
+        
     end
 
     function [] = on_plot_molecule_lengths_hist(dbmODW, tsDBM)

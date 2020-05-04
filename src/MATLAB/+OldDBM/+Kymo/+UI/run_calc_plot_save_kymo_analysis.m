@@ -68,9 +68,12 @@ function [] = run_calc_plot_save_kymo_analysis(tsDBM, dbmODW, skipDoubleTanhAdju
 
     % [kymosMoleculeLeftEdgeIdxs, kymosMoleculeRightEdgeIdxs] = dbmODW.get_raw_kymos_molecules_edge_idxs(fileIdxs, fileMoleculeIdxs);
     
+    % should not display this if there are too many molecules..!
+    
     hTabEdgeDetection = tsDBM.create_tab('Raw Kymo Edge Detection');
     tsDBM.select_tab(hTabEdgeDetection);
     hPanel = uipanel('Parent', hTabEdgeDetection);
+% hPanel = figure('visible','off');
     import OldDBM.Kymo.UI.plot_detected_raw_kymo_edges;
     hAxesPlots = plot_detected_raw_kymo_edges(dbmODW, fileIdxs, fileMoleculeIdxs, hPanel, kymosMoleculeLeftEdgeIdxs, kymosMoleculeRightEdgeIdxs);
 

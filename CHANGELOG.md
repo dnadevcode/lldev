@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.4.1] - 2020-05-04
+- Now possible to run DBM_GUI by using two methods" 'old', and 'corr'
+- both method can be run without clicking anything on GUI by DBM_GUI(0)
+- Added possibility of including edge molecules to DBM 
+- CBC GUI fixed that marked molecules would be unmarked again after generating something, and
+that generated data was not saved so it had to be recalculated again
+
 ## [0.4.0] - 2020-03-23
 - Rewrote the DBM_GUI so that all the important settings are imported via
 SettingFiles/DBM.ini file

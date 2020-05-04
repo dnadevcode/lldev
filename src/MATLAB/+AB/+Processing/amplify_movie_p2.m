@@ -17,3 +17,4 @@ function [movieRotCycAmpB] = amplify_movie_p2(movieRotCycAmpA)
     movieRotCycAmpB = movieRotCycAmpB - min(movieRotCycAmpB(:));
     movieRotCycAmpB = movieRotCycAmpB ./ max(movieRotCycAmpB(:));
 end
+
