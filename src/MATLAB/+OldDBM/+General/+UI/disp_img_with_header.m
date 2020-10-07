@@ -2,7 +2,7 @@ function [] = disp_img_with_header(hAxis, imgArr, imgHeaderText)
 
     cutout = 0.01;
     num_to_cut = ceil( numel(imgArr) * cutout / 2);
-    sorted_data = sort(imgArr(:));
+    sorted_data = sort(imgArr(~isnan(imgArr)));
     cmin = sorted_data( num_to_cut );
     cmax = sorted_data( end - num_to_cut + 1);
     % imagesc(data, [cmin, cmax]);

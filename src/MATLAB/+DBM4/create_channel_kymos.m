@@ -10,7 +10,12 @@ function [kymos, wideKymos] = create_channel_kymos(image, peakpos, settings)
         numSegsRight = floor(settings.averagingWindowWidth/2);
 
         img = image(:,peakpos(idx)-numSegsLeft:peakpos(idx)+numSegsRight,:);
-        wideKymos{idx} = img;
+%         wideKymos{idx} = img;
+        try
+            wideKymos{idx} =  image(:,peakpos(idx)-numSegsLeft-settings.wide:peakpos(idx)+numSegsRight+settings.wide,:);
+        catch
+            wideKymos{idx} = img;
+        end
         kymos{idx} = transpose(squeeze(nanmean(img,2)));
     end
 

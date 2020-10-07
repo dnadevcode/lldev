@@ -15,11 +15,11 @@ function [corrs] = find_channels_based_on_intensity_max(image1,image2,numPts)
     % i'th and i+1 column, so for the pixel for continued classification,
     % we need to use max (or mean) between i and i+1 intensities in A. This
     % can be written as
-    numPoints = size(image1,2);
-    corrs = zeros(1,numPoints);
+    numPoints2 = size(image1,2);
+    corrs = zeros(1,numPoints2);
 %     corrs2 = zeros(1,numPoints);
 
-    for i=1:numPoints
+    for i=1:numPoints2
         
         bar1 = image1(:,i);
         
