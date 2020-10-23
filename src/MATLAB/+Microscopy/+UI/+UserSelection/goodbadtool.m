@@ -5,7 +5,9 @@ function [allKymos] = goodbadtool(numImages,fold,foldOut)
     %   foldOut - output for folders good and bad molecules,foldOut
     %
     %   Saves all good files into good folder, bad into bad folder
-
+    
+    import Microscopy.UI.UserSelection.select_image;
+    
     if nargin< 1
         numImages = [4 4]; % grid for images
     end
