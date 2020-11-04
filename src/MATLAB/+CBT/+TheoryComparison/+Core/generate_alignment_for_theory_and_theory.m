@@ -19,7 +19,7 @@ function [alignedThyCurveA, alignedThyCurveB,...
             });
 
     import CBT.TheoryComparison.get_struct_theory_curve_bpRes;
-    thyCurveA_bpRes = get_struct_theory_curve_bpRes(theoryStructA);
+    thyCurveA_bpRes = get_struct_theory_curve_bpRes(theoryStructA,1);
 
 
     if isempty(thyCurveA_bpRes)
@@ -42,7 +42,7 @@ function [alignedThyCurveA, alignedThyCurveB,...
     % compute best Pearson cross-correlation coefficient & alignment:
     thyCurveABitmask = true(size(thyCurveA_pxRes));
 
-    thyCurveB_bpRes = get_struct_theory_curve_bpRes(theoryStructB);
+    thyCurveB_bpRes = get_struct_theory_curve_bpRes(theoryStructB,1);
 
 
     if isempty(thyCurveB_bpRes)

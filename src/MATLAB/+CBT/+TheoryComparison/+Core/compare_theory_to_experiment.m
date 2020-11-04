@@ -1,4 +1,4 @@
-function comparisonResults = compare_theory_to_experiment(theoryStruct, experimentStruct, constantSettingsStruct, cacheResultsSubfolderPath, tryLoadPrecomputedResult, saveToPathTF)
+function comparisonResults = compare_theory_to_experiment(theoryStruct, experimentStruct, constantSettingsStruct, cacheResultsSubfolderPath, tryLoadPrecomputedResult, saveToPathTF,bs)
     if nargin < 4
         cacheResultsSubfolderPath = '';
     end
@@ -7,6 +7,10 @@ function comparisonResults = compare_theory_to_experiment(theoryStruct, experime
     end
     if nargin < 6
         saveToPathTF =  not(isempty(cacheResultsSubfolderPath));
+    end
+    
+    if nargin < 6
+        bs = 1;
     end
     if tryLoadPrecomputedResult
         import CBT.TheoryComparison.Import.load_result_from_path;
@@ -40,7 +44,7 @@ function comparisonResults = compare_theory_to_experiment(theoryStruct, experime
             });
 
     import CBT.TheoryComparison.get_struct_theory_curve_bpRes;
-    theoryCurve_bpRes = get_struct_theory_curve_bpRes(theoryStruct);
+    theoryCurve_bpRes = get_struct_theory_curve_bpRes(theoryStruct,bs);
     
     import CBT.TheoryComparison.get_struct_experiment_curve_pxRes;
     experimentCurve_pxRes = get_struct_experiment_curve_pxRes(experimentStruct);

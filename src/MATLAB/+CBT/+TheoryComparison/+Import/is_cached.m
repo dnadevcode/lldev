@@ -1,4 +1,4 @@
-function [wasFoundInCache, cachedVal, cacheFilepath] = is_cached(cacheSubfolderPath, sequenceDataHash, displayName, concNetropsin_molar, concYOYO1_molar)
+function [wasFoundInCache, cachedVal, cacheFilepath] = is_cached(cacheSubfolderPath, sequenceDataHash, displayName, concNetropsin_molar, concYOYO1_molar,bindingSequence)
     wasFoundInCache = false;
     cachedVal = [];
 
@@ -13,7 +13,7 @@ function [wasFoundInCache, cachedVal, cacheFilepath] = is_cached(cacheSubfolderP
 
     loaded = load(cacheFilepath, 'cacheStruct');
     cacheStruct = loaded.cacheStruct;
-    requiredFields = {'NETROPSINconc', 'YOYO1conc', 'sequenceDataHash', 'displayName', 'rawIntensityCurve'};
+    requiredFields = {'NETROPSINconc', 'YOYO1conc', 'bindingSequence', 'sequenceDataHash', 'displayName', 'rawIntensityCurve'};
     numRequiredFields = length(requiredFields);
 
     if not(isstruct(cacheStruct))
@@ -30,6 +30,7 @@ function [wasFoundInCache, cachedVal, cacheFilepath] = is_cached(cacheSubfolderP
 
     if not((cacheStruct.NETROPSINconc == concNetropsin_molar)...
             && (cacheStruct.YOYO1conc == concYOYO1_molar)...
+            && (isequal(cacheStruct.bindingSequence,bindingSequence))...
             && strcmp(cacheStruct.sequenceDataHash, sequenceDataHash))
         fprintf('Bad cache for %s-%s (inconsistent values: %s-%s)', displayName, sequenceDataHash, cacheStruct.displayName, cacheStruct.sequenceDataHash);
         return;

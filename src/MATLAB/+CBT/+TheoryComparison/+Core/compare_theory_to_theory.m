@@ -42,8 +42,8 @@ function comparisonResults = compare_theory_to_theory(theoryStructA, theoryStruc
             });
 
     import CBT.TheoryComparison.get_struct_theory_curve_bpRes;
-    theoryCurveA_bpRes = get_struct_theory_curve_bpRes(theoryStructA);
-    theoryCurveB_bpRes = get_struct_theory_curve_bpRes(theoryStructB);
+    theoryCurveA_bpRes = get_struct_theory_curve_bpRes(theoryStructA,1);
+    theoryCurveB_bpRes = get_struct_theory_curve_bpRes(theoryStructB,1);
     
     import Microscopy.Simulate.Core.apply_point_spread_function;
     theoryCurveB_bpRes = apply_point_spread_function(theoryCurveB_bpRes, psfSigmaWidth_bp);
