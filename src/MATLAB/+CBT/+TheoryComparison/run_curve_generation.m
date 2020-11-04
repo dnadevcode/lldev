@@ -38,7 +38,7 @@ function [theoryStruct] = run_curve_generation(concNetropsin_molar, concYOYO1_mo
         import CBT.Core.cb_netropsin_vs_yoyo1_plasmid;
         theoryCurve_bpRes_prePSF = cb_netropsin_vs_yoyo1_plasmid(theorySequence, concNetropsin_molar, concYOYO1_molar, [], true);
         
-        if ~isempty(bindingSequence)
+        if ~isequal(bindingSequence,' ')
             import ELT.Core.find_sequence_matches;
             [bindingExpectedMask, numberOfBindings] = find_sequence_matches(bindingSequence, theorySequence);
         else
