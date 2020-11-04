@@ -33,7 +33,7 @@
     [aborted, fastaFilepaths] = try_prompt_nt_seq_filepaths([], [], false);
 
 
-    if aborted || isempty(ntSeqs)
+    if aborted || isempty(fastaFilepaths)
         fprintf('No sequences were provided\n');
         return;
     end

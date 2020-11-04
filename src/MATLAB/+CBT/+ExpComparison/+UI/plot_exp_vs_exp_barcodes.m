@@ -71,7 +71,12 @@ function [] = plot_exp_vs_exp_barcodes( ...
 
     longerBarcodeLen = length(longerBarcode);
     shorterBarcodeLen = length(shorterBarcode);
-
+    
+    
+    shortShifted = (shortShifted -nanmean(shortShifted))/nanstd(shortShifted);
+    meanShifted = nanmean(longShifted(1:length(shortShifted)));
+    meanStd = nanstd(longShifted(1:length(shortShifted)));
+    longShifted = (longShifted-meanShifted)/meanStd;
     hold(hAxis, 'on');
     if sameLength
         plot(hAxis, (1:longerBarcodeLen)-1, longerBarcode, ...

@@ -8,7 +8,7 @@ function [] = pregen_zero_model_fft_from_prompted_consensuses()
     if isempty(kbpsPerPixel)
         return;
     end
-    meanBpExt_pixels = 1/(kbpsPerPixel*1000);
+    meanBpExt_pixels = mean(1./(kbpsPerPixel*1000));
 
     import CBT.UI.prompt_should_rescale;
     shouldRescale = prompt_should_rescale();
