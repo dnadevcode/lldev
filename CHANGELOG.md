@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.4.6] - 2020-11-19
+One can run edge detection for kymographs
+DBM4.find_molecule_extention_nonuniform('test/','output/')
+- also fixed good bad tool
+Microscopy.UI.UserSelection.goodbadtool
+which before sometimes was giving errors
 ## [0.4.2] - 2020-10-07
 - Added a tool for tif/png classification, which can be run
 Microscopy.UI.UserSelection.goodbadtool()

@@ -14,7 +14,7 @@ function [] = find_molecule_extention_nonuniform(fold,foldOut)
         % run single example edge detection
     % where the folder with tif files is
     kymoDir = fold;
-    example = dir(strcat(kymoDir,'*.tif'));
+    example = dir(fullfile(kymoDir,'*.tif'));
 
     examples = {example.name};
 
