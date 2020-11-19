@@ -30,15 +30,20 @@ function [allKymos] = goodbadtool(numImages,fold,foldOut)
     tiffs = {listing(:).name};
     folds = {listing(:).folder};
     files = cellfun(@(x,y) fullfile(x,y),folds,tiffs,'UniformOutput',false);
-
-
+    
+%     i=1;
     selected = [];
     for i=1:numImagesToShow:length(files)-numImagesToShow+1
        selected = [selected; (i-1)+select_image(files,i,numImages(1),numImages(2))]; 
     end
     iLast = i+numImagesToShow;
-    selected = [selected; iLast-1+select_image(files,iLast,numImages(1),numImages(2))]; 
-
+    if isempty(i)
+        iLast = 1;
+    end
+    if (iLast< length(files))
+        selected = [selected; iLast-1+select_image(files,iLast,numImages(1),numImages(2))]; 
+    end
+    
     allKymos = zeros(1,length(files));
     allKymos(selected) = 1;
 
