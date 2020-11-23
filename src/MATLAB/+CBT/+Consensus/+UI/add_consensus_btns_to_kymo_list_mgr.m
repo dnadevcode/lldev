@@ -53,8 +53,24 @@ function [] = add_consensus_btns_to_kymo_list_mgr(lm, ts, cache)
             import CBT.Consensus.UI.Helper.generate_consensus_for_selected;
             [consensusStruct, cache] = generate_consensus_for_selected(lm, cache);
             
-            import CBT.Consensus.Import.load_consensus_results;
-            load_consensus_results(ts, consensusStruct);
+            if ~iscell(consensusStruct)
+                consensusStruct ={consensusStruct};
+            end
+            
+            for i=1:length(consensusStruct)
+                if ~isempty(consensusStruct{i}.barsInClusters) 
+                    if i >= 2
+                        hPanel =figure;
+                        import Fancy.UI.FancyTabs.TabbedScreen;
+                        ts = TabbedScreen(hPanel);
+                    end
+                    import CBT.Consensus.Import.load_consensus_results;
+                    load_consensus_results(ts, consensusStruct{i});
+                end
+            end
+
+%             import CBT.Consensus.Import.load_consensus_results;
+%             load_consensus_results(ts, consensusStruct);
         end
 
         import Fancy.UI.FancyList.FancyListMgrBtn;

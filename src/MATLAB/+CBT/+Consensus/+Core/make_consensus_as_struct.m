@@ -116,7 +116,9 @@ function [consensusStruct, cache] = make_consensus_as_struct(barcodes, barcodeBi
     import CBT.Consensus.CoreCacheBridge.get_best_pair_indices;
     import CBT.Consensus.Core.merge_consensus_pair;
     for subtreeIndex = 1:(numBarcodes - 1)
+        
         [keyA, keyB, bestScore, xcorrAtBest, flipTFAtBest, circShiftAtBest, cache, subtreeCacheKeys] = get_best_pair_indices(consensusKeyPool, barcodeStructsMap, cache);
+        
         relevantCacheKeys{subtreeIndex} = subtreeCacheKeys;...
         bestScoreNormalized = bestScore/bestPossibleScore;
         keyAB = ['[', keyA, ',', keyB ']'];

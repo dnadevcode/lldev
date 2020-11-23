@@ -11,7 +11,7 @@ function [] = load_consensus_results(ts, consensusStruct)
         return;
     end
 
-    assignin('base', 'consensusStruct', consensusStruct);
+%     assignin('base', 'consensusStruct', consensusStruct);
     import CBT.Consensus.UI.generate_consensus_ui;
     generate_consensus_ui(ts, consensusStruct);
 end

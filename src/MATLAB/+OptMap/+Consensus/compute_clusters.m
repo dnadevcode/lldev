@@ -1,10 +1,12 @@
-function [lC, clusterMeanCenters ] = compute_clusters(barcodes, consensusSettings )
-    % compute_clusters
+function [lC, clusterMeanCenters ] = compute_clusters(lens, lenRangeFactor )
+    % compute_clusters. Computes clusters for barcode lengths
 
-    % :param barcodes: input barcodes
-    % :param consensusSettings: consensus settings
+    %   Args:
+    %       barcodes 
+    %       consensusSettings
     %
-    % :returns: lC, clusterMeanCenters
+    %   Returns:
+    %       lC, clusterMeanCenters
 
     % written by Albertas Dvirnas
     
@@ -13,9 +15,9 @@ function [lC, clusterMeanCenters ] = compute_clusters(barcodes, consensusSetting
     % barcodes to belong to the same cluster. 
     
     % range factor
-    lR = consensusSettings.lenRangeFactor;
+    lR = lenRangeFactor;
     
-    lens = cellfun(@length, barcodes); % barcode lengths
+%     lens = cellfun(@length, barcodes); % barcode lengths
     nB = length(lens); % number barcodes
     % the same, so should be removed.
     

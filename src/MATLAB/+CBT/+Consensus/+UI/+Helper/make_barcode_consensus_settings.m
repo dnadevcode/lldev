@@ -10,17 +10,27 @@ function barcodeConsensusSettings = make_barcode_consensus_settings(rawBarcodeLe
     barcodeConsensusSettings.prestretchUntrustedEdgeLenUnrounded_pixels = prestretchUntrustedEdgeLenUnrounded_pixels;
     barcodeConsensusSettings.prestretchPixelWidth_nm = prestretchPixelWidth_nm;
 
-    commonLength = ceil(mean(rawBarcodeLens));
-
-    import CBT.Consensus.Import.confirm_stretching_is_ok;
-    [notOK, commonLength] = confirm_stretching_is_ok(commonLength, rawBarcodeLens);
-    aborted = notOK;
-    if aborted
-        fprintf('Aborting consensus input generation\n');
-        barcodeConsensusSettings = [];
-        return;
+    if barcodeConsensusSettings.promptSplitBasedOnLength
+        if length(rawBarcodeLens) > barcodeConsensusSettings.maxNumBarcodesInCluster
+            % select length range factor
+            import OptMap.Consensus.Import.confirm_split_by_lengths;
+            [notOK,barcodeConsensusSettings] = confirm_split_by_lengths(rawBarcodeLens,barcodeConsensusSettings);
+            
+        else  % default: run pair-wise comparisons for all of the barcodes.      
+            commonLength = ceil(mean(rawBarcodeLens));
+            import CBT.Consensus.Import.confirm_stretching_is_ok;
+            [notOK, commonLength] = confirm_stretching_is_ok(commonLength, rawBarcodeLens);
+            aborted = notOK;
+            if aborted
+                fprintf('Aborting consensus input generation\n');
+                barcodeConsensusSettings = [];
+                return;
+            end
+            barcodeConsensusSettings.lC = ones(1,length(rawBarcodeLens));
+            barcodeConsensusSettings.commonLength = commonLength;        
+        end
     end
-    barcodeConsensusSettings.commonLength = commonLength;
+  
 
     import CBT.Consensus.Import.get_cluster_threshold;
     [clusterScoreThresholdNormalized, quitConsensus] = get_cluster_threshold(defaultConsensusSettings);
@@ -30,5 +40,6 @@ function barcodeConsensusSettings = make_barcode_consensus_settings(rawBarcodeLe
         barcodeConsensusSettings = [];
         return;
     end
+    
     barcodeConsensusSettings.clusterScoreThresholdNormalized = clusterScoreThresholdNormalized;
 end

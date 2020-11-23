@@ -30,7 +30,40 @@ function [consensusStruct, cache] = generate_consensus_for_selected(lm, cache)
         return;
     end
     barcodeConsensusSettings.promptToConfirmTF = true;
-    
-    import CBT.Consensus.Core.generate_consensus_for_barcodes;
-    [consensusStruct, cache] = generate_consensus_for_barcodes(rawBarcodes, displayNames, bpsPerPx_original, barcodeConsensusSettings, cache, rawBgs);
+    if length(barcodeConsensusSettings.commonLength)>1
+        barcodeConsensusSettings.promptToConfirmTF = false;
+
+        consensusStructs = cell(1,tmp_numLenClusters);
+        commonLengths = barcodeConsensusSettings.commonLength;
+        barsInClusters = cell(1,length(commonLengths));
+
+        for i=1:length(commonLengths)    
+            barIdx = barcodeConsensusSettings.lC == i;
+            barcodeConsensusSettings.commonLength = ceil(mean(rawBarcodeLens(barIdx)));
+
+            [consensusStructs{i}, cache] = generate_consensus_for_barcodes(rawBarcodes(barIdx), displayNames(barIdx), bpsPerPx_original(barIdx), barcodeConsensusSettings, [], rawBgs(barIdx));
+            % remove all single barcode results:
+            try
+                numBars = cellfun(@(x) length(x.barcodeKeys), consensusStructs{i}.clusterResultStructs);
+                consensusStructs{i}.clusterResultStructs(find(numBars==1)) = [];
+                consensusStructs{i}.clusterKeys(find(numBars==1)) = [];
+                consensusStructs{i}.barsInClusters= numBars(numBars>1);
+            catch
+                consensusStructs{i}.barsInClusters = [];
+            end
+        end
+        
+        disp("Consensus generated");
+        % now merge these into one maybe..?
+        consensusStruct = consensusStructs;
+%         for i=2:length(commonLengths) 
+%             consensusStruct.clusterResultStructs = [consensusStruct.clusterResultStructs;  consensusStructs{1}.clusterResultStructs];
+%         end
+        
+        % now main struct is the one with best final score
+    else
+        import CBT.Consensus.Core.generate_consensus_for_barcodes;
+        [consensusStruct, cache] = generate_consensus_for_barcodes(rawBarcodes, displayNames, bpsPerPx_original, barcodeConsensusSettings, cache, rawBgs);
+        consensusStruct.barsInClusters = cellfun(@(x) length(x.barcodeKeys), consensusStruct.clusterResultStructs);
+    end
 end

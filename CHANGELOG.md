@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.4.7] - 2020-11-23
+Feat: when computing consensus, allow to split data based on lengths when more than fixed numbe of barcodes
+
 ## [0.4.6] - 2020-11-19
 One can run edge detection for kymographs
 DBM4.find_molecule_extention_nonuniform('test/','output/')
