@@ -45,10 +45,10 @@ function [] = DBM_Gui(useGUI,dbmOSW)
         sets = dbmOSW.DBMSettingsstruct;
    
         if sets.askForDBMtoolSettings
-            prompt = {'dbmtool','averagingWindowWidth', 'rowSidePadding', 'distbetweenChannels','filterEdgeMolecules', 'filterCloseMolecules', 'minMoleculeLength', 'minMoleculeSize'};
+            prompt = {'dbmtool','averagingWindowWidth', 'rowSidePadding', 'distbetweenChannels','filterEdgeMolecules', 'filterCloseMolecules', 'minMoleculeLength', 'minMoleculeSize','denoise'};
             title = 'DBM 4.1 (no-gui) settings';
             dims = [1 35];
-            definput = {'corr','3','100','7','1','0','20','20'};
+            definput = {'corr','3','100','7','1','0','20','20','0'};
             answer = inputdlg(prompt,title,dims,definput);
 
             sets.dbmtool = answer{1};
@@ -60,6 +60,7 @@ function [] = DBM_Gui(useGUI,dbmOSW)
             sets.minMoleculeLength = str2double(answer{7}); % skips edge detection and assumes the first
             % non-zero and last nonzero to be edges of molecule
             sets.random.generate = str2double(answer{8});
+            sets.movies.denoise =  str2double(answer{9});
     
    
         end

@@ -90,7 +90,7 @@ function [fileCells, fileMoleculeCells, pixelsWidths_bps] = import_movies(sets)
         if sets.movies.denoise
            imAverage = imgaussfilt(mean(grayscaleVideo,3),[10,10]);
            grayscaleVideo = grayscaleVideo-imAverage;
-           grayscaleVideo(grayscaleVideo<0) = 0;
+%            grayscaleVideo(grayscaleVideo<0) = 0;
         end
 %         [imDenoised] = denoise_image( imAverage );
 
