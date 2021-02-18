@@ -87,6 +87,12 @@ function [fileCells, fileMoleculeCells, pixelsWidths_bps] = import_movies(sets)
         movie = arrayfun(@(x) imread(filename,x),vec,'UniformOutput',false);
        
        grayscaleVideo = double(cat(3, movie{:}));
+        if sets.movies.denoise
+           imAverage = imgaussfilt(mean(grayscaleVideo,3),[10,10]);
+           grayscaleVideo = grayscaleVideo-imAverage;
+           grayscaleVideo(grayscaleVideo<0) = 0;
+        end
+%         [imDenoised] = denoise_image( imAverage );
 
         % detect molecules
         import DBM4.detect_molecules;
