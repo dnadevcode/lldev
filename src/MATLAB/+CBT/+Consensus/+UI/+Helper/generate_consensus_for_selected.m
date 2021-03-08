@@ -33,7 +33,7 @@ function [consensusStruct, cache] = generate_consensus_for_selected(lm, cache)
     if length(barcodeConsensusSettings.commonLength)>1
         barcodeConsensusSettings.promptToConfirmTF = false;
 
-        consensusStructs = cell(1,tmp_numLenClusters);
+        consensusStructs = cell(1,length(barcodeConsensusSettings.commonLength));
         commonLengths = barcodeConsensusSettings.commonLength;
         barsInClusters = cell(1,length(commonLengths));
 
