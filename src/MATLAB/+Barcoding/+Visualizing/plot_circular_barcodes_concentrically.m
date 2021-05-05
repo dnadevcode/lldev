@@ -82,4 +82,6 @@ function hGoSurface = plot_circular_barcodes_concentrically(hAxis, sanitizedBarc
     set(hAxis, 'XTickLabel', [], 'YTickLabel',[]); 
     grid off;
     shading flat; %shading interp;
+%     saveas(hGoSurface,'plot.fig')
+
 end

@@ -23,11 +23,26 @@ function [kymoStructs] = generate_barcodes_for_selected_kymos(lm, skipConfirmati
             return;
         end
     end
+    
+  
     trueValueList = lm.get_true_value_list();
     import CBT.Consensus.Import.Helper.ensure_barcode_generated_at_index;
+    
+    detectEdges = 1;
+    % check if we need to still detect edges
+    for selectedIdx = 1:numSelected
+        if not(isfield(trueValueList{selectedIdx}, 'barcodeGen'))
+            % check if for some elements barcodes are not generated yet
+            detectEdgesChoice = questdlg('Detect edges?', 'Barcode Edge Detection', 'Yes','No', 'Yes');
+            detectEdges = strcmp(detectEdgesChoice, 'Yes');
+            break;
+        end        
+    end
+  
+    
     for selectedIdx = 1:numSelected
         kymoIndex = selectedIndices(selectedIdx);
-        [kymoStructs{selectedIdx},  trueValueList] = ensure_barcode_generated_at_index(kymoIndex, lm, trueValueList);
+        [kymoStructs{selectedIdx},  trueValueList] = ensure_barcode_generated_at_index(kymoIndex, lm, trueValueList,detectEdges);
     end
     lm.update_list_items(lm.get_diplay_names(lm.get_all_indices), trueValueList);
     if not(skipSuccessMessage)

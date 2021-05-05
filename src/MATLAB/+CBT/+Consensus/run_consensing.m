@@ -4,6 +4,8 @@ function [] = run_consensing(tsCBC)
     tsCBC.select_tab(hTabKymoImport);
     hPanelKymoImport = uipanel(hTabKymoImport);
 
+    % launch kymo import - should only import filenames, instead of full
+    % kymographs (so save space in case of many kymos)
     import CBT.Consensus.UI.launch_kymo_import_ui;
     lm = launch_kymo_import_ui(hPanelKymoImport, tsCBC);
 

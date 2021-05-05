@@ -33,6 +33,8 @@ function [lm] = launch_kymo_import_ui(hPanelKymoImport, tsCBC)
 
             import OldDBM.General.Import.import_raw_kymos;
             [rawKymos, rawKymoFilepaths] = import_raw_kymos();
+            
+            
 
             % remove pixel width / bp selection
             numFiles = length(rawKymoFilepaths);
@@ -63,11 +65,11 @@ function [lm] = launch_kymo_import_ui(hPanelKymoImport, tsCBC)
                 kymoStructs, ...
                 'UniformOutput', false);
             
-            hTabUnalignedKymos = get_unaligned_kymos_tab(ts);
-            hPanelUnalignedKymos = uipanel('Parent', hTabUnalignedKymos);
-            delete(allchild(hPanelUnalignedKymos));
-            import OldDBM.Kymo.UI.show_kymos_in_grid;
-            show_kymos_in_grid(hPanelUnalignedKymos, unalignedKymos, kymoNames);
+%             hTabUnalignedKymos = get_unaligned_kymos_tab(ts);
+%             hPanelUnalignedKymos = uipanel('Parent', hTabUnalignedKymos);
+%             delete(allchild(hPanelUnalignedKymos));
+%             import OldDBM.Kymo.UI.show_kymos_in_grid;
+%             show_kymos_in_grid(hPanelUnalignedKymos, unalignedKymos, kymoNames);
 
             lm.add_list_items(kymoNames, kymoStructs);
         end
@@ -118,25 +120,25 @@ function [lm] = launch_kymo_import_ui(hPanelKymoImport, tsCBC)
                 kymoStructs, ...
                 'UniformOutput', false);
             
-            hTabUnalignedKymos = get_unaligned_kymos_tab(ts);
-            hPanelUnalignedKymos = uipanel('Parent', hTabUnalignedKymos);
-            delete(allchild(hPanelUnalignedKymos));
-            import OldDBM.Kymo.UI.show_kymos_in_grid;
-            show_kymos_in_grid(hPanelUnalignedKymos, unalignedKymos, kymoNames);
+%             hTabUnalignedKymos = get_unaligned_kymos_tab(ts);
+%             hPanelUnalignedKymos = uipanel('Parent', hTabUnalignedKymos);
+%             delete(allchild(hPanelUnalignedKymos));
+%             import OldDBM.Kymo.UI.show_kymos_in_grid;
+%             show_kymos_in_grid(hPanelUnalignedKymos, unalignedKymos, kymoNames);
 
             lm.add_list_items(kymoNames, kymoStructs);
         end
     end
 
-    function [hTabUnalignedKymos] = get_unaligned_kymos_tab(tsCBC)
-        persistent localhTabUnalignedKymos;
-        if isempty(localhTabUnalignedKymos) || not(isvalid(localhTabUnalignedKymos))
-            hTabUnalignedKymos = tsCBC.create_tab('Unaligned Kymos');
-            localhTabUnalignedKymos = hTabUnalignedKymos;
-        else
-            hTabUnalignedKymos = localhTabUnalignedKymos;
-        end
-    end
+%     function [hTabUnalignedKymos] = get_unaligned_kymos_tab(tsCBC)
+%         persistent localhTabUnalignedKymos;
+%         if isempty(localhTabUnalignedKymos) || not(isvalid(localhTabUnalignedKymos))
+%             hTabUnalignedKymos = tsCBC.create_tab('Unaligned Kymos');
+%             localhTabUnalignedKymos = hTabUnalignedKymos;
+%         else
+%             hTabUnalignedKymos = localhTabUnalignedKymos;
+%         end
+%     end
 
     function [btnRemoveKymos] = make_remove_kymos_btn()
         import Fancy.UI.FancyList.FancyListMgrBtn;

@@ -1,4 +1,12 @@
-function [consensusStruct, cache] = generate_consensus_for_selected(lm, cache)
+function [consensusStruct, cache] = generate_consensus_for_selected_hca(lm, cache)
+    % generates consensus for selected barcodes using HCA
+    
+     % generate consensus
+	import CBT.Hca.Core.generate_consensus;
+    [ consensusStruct ] = generate_consensus( barcodes, bitmasks, bgMeanApprox, sets )
+%     consensusStructs = CBT.Hca.Core.gen_consensus(barcodeGen,sets);
+   
+        
     import CBT.Consensus.Import.Helper.generate_barcodes_for_selected_kymos;
     [kymoStructs] = generate_barcodes_for_selected_kymos(lm, true, true);
     if isempty(kymoStructs)
@@ -29,8 +37,6 @@ function [consensusStruct, cache] = generate_consensus_for_selected(lm, cache)
     if isempty(barcodeConsensusSettings)
         return;
     end
-    
-    import CBT.Consensus.Core.generate_consensus_for_barcodes;
     barcodeConsensusSettings.promptToConfirmTF = true;
     if length(barcodeConsensusSettings.commonLength)>1
         barcodeConsensusSettings.promptToConfirmTF = false;
@@ -64,6 +70,7 @@ function [consensusStruct, cache] = generate_consensus_for_selected(lm, cache)
         
         % now main struct is the one with best final score
     else
+        import CBT.Consensus.Core.generate_consensus_for_barcodes;
         [consensusStruct, cache] = generate_consensus_for_barcodes(rawBarcodes, displayNames, bpsPerPx_original, barcodeConsensusSettings, cache, rawBgs);
         consensusStruct.barsInClusters = cellfun(@(x) length(x.barcodeKeys), consensusStruct.clusterResultStructs);
     end

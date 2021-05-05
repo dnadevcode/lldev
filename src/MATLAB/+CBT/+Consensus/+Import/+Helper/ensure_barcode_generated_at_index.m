@@ -1,5 +1,5 @@
-function [kymoStruct, trueValueList] = ensure_barcode_generated_at_index(kymoIndex, lm, trueValueList, dispSkippingMsg)
-    if nargin < 4
+function [kymoStruct, trueValueList] = ensure_barcode_generated_at_index(kymoIndex, lm, trueValueList, detectEdges, dispSkippingMsg)
+    if nargin < 5
         dispSkippingMsg = false;
     end
 
@@ -11,9 +11,9 @@ function [kymoStruct, trueValueList] = ensure_barcode_generated_at_index(kymoInd
 
     if not(isfield(kymoStruct, 'barcodeGen')) || isempty(kymoStruct.barcodeGen)
         fprintf('Generating barcode for ''%s''...\n', kymoDispName);
-
+        
         import CBT.Consensus.Import.Helper.gen_barcode_data;
-        kymoStruct.barcodeGen = gen_barcode_data(alignedKymo);
+        kymoStruct.barcodeGen = gen_barcode_data(alignedKymo,detectEdges);
     elseif dispSkippingMsg
         fprintf('Skipping barcode generation for ''%s''...\n', kymoDispName);
     end
