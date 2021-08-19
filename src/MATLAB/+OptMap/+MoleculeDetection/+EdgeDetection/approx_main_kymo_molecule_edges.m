@@ -19,7 +19,15 @@ function [moleculeStartEdgeIdxs, moleculeEndEdgeIdxs, mainKymoMoleculeMask] = ap
     %   Charleston Noble
     %     (original version, algorithm)
     
-    method=  edgeDetectionSettings.method;
+    if ~isfield(edgeDetectionSettings,'method')
+        if edgeDetectionSettings.skipDoubleTanhAdjustment==1
+            method = 'Otsu';
+        else
+            method = 'Double tanh';
+        end    
+        else
+        method=  edgeDetectionSettings.method;
+    end
     
 %     if isequal(method,'Otsu')
     import OptMap.MoleculeDetection.EdgeDetection.get_default_edge_detection_settings;
@@ -73,17 +81,17 @@ function [moleculeStartEdgeIdxs, moleculeEndEdgeIdxs, mainKymoMoleculeMask] = ap
                 moleculeEndEdgeIdxsFirstApprox, ...
                 tanhSettings ...
             );
-        case 'Error function'
-            import OptMap.MoleculeDetection.EdgeDetection.Fit.fit_sigmoid_on_kymo;
-            [fitsLeft, fitsRight,confLeft,confRight] = fit_sigmoid_on_kymo(kymo);  
-            
-            moleculeStartEdgeIdxs = fitsLeft(:,3);
-            moleculeEndEdgeIdxs = fitsRight(:,3);
-            
-            mainKymoMoleculeMask = false(size(kymo));
-            for i=1:size(kymo,1)
-                mainKymoMoleculeMask(i,max(1,round(moleculeStartEdgeIdxs(i))):min(size(kymo,2),round(moleculeEndEdgeIdxs(i)))) = 1;
-            end
+%         case 'Error function'
+%             import OptMap.MoleculeDetection.EdgeDetection.Fit.fit_sigmoid_on_kymo;
+%             [fitsLeft, fitsRight,confLeft,confRight] = fit_sigmoid_on_kymo(kymo);  
+%             
+%             moleculeStartEdgeIdxs = fitsLeft(:,3);
+%             moleculeEndEdgeIdxs = fitsRight(:,3);
+%             
+%             mainKymoMoleculeMask = false(size(kymo));
+%             for i=1:size(kymo,1)
+%                 mainKymoMoleculeMask(i,max(1,round(moleculeStartEdgeIdxs(i))):min(size(kymo,2),round(moleculeEndEdgeIdxs(i)))) = 1;
+%             end
 
 %             figure,imagesc(kymo)
 %             hold on,plot(fitsLeft(:,3)',1:size(kymo,1),'.r','linewidth',3)
