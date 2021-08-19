@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.5.1] - 2021-08-19
+Fixed CBT_Gui  - comparing against single consensus produced an error
+Restructured kymo molecule detect edges
+Small change to center of mass algorithm
 ## [0.5.0] - 2021-05-05 updated CBC_GUI to run faster and support ignoring of edges
 ## [0.4.7] - 2020-11-23
 Feat: when computing consensus, allow to split data based on lengths when more than fixed numbe of barcodes

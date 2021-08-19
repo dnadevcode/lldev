@@ -13,6 +13,12 @@ function [aborted, consensusBarcodeNames, consensusBarcodeStructs] = get_consens
     defaultConsensusDirpath = fullfile(appDirpath, 'OutputFiles', 'Consensus');
     [filename, dirpath] = uigetfile({'*.mat;'}, 'Select DBM Consensus Results File for Exp Data Import', defaultConsensusDirpath,'MultiSelect', 'on');
 
+    if ~iscell(filename) % in case single file only
+        filenameTemp = filename;
+        filename = [];
+        filename = {filenameTemp};
+    end
+    
     aborted = isequal(dirpath, 0);
     if aborted
         return;
