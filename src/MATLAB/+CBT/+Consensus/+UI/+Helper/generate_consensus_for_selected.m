@@ -42,8 +42,11 @@ function [consensusStruct, cache] = generate_consensus_for_selected(lm, cache)
         for i=1:length(commonLengths)    
             barIdx = barcodeConsensusSettings.lC == i;
             barcodeConsensusSettings.commonLength = ceil(mean(rawBarcodeLens(barIdx)));
-
-            [consensusStructs{i}, cache] = generate_consensus_for_barcodes(rawBarcodes(barIdx), displayNames(barIdx), bpsPerPx_original(barIdx), barcodeConsensusSettings, [], rawBgs(barIdx));
+            if sum(barIdx)>1
+                [consensusStructs{i}, cache] = generate_consensus_for_barcodes(rawBarcodes(barIdx), displayNames(barIdx), bpsPerPx_original(barIdx), barcodeConsensusSettings, [], rawBgs(barIdx));
+            else
+                consensusStructs{i} = [];
+            end
             % remove all single barcode results:
             try
                 numBars = cellfun(@(x) length(x.barcodeKeys), consensusStructs{i}.clusterResultStructs);

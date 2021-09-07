@@ -14,7 +14,7 @@ function [] = export_image_as_png(dbmODW, fileIdxs, fileMoleculeIdxs, kymosMolec
     import OldDBM.General.UI.set_centered_header_text;
 
 
-    for kymoNum = 1:numKymos
+    parfor kymoNum = 1:numKymos
         f=figure('visible','off');
         kymo = rawKymos{kymoNum};
 %             hAxisKymo = hAxesKymos(kymoNum);
