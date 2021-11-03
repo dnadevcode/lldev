@@ -25,56 +25,59 @@ function []= CBT_to_ETE_conversion()
         concNetropsin_molar = settingsStruct.constants.NETROPSINconc;
         concYOYO1_molar = settingsStruct.constants.YOYO1conc;
         bindingSequence = settingsStruct.constants.bindingSequence;
-        import CBT.Core.cb_netropsin_vs_yoyo1_plasmid;
-        theoryCurve_bpRes_prePSF = cb_netropsin_vs_yoyo1_plasmid(theorySequence.Sequence, concNetropsin_molar, concYOYO1_molar, [], true);
-
-        if ~isequal(bindingSequence,' ')
-            import ELT.Core.find_sequence_matches;
-            [bindingExpectedMask, ~] = find_sequence_matches(bindingSequence, theorySequence.Sequence);
-        else
-            bindingExpectedMask = [];
-        end
-        
-        import Fancy.Utils.extract_fields;
-        [...
-            deltaCut,...
-            psfSigmaWidth_nm,...
-            psfSigmaWidth_bp,...
-            pixelWidth_nm,...
-            meanBpExt_pixels...
-        ] = extract_fields(settingsStruct.constants, {
-            'deltaCut',...
-            'psfWidth_nm',...
-            'psfWidth_bp',...
-            'nmPerPixel',...
-            'pixelsPerBp'...
-            });
-
-        import Microscopy.Simulate.Core.apply_point_spread_function;
-        theoryCurveB_bpRes = apply_point_spread_function(theoryCurve_bpRes_prePSF, psfSigmaWidth_bp);
-
-        import CBT.Core.convert_bpRes_to_pxRes;
-        theoryCurveB_pxRes = convert_bpRes_to_pxRes(theoryCurveB_bpRes, meanBpExt_pixels);
-        
-        theoryCurveB_pxRes = zscore(theoryCurveB_pxRes);
-
-        import CBT.TheoryComparison.Core.get_theory_bitmask;
-        theoryCurveBitmaskB = get_theory_bitmask(theoryCurveB_pxRes, 1, deltaCut, psfSigmaWidth_nm, pixelWidth_nm); % get bitmask as if experiment
-        
-        
-        clusterConsensusData.barcode = theoryCurveB_pxRes;
-        clusterConsensusData.bitmask = theoryCurveBitmaskB;
-        clusterConsensusData.datetime = datetime;
-        clusterConsensusData.settings = settingsStruct;
-
-        if ~isequal(bindingSequence,' ')
-            theoryCurveB_bpRes = apply_point_spread_function(bindingExpectedMask, psfSigmaWidth_bp);
-            theoryCurveB_pxRes = convert_bpRes_to_pxRes(theoryCurveB_bpRes, meanBpExt_pixels);
-            theoryCurveB_pxRes = zscore(theoryCurveB_pxRes);
-            clusterConsensusData.bindingBarcode = theoryCurveB_pxRes;
-        end
         [file,path] = uiputfile('*.mat','Save CBT file As ETE loadable file',strcat(file,'.mat'));
-        save(strcat(path,file),'clusterConsensusData','-v7.3')
+
+        for i=1:length(theorySequence)
+            import CBT.Core.cb_netropsin_vs_yoyo1_plasmid;
+            theoryCurve_bpRes_prePSF = cb_netropsin_vs_yoyo1_plasmid(theorySequence(i).Sequence, concNetropsin_molar, concYOYO1_molar, [], true);
+
+            if ~isequal(bindingSequence,' ')
+                import ELT.Core.find_sequence_matches;
+                [bindingExpectedMask, ~] = find_sequence_matches(bindingSequence, theorySequence(i).Sequence);
+            else
+                bindingExpectedMask = [];
+            end
+        
+            import Fancy.Utils.extract_fields;
+            [...
+                deltaCut,...
+                psfSigmaWidth_nm,...
+                psfSigmaWidth_bp,...
+                pixelWidth_nm,...
+                meanBpExt_pixels...
+            ] = extract_fields(settingsStruct.constants, {
+                'deltaCut',...
+                'psfWidth_nm',...
+                'psfWidth_bp',...
+                'nmPerPixel',...
+                'pixelsPerBp'...
+                });
+
+            import Microscopy.Simulate.Core.apply_point_spread_function;
+            theoryCurveB_bpRes = apply_point_spread_function(theoryCurve_bpRes_prePSF, psfSigmaWidth_bp);
+
+            import CBT.Core.convert_bpRes_to_pxRes;
+            theoryCurveB_pxRes = convert_bpRes_to_pxRes(theoryCurveB_bpRes, meanBpExt_pixels);
+
+            theoryCurveB_pxRes = zscore(theoryCurveB_pxRes);
+
+            import CBT.TheoryComparison.Core.get_theory_bitmask;
+            theoryCurveBitmaskB = get_theory_bitmask(theoryCurveB_pxRes, 1, deltaCut, psfSigmaWidth_nm, pixelWidth_nm); % get bitmask as if experiment
+
+
+            clusterConsensusData.barcode = theoryCurveB_pxRes;
+            clusterConsensusData.bitmask = theoryCurveBitmaskB;
+            clusterConsensusData.datetime = datetime;
+            clusterConsensusData.settings = settingsStruct;
+
+            if ~isequal(bindingSequence,' ')
+                theoryCurveB_bpRes = apply_point_spread_function(bindingExpectedMask, psfSigmaWidth_bp);
+                theoryCurveB_pxRes = convert_bpRes_to_pxRes(theoryCurveB_bpRes, meanBpExt_pixels);
+                theoryCurveB_pxRes = zscore(theoryCurveB_pxRes);
+                clusterConsensusData.bindingBarcode = theoryCurveB_pxRes;
+            end
+            save(strcat(path,strcat(theorySequence(i).Header,file)),'clusterConsensusData','-v7.3')
+        end
     end
 
 
