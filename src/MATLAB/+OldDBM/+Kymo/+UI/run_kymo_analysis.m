@@ -1,4 +1,4 @@
-function [kymoStatsTable] = run_kymo_analysis(dbmODW, skipDoubleTanhAdjustment)
+function [kymoStatsTable] = run_kymo_analysis(dbmODW, skipDoubleTanhAdjustment,skipEdgeDetection)
     % RUN_KYMO_ANALYSIS - calculates the lengths of the molecules using
     %	the method chosen by the user
     %
@@ -9,18 +9,38 @@ function [kymoStatsTable] = run_kymo_analysis(dbmODW, skipDoubleTanhAdjustment)
     % Authors:
     %   Saair Quaderi (Refactoring)
     %   Charleston Noble
+    
+    if nargin < 3
+        skipEdgeDetection = false;
+    end
+    
+    
+    if skipEdgeDetection
+            [rawKymos, rawKymoFileIdxs, rawKymoFileMoleculeIdxs] = dbmODW.get_all_existing_raw_kymos();
+            k=1;
+            for ii=1:length( dbmODW.DBMMainstruct.fileMoleculeCell)
+                for jj=1:length( dbmODW.DBMMainstruct.fileMoleculeCell{ii})
+                    kymosMoleculeLeftEdgeIdxs{k} =  dbmODW.DBMMainstruct.fileMoleculeCell{ii}{jj}.kymosMoleculeLeftEdgeIdxs';
+                    kymosMoleculeRightEdgeIdxs{k} =  dbmODW.DBMMainstruct.fileMoleculeCell{ii}{jj}.kymosMoleculeRightEdgeIdxs';
+                    moleculeMasks{k} =  dbmODW.DBMMainstruct.fileMoleculeCell{ii}{jj}.moleculeMasks;
+                    k = k+1;
+                end
+            end
+        kymosMoleculeLeftEdgeIdxs= kymosMoleculeLeftEdgeIdxs';
+        kymosMoleculeRightEdgeIdxs = kymosMoleculeRightEdgeIdxs';
+        moleculeMasks = moleculeMasks';
+    else
+        import OldDBM.Kymo.Core.run_raw_kymos_edge_detection;
 
-    import OldDBM.Kymo.Core.run_raw_kymos_edge_detection;
-
-    [ ...
-        kymosMoleculeLeftEdgeIdxs, ...
-        kymosMoleculeRightEdgeIdxs, ...
-        moleculeMasks, ...
-        rawKymos, ...
-        rawKymoFileIdxs, ...
-        rawKymoFileMoleculeIdxs ...
-        ] = run_raw_kymos_edge_detection(dbmODW, skipDoubleTanhAdjustment);
-
+        [ ...
+            kymosMoleculeLeftEdgeIdxs, ...
+            kymosMoleculeRightEdgeIdxs, ...
+            moleculeMasks, ...
+            rawKymos, ...
+            rawKymoFileIdxs, ...
+            rawKymoFileMoleculeIdxs ...
+            ] = run_raw_kymos_edge_detection(dbmODW, skipDoubleTanhAdjustment);
+    end
     numMolecules = length(rawKymoFileMoleculeIdxs);
 
     if numMolecules == 0

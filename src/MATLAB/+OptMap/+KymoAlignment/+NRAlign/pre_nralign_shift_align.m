@@ -14,8 +14,7 @@ function [shiftAlignedKymo, shiftingVect] = pre_nralign_shift_align(unalignedKym
     %     the amount each row was shifted
     %
     % Authors:
-    %	Henrik Nordanger
-    %   Saair Quaderi
+    %	HN, SQ, AD
 
 
     % Each row of the kymograph is smoothed out in order to reduce noise
@@ -26,7 +25,9 @@ function [shiftAlignedKymo, shiftingVect] = pre_nralign_shift_align(unalignedKym
     if nargin < 3
         blurSigmaWidth_pixels = 2;
     end
-
+    
+    unalignedKymo(isnan(unalignedKymo)) = 0; % in case any nan's we assume 0 (mean background assume zero)
+    
     rowBlurredUnalignedKymo = unalignedKymo;
     if rowSmoothingWindowLen_pixels ~= 1
         hSize = [1, rowSmoothingWindowLen_pixels];

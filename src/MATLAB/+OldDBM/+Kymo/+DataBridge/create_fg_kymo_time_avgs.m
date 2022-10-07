@@ -16,6 +16,8 @@ function [fgKymoTimeAvgs, fgStartIdxs, fgEndIdxs] = create_fg_kymo_time_avgs(dbm
         if not(isempty(alignedKymo))
             fprintf('Averaging foreground of aligned kymograph for file molecule #%d in file #%d (%s)...\n', fileMoleculeIdx, fileIdx, fileName);
             kymoTimeAvg = nanmean(alignedKymo, 1);
+            % if kymo mask is known, do not need to search for signal
+            % region
             [fgStartIdx, fgEndIdx] = find_signal_region_with_otsu(kymoTimeAvg);
             fgStartIdx = ceil(fgStartIdx);
             fgEndIdx = floor(fgEndIdx);

@@ -405,7 +405,12 @@ function [] = add_dbm_menu(hMenuParent, tsDBM,dbmOSW,dbmODW)
 
         import OldDBM.Kymo.UI.prompt_kymo_analysis_method;
         [kymoAnalysisMethod, shouldSaveTF] = prompt_kymo_analysis_method();
+        
+        skipEdgeDetection = false;
+        skipDoubleTanhAdjustmentTF = true;
         switch kymoAnalysisMethod
+            case 'kymo_edge'
+                skipEdgeDetection = true;
             case 'basic_otsu_edge_detection'
                 skipDoubleTanhAdjustmentTF = true;
             case 'double_tanh_edge_detection'
@@ -415,7 +420,7 @@ function [] = add_dbm_menu(hMenuParent, tsDBM,dbmOSW,dbmODW)
         end
 %         import OldDBM.Kymo.UI.run_calc_plot_save_kymo_analysis;
         import DBM4.run_calc_plot_save_kymo_analysis;
-        run_calc_plot_save_kymo_analysis(tsDBM, dbmODW, skipDoubleTanhAdjustmentTF, shouldSaveTF,dbmOSW.DBMSettingsstruct)
+        run_calc_plot_save_kymo_analysis(tsDBM, dbmODW, skipDoubleTanhAdjustmentTF, shouldSaveTF,dbmOSW.DBMSettingsstruct,skipEdgeDetection)
         
     end
 

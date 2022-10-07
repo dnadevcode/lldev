@@ -1,4 +1,4 @@
-function [] = run_calc_plot_save_kymo_analysis(tsDBM, dbmODW, skipDoubleTanhAdjustmentTF, shouldSavePngTF,settings)
+function [] = run_calc_plot_save_kymo_analysis(tsDBM, dbmODW, skipDoubleTanhAdjustmentTF, shouldSavePngTF,settings,skipEdgeDetection)
     %
     %
     %   Args:
@@ -28,7 +28,7 @@ function [] = run_calc_plot_save_kymo_analysis(tsDBM, dbmODW, skipDoubleTanhAdju
     
     % generate
     import OldDBM.Kymo.UI.run_kymo_analysis;
-    kymoStatsTable = run_kymo_analysis(dbmODW, skipDoubleTanhAdjustmentTF);
+    kymoStatsTable = run_kymo_analysis(dbmODW, skipDoubleTanhAdjustmentTF,skipEdgeDetection);
 
     defaultStatsOutputDirpath =   settings.dirs.stats;
     

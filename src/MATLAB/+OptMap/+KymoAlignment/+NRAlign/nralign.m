@@ -32,8 +32,7 @@ function [alignedKymo, stretchFactorsMat, shiftAlignedKymo, alignedMask, shiftAl
     %     could not be found
     %
     % Authors:
-    %	Henrik Nordanger
-    %   Saair Quaderi
+    %	HN, SQ, AD
 
     if nargin < 2
         skipPrealignTF = false;
@@ -160,7 +159,9 @@ function [alignedKymo, stretchFactorsMat, shiftAlignedKymo, alignedMask, shiftAl
             alignedMask = round(apply_horizontal_stretching(double(alignedMask), stretchFactorsMat)) > 0;
         end
     end
-    
+    % put nan's on the non-mask of aligned kymo since that's not relevant
+    % anymore
+    alignedKymo(~alignedMask) = nan;
     % % For debugging reasons, the paths can be drawn in the (unaligned)
     % % kymograph.
     % 

@@ -22,9 +22,12 @@ function [] = show_home_screen(dbmODW, hPanelHomescreen)
 
     numNewAxisHandles = numUniqueFiles;
 
+    % todo: simplify axes and add save button
     import Fancy.UI.FancyPositioning.FancyGrid.generate_axes_grid;
     hNewAxes = generate_axes_grid(hPanelHomescreen, numNewAxisHandles);
-
+%     hTabgroup = uitabgroup('Parent',hPanelHomescreen);
+%     hResScores= uitab(hTabgroup);
+%     hNewAxes =axes(hResScores);
     import OldDBM.General.UI.disp_rect_annotated_image;
     for uniqueFileNum = 1:numUniqueFiles
         fileIdx = uniqueFileIdxs(uniqueFileNum);

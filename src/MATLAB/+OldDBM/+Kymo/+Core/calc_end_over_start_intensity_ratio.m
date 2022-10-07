@@ -6,5 +6,7 @@ function [endOverStartIntensityRatio] = calc_end_over_start_intensity_ratio(rawK
         meanIntensityAboveBgStartFrames = nanmean(feval(@(vals) vals(:), rawKymoFgWithNaN(1:largeDropNumKymoEndAreaFrames, :))) - bgIntensityApprox;
         meanIntAboveBgEndFrames = nanmean(feval(@(vals) vals(:), rawKymoFgWithNaN(end + 1 - (1:largeDropNumKymoEndAreaFrames), :))) - bgIntensityApprox;
         endOverStartIntensityRatio = meanIntAboveBgEndFrames / meanIntensityAboveBgStartFrames;
+    else
+        endOverStartIntensityRatio = nan;
     end
 end

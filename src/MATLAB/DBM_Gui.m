@@ -37,8 +37,12 @@ function [] = DBM_Gui(useGUI,dbmOSW)
         hPanelDBM = uipanel('Parent', hTabDBM);
         tsDBM = TabbedScreen(hPanelDBM);
 
-        import OldDBM.UI.add_dbm_menu;
-        add_dbm_menu(hMenuParent, tsDBM,dbmOSW);
+        
+        import DBM4.add_dbm_menu;
+        DBM4.add_dbm_menu(hMenuParent, tsDBM,dbmOSW);
+
+%         import OldDBM.UI.add_dbm_menu;
+%         add_dbm_menu(hMenuParent, tsDBM,dbmOSW);
     else
         % new method, HCA'esque, which prompts for user relevant files only
         % when required
@@ -78,6 +82,10 @@ function [] = DBM_Gui(useGUI,dbmOSW)
                 import DBM4.import_movies;
                 %         import OldDBM.General.Import.import_movies;
                 [fileCells, fileMoleculeCells, pixelsWidths_bps] = DBM4.import_movies(sets);     
+            case 'hpfl-odm'
+                import Core.hpfl_odm_extract;
+                [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets);
+                
             otherwise
                 % default to something..
         end
