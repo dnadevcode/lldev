@@ -15,7 +15,7 @@ function [] = export_raw_kymos(dbmODW, defaultOutputDirpath)
 
     numRawKymos = length(rawKymos);
     outputKymoFilepaths = cell(numRawKymos, 1);
-%     outputKymoFilepaths2 = cell(numRawKymos, 1);
+    outputKymoFilepaths2 = cell(numRawKymos, 1);
 
     for rawKymoNum = 1:numRawKymos
         [~, srcFilenameNoExt, ~] = fileparts(srcFilenames{rawKymoNum});
@@ -24,8 +24,10 @@ function [] = export_raw_kymos(dbmODW, defaultOutputDirpath)
         outputKymoFilepath = fullfile(outputDirpath, outputKymoFilename);
         outputKymoFilepaths{rawKymoNum} = outputKymoFilepath;
 %         try
-%         outputKymoFilename2 = sprintf('%s_molecule_%d_bitmask.tif', srcFilenameNoExt, fileMoleculeIdx);
-%         outputKymoFilepath2 = fullfile(outputDirpath, outputKymoFilename2);
+        outputKymoFilename2 = sprintf('%s_molecule_%d_bitmask.tif', srcFilenameNoExt, fileMoleculeIdx);
+        outputKymoFilepath2 = fullfile(outputDirpath, outputKymoFilename2);
+        outputKymoFilepaths2{rawKymoNum} = outputKymoFilepath2;
+
 %             imwrite(uint16(fileMoleculeCells{rawMovieIdx}{rawKymoNum}.moleculeMasks), outputKymoFilepath, 'tif');
 %         end
     end
@@ -33,6 +35,20 @@ function [] = export_raw_kymos(dbmODW, defaultOutputDirpath)
     cellfun(@(rawKymo, outputKymoFilepath)...
         imwrite(rawKymo, outputKymoFilepath, 'tif'),...
         rawKymos, outputKymoFilepaths);
+    
+    try
+        rawBitmasks = cell(1,length(rawKymos));
+        t=1;
+        for i=1:length(dbmODW.DBMMainstruct.fileMoleculeCell)
+            for j=1:length(dbmODW.DBMMainstruct.fileMoleculeCell{i})
+                rawBitmasks{t} = dbmODW.DBMMainstruct.fileMoleculeCell{i}{j}.moleculeMasks;
+                t = t+1;
+            end
+        end
+        cellfun(@(rawKymo, outputKymoFilepath)...
+            imwrite(rawKymo, outputKymoFilepath, 'tif'),...
+            rawBitmasks', outputKymoFilepaths2);
+    end
     
     
 end
