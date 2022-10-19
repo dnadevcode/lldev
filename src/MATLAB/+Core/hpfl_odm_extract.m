@@ -119,6 +119,7 @@ function [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets)
     [kymos, wideKymos,kmChanginW, kmChangingPos] = create_channel_kymos_one(posXUpd,firstIdx,channels,movieAngle,name,max_number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
    
     disp(strcat(['Barcodes extracted in ' num2str(toc) ' seconds']));
+%     figure,imagesc(kymos{1}{1})
 
 %     out.kymos=kymos;
 %     out.wideKymos=wideKymos;
@@ -140,8 +141,11 @@ function [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets)
     % what if we can't extract noise kymos?
     [noiseKymos,noisewideKymos] = create_channel_kymos_one(diffPeaks,firstIdx,channels,movieAngle, name,max_number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
     % 
-    
-    posY = find_positions_in_nanochannel(noiseKymos,kymos );
+    try
+        posY = find_positions_in_nanochannel(noiseKymos,kymos );
+    catch
+        posY = [];
+    end
 %     posY = find_positions_in_nanochannel(noisewideKymos,wideKymos );
 
 %     wideKymos
@@ -156,7 +160,7 @@ function [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets)
 
     for i=1:numMoleculesDetected
         moleculeStructs{i}.miniRotatedMovie = kymoW{i}{1};
-        moleculeStructs{i}.kymograph = kymoOrig{i};
+        moleculeStructs{i}.kymograph = uint16(kymoOrig{i});
         moleculeStructs{i}.kymosMoleculeLeftEdgeIdxs = posY{i}.leftEdgeIdxs;
         moleculeStructs{i}.kymosMoleculeRightEdgeIdxs = posY{i}.rightEdgeIdxs;
         moleculeStructs{i}.moleculeMasks = ~isnan(kymo{i});
@@ -168,7 +172,11 @@ function [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets)
          moleculeStructs{i}.passesFilters = 1;
 
     end
-        poss = cellfun(@(x) round([mean(x.leftEdgeIdxs) mean(x.rightEdgeIdxs)]),posY,'UniformOutput',false)';
+        if ~isempty(posY)
+            poss = cellfun(@(x) round([mean(x.leftEdgeIdxs) mean(x.rightEdgeIdxs)]),posY,'UniformOutput',false)';
+        else
+            poss = {};
+        end
         rowEdgeIdxs = vertcat(poss{:});
         posXUpd2=num2cell(posXUpd(find(idxOut)));
         colCenterIdxs = vertcat(posXUpd2{:});
@@ -183,6 +191,31 @@ function [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets)
     end
 %     [nameS] = save_image(channelImg{2}{1}',channelImg{1}{1}',''); % save for i.e. analysis with optiscan
 
+%     timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
+%     outputDirpath=strcat('kymographs',timestamp);
+%     mkdir(outputDirpath)
+%     
+% %     numRawKymos = length(rawKymos);
+% %     outputKymoFilepaths = cell(numRawKymos, 1);
+%     for rawMovieIdx=1:length(fileMoleculeCells)
+%         numRawKymos = length(fileMoleculeCells{rawMovieIdx});
+%         for rawKymoNum = 1:numRawKymos
+%             [~, srcFilenameNoExt, ~] = fileparts(movieFilenames{rawMovieIdx});
+%             outputKymoFilename = sprintf('%s_molecule_%d_kymograph.tif', srcFilenameNoExt, rawKymoNum);
+%             outputKymoFilepath = fullfile(outputDirpath, outputKymoFilename);
+%             fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymograph(isnan(fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymograph)) = 0;
+%             imwrite(uint16(fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymograph), outputKymoFilepath, 'tif');
+%             
+%             outputKymoFilename = sprintf('%s_molecule_%d_bitmask.tif', srcFilenameNoExt, rawKymoNum);
+%             outputKymoFilepath = fullfile(outputDirpath, outputKymoFilename);
+%             imwrite(uint16(fileMoleculeCells{rawMovieIdx}{rawKymoNum}.moleculeMasks), outputKymoFilepath, 'tif');
+% 
+% %         fileMoleculeCells{rawMovieIdx}
+%         end
+%         
+%         
+%     end
+    
 
 end
 
@@ -1190,12 +1223,14 @@ end
 function posY = find_positions_in_nanochannel(noiseKymos,kymos )
 
     threshval = mean(cellfun(@(x) nanmean(x(:)), noiseKymos{1}));%+ 3*nanstd(noiseKymos{1}{1}(:));
+    threshstd = mean(cellfun(@(x) nanstd(x(:)), noiseKymos{1}));%+ 3*nanstd(noiseKymos{1}{1}(:));
+
 %     threshval = mean(cellfun(@(x) nanmean(reshape(cell2mat(x),1,[])), noiseKymos{1}));%+ 3*nanstd(noiseKymos{1}{1}(:));
 
     posY = []; % put into function! medfilt based edge detection. Less accurate for single-frame stuff
     for i=1:length(kymos{1})
         kymos{1}{i}(isnan(kymos{1}{i}))=0;
-        K = medfilt2(kymos{1}{i},[5 15],'symmetric') > threshval;
+        K = medfilt2(kymos{1}{i},[5 15],'symmetric') > threshval+3*threshstd;
 %         figure,imagesc(K)
 
         [labeledImage, numBlobs] = bwlabel(K);
