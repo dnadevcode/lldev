@@ -1230,16 +1230,20 @@ function posY = find_positions_in_nanochannel(noiseKymos,kymos )
     posY = []; % put into function! medfilt based edge detection. Less accurate for single-frame stuff
     for i=1:length(kymos{1})
         kymos{1}{i}(isnan(kymos{1}{i}))=0;
-        K = medfilt2(kymos{1}{i},[5 15],'symmetric') > threshval+3*threshstd;
+        K = medfilt2(kymos{1}{i},[5 15],'symmetric') > threshval+2*threshstd;
 %         figure,imagesc(K)
 
         [labeledImage, numBlobs] = bwlabel(K);
         props = regionprops(labeledImage, 'Area');
         [maxArea, largestIndex] = max([props.Area]);
+        try
         labK = labeledImage==largestIndex; % either just max or create a loop here
 
         posY{i}.leftEdgeIdxs = arrayfun(@(x) find(labK(x,:) >0,1,'first'),1:size(labK,1));
-        posY{i}.rightEdgeIdxs = arrayfun(@(x) find(labK(x,:) >0,1,'last'),1:size(labK,1));       
+        posY{i}.rightEdgeIdxs = arrayfun(@(x) find(labK(x,:) >0,1,'last'),1:size(labK,1)); 
+        catch
+           posY{i} = [];
+        end
     end
 end
     
@@ -1302,8 +1306,9 @@ function [kymo, kymoW, kymoNames,Length,posXOut,kymoOrig,idxOut] = extract_from_
 %         kymoW =  cell(1,length(posY));
 %         kymoNames = cell(1,length(posY));
 %         Length = cell(1,length(posY));
-
-        for i=1:length(posY)
+        nonemptypos = find(cellfun(@(x) ~isempty(x),posY));
+        for i=nonemptypos
+            
             if mean(posY{i}.rightEdgeIdxs-posY{i}.leftEdgeIdxs)>numPts && std(diff(posY{i}.leftEdgeIdxs)) < 10 && std(diff(posY{i}.rightEdgeIdxs)) < 10% threshold num pixels
 %                 idx = 1;
                 kymo{idx} = nan(size(kymos{channel}{i}));
