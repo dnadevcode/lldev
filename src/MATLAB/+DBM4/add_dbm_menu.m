@@ -112,6 +112,10 @@ function [] = add_dbm_menu(hMenuParent, tsDBM,dbmOSW,dbmODW)
         'Label', 'Calculate molecule lengths and intensities', ...
         'Callback', @(~, ~) on_calc_molecule_lengths_and_intensity(dbmODW, tsDBM,dbmOSW));
 
+    hMenuKymographs = uimenu( ...
+        'Parent', hMenuDBM, ...
+        'Label','NewDBM','Callback',@(~, ~) NewDBM);
+    
     import OldDBM.Kymo.UI.disp_raw_kymos_centers_of_mass;
     uimenu( ...
         'Parent', hMenuStatistics, ...
@@ -459,6 +463,10 @@ function [] = add_dbm_menu(hMenuParent, tsDBM,dbmOSW,dbmODW)
         import OldDBM.General.UI.add_infoscore_hist_tab;
         hTabISD = add_infoscore_hist_tab(tsDBM, infoScores);
         tsDBM.select_tab(hTabISD);
+    end
+
+    function [] = NewDBM(src, event)
+        dna_barcode_matchmaker;
     end
 
 end

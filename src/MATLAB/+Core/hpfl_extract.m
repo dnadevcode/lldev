@@ -1,4 +1,4 @@
-function [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets)
+function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells)
     % hpfl_odm_extract / extracts molecules.
     
     % tested on:
@@ -12,16 +12,21 @@ function [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets)
     %   kymo - kymographs
     %   kymoW - wide kymographs
     %   noiseKymos - noise kymographs
+    
+
 
     % pre-load file
-    sets = preload_movie_folder_names(sets);
+%     sets = preload_movie_folder_names(sets);
    
-
-    movieFilenames = fullfile(sets.movies.kymofilefold , sets.movies.filenames);
+    movieFilenames = sets.movies.movieNames;
+%     movieFilenames = fullfile(sets.movies.kymofilefold , sets.movies.filenames);
     numFiles = numel(movieFilenames);
 
    % Go through each of the files.
-    fileCells = cell(numFiles, 1);
+    if nargin < 2
+        fileCells = cell(numFiles, 1);
+    end
+    
     fileMoleculeCells = cell(numFiles, 1);
 
     % params: should be in settings file
@@ -29,24 +34,52 @@ function [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets)
     averagingWindowWidth = sets.averagingWindowWidth; % averaging window width
     distbetweenChannels = sets.distbetweenChannels; % estimated distance between channels
     parForNoise = sets.parForNoise;
-    remNonuniform = sets.movies.denoise;
+    remNonuniform = sets.denoise;
 
     numFrames = sets.numFrames; % numframes for angle detection
+    minLen = sets.minLen;
+    stdDifPos = sets.stdDifPos;
+    
+    max_number_of_frames = sets.max_number_of_frames;
     timeframes = sets.timeframes; % number of time-frames to use to detect positions of nanochannels
 
     % detect columns with molecule
     farAwayShift = sets.farAwayShift; % how many rows to shift for max coefficient calculation
     channelForDist = sets.channelForDist;
    
+    import DBM4.convert_czi_to_tif;
+
     % 3) load image first frame for mol detection
     tic
     % settingsHPFL.numFrames = 1;
     for idx = 1:length(movieFilenames)
+        if nargin >= 2
+            kymos=fileCells{idx}.precalculated.kymos;
+            wideKymos = fileCells{idx}.precalculated.wideKymos ;
+            posXUpd =  fileCells{idx}.precalculated.posXUpd;
+            posY = fileCells{idx}.precalculated.posY;
+            channelForDist =fileCells{idx}.precalculated.channelForDist;
+            minLen = fileCells{idx}.precalculated.minLen;
+            stdDifPos = fileCells{idx}.precalculated.stdDifPos;
+            name =  fileCells{idx}.precalculated.name;
+            meanRotatedMovieFrame =  fileCells{idx}.precalculated.meanRotatedMovieFrame;
+            maxCol = fileCells{idx}.precalculated.maxCol;
+        else
+            
         name = movieFilenames{idx};
         fprintf('Importing data from: %s\n', name);
+        
+        [beg,mid,ending] =  fileparts(name);
+        if isequal(ending,'.czi')
+            data(1).folder = beg;
+            data(1).name = strcat(mid,ending);
+            disp('Need to convert to czi, running convertion tool');
+            [newNames, newInfo ] = convert_czi_to_tif(data,0); % todo: convert fixed number of frames only/ newInfo contains info about file
+            name = newNames{1}; 
+        end
 
         % load data - support multi-channel // take from the first time frame
-        [ channelImg,imageData ] = load_first_frame_iris(movieFilenames{idx},inf+200,numFrames);
+        [ channelImg,imageData ] = load_first_frame_iris(name,max_number_of_frames);
         firstIdx = imageData{1}.IntensityInfo.firstIdx;
 %         firstIdx = 1; % 
         channels = imageData{1}.info.channels;
@@ -56,18 +89,43 @@ function [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets)
         if length(channelImg) == 1 % if single channel
             channelForDist = 1;
         end
-        max_number_of_frames = min(length(imageData{1}.IntensityInfo.yData),inf); % maximum number of frames
+        number_of_frames = length(channelImg{1}); % maximum number of frames
 
         %
         disp(strcat(['Image loaded in ' num2str(toc) ' seconds']));
         
+        meanMovieFrame = mean(cat(3, channelImg{1}{:}), 3, 'omitnan');
+        
+        % angle calculated from meanMovieframe or numFrames
 
         % movie angle
-        [movieAngle, CC, allAngles] = get_angle(channelImg,numFrames);
+%         [movieAngle, CC, allAngles] = get_angle(channelImg,numFrames,sets.maxMinorAxis, sets.tubeSize);
+        [movieAngle, CC, allAngles] = get_angle({{meanMovieFrame}},1,sets.maxMinorAxis, sets.tubeSize);
+        % if angle not detected, skip
+        
+        
+        maxCol = [];
 
+        if sets.moleculeAngleValidation
+            % TEST ANGLE DETECTION
+            pos = -sets.minAngle:sets.angleStep:sets.minAngle;
+            for j=pos
+%                 j
+                % quicker rotation?
+                [rotImgT, ~] = rotate_images({{meanMovieFrame}}, movieAngle+j);
+    %             meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
+                maxCol = [maxCol max(nanmean(rotImgT{1}{1}))];
+            end
+            [a,b] = max(maxCol);
+            movieAngle = movieAngle+pos(b);
+        end
+        
+        
         tic
         [rotImg, rotMask] = rotate_images(channelImg, movieAngle);
         disp(strcat(['Rotation done in ' num2str(toc) ' seconds']));
+        meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
+        
 %         visual_mean(rotImg{1}{1}) % visualize channel vs mean
 
 %         se = strel('disk',10)
@@ -83,23 +141,31 @@ function [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets)
 
 %         figure
 %         imagesc(I2)
-        meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
-        visual_mean(meanRotatedMovieFrame)
+
+        % max should be at center
+%         visual_mean(meanRotatedMovieFrame)
        
 
         
         % remove noise. this also calculates central and bg trend
         %     [rotImg,centralTend,bgTrend,bgSub] = remove_noise(rotImg, rotMask);
-        [rotImg, centralTend, bgTrend, bgSub,background] = remove_noise_mean(rotImg, rotMask,remNonuniform);
-        visual_mean(rotImg{1}{1}) % visualize channel vs mean
+        [rotImg, centralTend, bgTrend, bgSub,background] = remove_noise_mean(rotImg, rotMask, remNonuniform);
+%         visual_mean(rotImg{1}{1}) % visualize channel vs mean
 
        % now detect channels
         for ch=1:length(rotImg)
             rotImg{ch}{1}(isnan(rotImg{ch}{1}))=0;
         end
      
-        
-        % find mol positions
+        %% find lambda molecules
+        meanRotatedDenoisedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
+
+        if sets.detectlambdas
+            [posXlambda,posYlambda] = find_short_molecules(meanRotatedDenoisedMovieFrame,sets );
+            plot_result(channelImg,rotImg,rotImg,round(posXlambda),posYlambda(:,1))
+
+        end
+        % find mol positions/ 
         [posX,posMax] = find_mols_corr(rotImg, bgTrend, numPts, channelForDist, centralTend, farAwayShift, distbetweenChannels,timeframes );
         
 
@@ -118,7 +184,7 @@ function [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets)
     % todo: check which is best for SNR/
     tic
     % import AB.create_channel_kymos_one;                                 % for this only one frame in IRIS../bionano would have several
-    [kymos, wideKymos,kmChanginW, kmChangingPos] = create_channel_kymos_one(posXUpd,firstIdx,channels,movieAngle,name,max_number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+    [kymos, wideKymos,kmChanginW, kmChangingPos] = create_channel_kymos_one(posXUpd,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
    
     disp(strcat(['Barcodes extracted in ' num2str(toc) ' seconds']));
 %     figure,imagesc(kymos{1}{1})
@@ -141,7 +207,7 @@ function [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets)
 %     end
     % 
     % what if we can't extract noise kymos?
-    [noiseKymos,noisewideKymos] = create_channel_kymos_one(diffPeaks,firstIdx,channels,movieAngle, name,max_number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+    [noiseKymos,noisewideKymos] = create_channel_kymos_one(diffPeaks,firstIdx,channels,movieAngle, name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
     % 
     try
         posY = find_positions_in_nanochannel(noiseKymos,kymos );
@@ -151,10 +217,21 @@ function [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets)
 %     posY = find_positions_in_nanochannel(noisewideKymos,wideKymos );
 
 %     wideKymos
- 
-     
+
+        end
+    %% re-saving of these structures based on "nicity" i.e. by filtering could be re-done from here
+    fileCells{idx}.precalculated.kymos = kymos;
+    fileCells{idx}.precalculated.wideKymos = wideKymos;
+    fileCells{idx}.precalculated.posXUpd = posXUpd;
+    fileCells{idx}.precalculated.posY = posY;
+    fileCells{idx}.precalculated.channelForDist = channelForDist;
+    fileCells{idx}.precalculated.minLen = minLen;
+    fileCells{idx}.precalculated.stdDifPos = stdDifPos;
+    fileCells{idx}.precalculated.name = name;
+    fileCells{idx}.precalculated.meanRotatedMovieFrame = meanRotatedMovieFrame;
+    fileCells{idx}.precalculated.maxCol = maxCol;
     % now final step is to extract "nice" kymographs
-    [kymo, kymoW, kymoNames,Length,~,kymoOrig,idxOut] = extract_from_channels(kymos,wideKymos, posXUpd, posY,channelForDist,numPts);
+    [kymo, kymoW, kymoNames,Length,~,kymoOrig,idxOut] = extract_from_channels(kymos,wideKymos, posXUpd, posY, channelForDist, minLen, stdDifPos);
     
      posY = posY(find(idxOut));
     numMoleculesDetected=length(kymo);
@@ -188,8 +265,10 @@ function [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets)
         fileStruct.averagedImg = meanRotatedMovieFrame;
         fileStruct.locs = colCenterIdxs;
         fileStruct.regions = rowEdgeIdxs;
+        fileStruct.angleCor = maxCol;
         fileMoleculeCells{idx} = moleculeStructs;
         fileCells{idx} = fileStruct;
+          
     end
 %     [nameS] = save_image(channelImg{2}{1}',channelImg{1}{1}',''); % save for i.e. analysis with optiscan
 
@@ -197,8 +276,9 @@ function [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets)
 %     outputDirpath=strcat('kymographs',timestamp);
 %     mkdir(outputDirpath)
 %     
-% %     numRawKymos = length(rawKymos);
-% %     outputKymoFilepaths = cell(numRawKymos, 1);
+%     numRawKymos = length(rawKymos);
+%     outputKymoFilepaths = cell(numRawKymos, 1);
+% 
 %     for rawMovieIdx=1:length(fileMoleculeCells)
 %         numRawKymos = length(fileMoleculeCells{rawMovieIdx});
 %         for rawKymoNum = 1:numRawKymos
@@ -217,44 +297,66 @@ function [fileCells, fileMoleculeCells] = hpfl_odm_extract(sets)
 %         
 %         
 %     end
-    
 
-end
-
-
-function sets=preload_movie_folder_names(sets);
-    if ~sets.movies.askForMovies % if movies already provided in input file (supports scripting)
-        try 
-            fid = fopen(sets.movies.movieFile); 
-            fastaNames = textscan(fid,'%s','delimiter','\n'); fclose(fid);
-            for i=1:length(fastaNames{1})
-                [FILEPATH,NAME,EXT] = fileparts(fastaNames{1}{i});
-
-                sets.movies.filenames{i} = strcat(NAME,EXT);
-                sets.movies.kymofilefold{i} = FILEPATH;
-            end
-        catch
-            sets.movies.askForMovies   = 1;
+    % save kymos into single structure
+    kymoCells = [];
+    kymoCells.rawKymos = [];
+    kymoCells.rawBitmask = [];
+    kymoCells.rawKymoFileIdxs = [];
+    kymoCells.rawKymoFileMoleculeIdxs = [];
+    kymoCells.rawKymoName = [];
+    kymoCells.rawBitmaskName = [];
+    for rawMovieIdx=1:length(fileMoleculeCells)
+        numRawKymos = length(fileMoleculeCells{rawMovieIdx});
+        for rawKymoNum = 1:numRawKymos
+            [~, srcFilenameNoExt, ~] = fileparts(movieFilenames{rawMovieIdx});
+            kymoCells.rawKymos{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymograph;
+            kymoCells.rawBitmask{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.moleculeMasks;
+            kymoCells.rawKymoFileIdxs(end+1) = rawMovieIdx;
+            kymoCells.rawKymoFileMoleculeIdxs(end+1) = rawKymoNum;
+            kymoCells.rawKymoName{end+1} = sprintf('%s_molecule_%d_kymograph.tif', srcFilenameNoExt, rawKymoNum);
+            kymoCells.rawBitmaskName{end+1} =  sprintf('%s_molecule_%d_bitmask.tif', srcFilenameNoExt, rawKymoNum);
         end
     end
 
-    if sets.movies.askForMovies
-        % loads figure window
-        import Fancy.UI.Templates.create_figure_window;
-        [hMenuParent, tsDBM] = create_figure_window('DBM movie import tool','DBM');
-
-        import Fancy.UI.Templates.create_import_tab;
-        cache = create_import_tab(hMenuParent,tsDBM,'movie');
-        uiwait(gcf);  
-
-        dd = cache('selectedItems');
-        sets.movies.filenames = dd(1:end/2);
-        sets.movies.kymofilefold = dd((end/2+1):end);
-        delete(hMenuParent);
-    end
+    
 
 end
-    
+
+% 
+% function sets=preload_movie_folder_names(sets);
+%     if ~sets.movies.askForMovies % if movies already provided in input file (supports scripting)
+%         try 
+%             fid = fopen(sets.movies.movieFile); 
+%             fastaNames = textscan(fid,'%s','delimiter','\n'); fclose(fid);
+%             for i=1:length(fastaNames{1})
+%                 [FILEPATH,NAME,EXT] = fileparts(fastaNames{1}{i});
+% 
+%                 sets.movies.filenames{i} = strcat(NAME,EXT);
+%                 sets.movies.kymofilefold{i} = FILEPATH;
+%             end
+%         catch
+%             sets.movies.askForMovies   = 1;
+%         end
+%     end
+% 
+%     if sets.movies.askForMovies
+%         % loads figure window
+%         import Fancy.UI.Templates.create_figure_window;
+%         [hMenuParent, tsDBM] = create_figure_window('DBM movie import tool','DBM');
+% 
+%         import Fancy.UI.Templates.create_import_tab;
+%         cache = create_import_tab(hMenuParent,tsDBM,'movie');
+%         uiwait(gcf);  
+% 
+%         dd = cache('selectedItems');
+%         sets.movies.filenames = dd(1:end/2);
+%         sets.movies.kymofilefold = dd((end/2+1):end);
+%         delete(hMenuParent);
+%     end
+% 
+% end
+%     
     
 % function to load the first frame
 function [channelImg, imageData] = load_first_frame_iris(moleculeImgPath, max_number_of_frames,numFrames)
@@ -274,6 +376,10 @@ function [channelImg, imageData] = load_first_frame_iris(moleculeImgPath, max_nu
 % %         numFrames = min(numFrames,frames);
 % 
 %     catch
+
+    if nargin < 3
+        numFrames = inf;
+    end
         data = imfinfo(moleculeImgPath);
         frames = length(data);
         channels = 1; % default is 2
@@ -354,7 +460,7 @@ function [deg,CC,frameAngle] = get_angle(channelImg, numFrames, maxMinorAxis, tu
     % estimate angle for each field of view, for first channel
 %     for j=1:fieldsOfView                        % take only first frame here for now. Could take mean
     for k=1:min(numFrames,length(channelImg{1}))
-        [frameAngle{k}, CC{k}] = estimate_angle(channelImg{1}{k}, maxMinorAxis,tubeSize); %cellfun(@(x) estimate_angle(x),channelImg{1}{j},'un',false);
+        [frameAngle{k}, CC{k}] = estimate_angle(channelImg{1}{k}, maxMinorAxis, tubeSize); %cellfun(@(x) estimate_angle(x),channelImg{1}{j},'un',false);
         if CC{k}.NumObjects<1 % for one object could still calculate?
             frameAngle{k} = nan;
         end
@@ -422,7 +528,7 @@ function [allAngles,CC] = estimate_angle(img, maxMinorAxis,tubeSize)
 
 	BW = imbinarize(J);%,'adaptive');
     % removes all regions that have fewer than 100 pixels
-    BW2 = bwareaopen(BW, 150,4); % tunable?
+    BW2 = bwareaopen(BW, 150,4); % tunable? Could keep only object which are very "flat"
 %     figure,imshowpair(J',BW2', 'Scaling'  ,'None')
 %     BW3 = imtophat(BW,strel('disk',50));
 % CH_objects = bwconvhull(BW2,'objects');
@@ -461,7 +567,7 @@ function [resizedImgRot,rotMask] = rotate_images(channelImg,movieAngle)
 %     rotim = imrotate(double(interpimg), -(90+movieAngle), 'bilinear');
 %     rotimUpd = imresize(rotim,[max(sz) min(sz)]);% get proper size..
     
-    method = 'bicubic';
+    method = 'bilinear'; %bicubic
     resSize = 5;
     % resize images to bigger
 %     tic
@@ -1225,17 +1331,27 @@ function [pos] = molecule_positions(kymos, statsMol, stdF,percentageNonzero,minA
 end
 
 
-function posY = find_positions_in_nanochannel(noiseKymos,kymos )
+function posY = find_positions_in_nanochannel(noiseKymos,kymos,bgSigma,filterS )
 
-    threshval = mean(cellfun(@(x) nanmean(x(:)), noiseKymos{1}));%+ 3*nanstd(noiseKymos{1}{1}(:));
-    threshstd = mean(cellfun(@(x) nanstd(x(:)), noiseKymos{1}));%+ 3*nanstd(noiseKymos{1}{1}(:));
+    if nargin < 3
+        bgSigma = 4;
+        filterS = [5 15];
+    end
+    
+    % TODO: more accurate?
+%     threshval = mean(cellfun(@(x) nanmean(x(:)), noiseKymos{1}));%+ 3*nanstd(noiseKymos{1}{1}(:));
+%     threshstd = mean(cellfun(@(x) nanstd(x(:)), noiseKymos{1}));%+ 3*nanstd(noiseKymos{1}{1}(:));
 
+    threshval = nanmean(cellfun(@(x) nanmean(medfilt2(x,filterS,'symmetric'),[1 2]), noiseKymos{1}));%+ 3*nanstd(noiseKymos{1}{1}(:));
+    threshstd = nanmean(cellfun(@(x) nanstd(medfilt2(x,filterS,'symmetric'),0, [1 2]), noiseKymos{1}));%+ 3*nanstd(noiseKymos{1}{1}(:));
+
+% medfilt2(kymos{1}{i},filterS,'symmetric')
 %     threshval = mean(cellfun(@(x) nanmean(reshape(cell2mat(x),1,[])), noiseKymos{1}));%+ 3*nanstd(noiseKymos{1}{1}(:));
 
     posY = []; % put into function! medfilt based edge detection. Less accurate for single-frame stuff
     for i=1:length(kymos{1})
         kymos{1}{i}(isnan(kymos{1}{i}))=0;
-        K = medfilt2(kymos{1}{i},[5 15],'symmetric') > threshval+2*threshstd;
+        K = medfilt2(kymos{1}{i},filterS,'symmetric') > threshval+bgSigma*threshstd;
 %         figure,imagesc(K)
 
         [labeledImage, numBlobs] = bwlabel(K);
@@ -1287,7 +1403,7 @@ function [posX,posY,kymos,wideKymos] = remove_empty_channels(posX,posY,kymos,wid
 end
 
 %%
-function [kymo, kymoW, kymoNames,Length,posXOut,kymoOrig,idxOut] = extract_from_channels(kymos,kymosWide, posX, posY,channel,numPts)
+function [kymo, kymoW, kymoNames,Length,posXOut,kymoOrig,idxOut] = extract_from_channels(kymos,kymosWide, posX, posY,channel,numPts,stdDifPos)
     
     %   Args:
     %   kymos,kymosDots,stdF,minArea,edge,meanBgs,stdBgs
@@ -1314,7 +1430,7 @@ function [kymo, kymoW, kymoNames,Length,posXOut,kymoOrig,idxOut] = extract_from_
         nonemptypos = find(cellfun(@(x) ~isempty(x),posY));
         for i=nonemptypos
             
-            if mean(posY{i}.rightEdgeIdxs-posY{i}.leftEdgeIdxs)>numPts && std(diff(posY{i}.leftEdgeIdxs)) < 10 && std(diff(posY{i}.rightEdgeIdxs)) < 10% threshold num pixels
+            if mean(posY{i}.rightEdgeIdxs-posY{i}.leftEdgeIdxs)>numPts && std(diff(posY{i}.leftEdgeIdxs)) < stdDifPos && std(diff(posY{i}.rightEdgeIdxs)) < stdDifPos% threshold num pixels
 %                 idx = 1;
                 kymo{idx} = nan(size(kymos{channel}{i}));
                 kymoOrig{idx} = kymos{channel}{i};
@@ -1544,3 +1660,98 @@ imagesc(img')
 xlim([0 size(img,1)])
 
 end
+
+
+function [posXlambda,posYlambda] = find_short_molecules(meanRotatedDenoisedMovieFrame,sets )
+        optics.logSigma = sets.psfnm / sets.nmPerPixel;
+        n = ceil(6 * optics.logSigma);
+        n = n + 1 -mod(n, 2);
+        filt = fspecial('log', n, optics.logSigma);
+        logim = imfilter(meanRotatedDenoisedMovieFrame, filt);
+
+        thedges = imbinarize(logim, 0);
+        thedges(1:end,[ 1 end]) = 1; % things around the boundary should also be considered
+        thedges([ 1 end],1:end) = 1;
+
+        [B, L] = bwboundaries(thedges, 'holes');
+
+        [~, Gdir] = imgradient(logim);
+        stat = @(h) mean(h); % This should perhaps be given from the outside
+        meh = zeros(1, length(B));
+
+        for k = 1:length(B)% Filter out any regions with artifacts in them
+            meh(k) = edge_score(B{k}, logim, Gdir, 5, stat); %how many points along the gradient to take?
+        end
+        
+        %
+        acc  = zeros(1, length(B));
+        l = zeros(1, length(B));
+        w = zeros(1, length(B));
+        for k = 1:length(B)% Filter any edges with lower scores than lim
+            [acc(k),l(k),w(k)] = mol_filt(B{k}, meh(k), sets.minScoreLambda, inf, [sets.minLambdaLen sets.maxLambdaLen], [1 sets.maxLambdaWidth]); % width depends on psf
+        end
+        
+        potLambda = find(acc==1);
+        posXlambda = zeros(1,length(potLambda));
+        posYlambda =  zeros(length(potLambda),2);
+        for j=1:length(potLambda)
+            posXlambda(j) = mean(B{potLambda(j)}(:,2));
+            posYlambda(j,:) = [min(B{potLambda(j)}(:,1)) max(B{potLambda(j)}(:,1))];
+        end
+        
+        % now save posX and posY of these molecules.
+        
+%             acc = mol_filt(B{k}, meh(k), lowLim, highLim, elim, ratlim, lengthLims, widthLims);
+
+
+end
+
+function score = edge_score(B,im,Gdir,dist,stat)
+
+    bound = B;
+    h = zeros(1,size(bound,1));
+    for point = 1:size(bound,1)
+      dir = Gdir(bound(point,1),bound(point,2)); % test to see if dirs were switched
+      dx = cosd(dir); %magnus' way
+      dy = -sind(dir); %magnus' way
+      xser = round((-dist:1:dist)*dx) + bound(point,2);
+      yser = round((-dist:1:dist)*dy) + bound(point,1);
+      prof = zeros(1,2*dist+1);
+      if min(min(yser),min(xser))>0 && max(xser) < size(im,2) && max(yser) < size(im,1)
+        for j = 1:2*dist+1
+          prof(j) = im(yser(j),xser(j));
+        end
+      end
+      %h(point) = abs(sum(prof(1:dist))-sum(prof(dist+2:end)));
+      h(point) = -sum(prof(1:dist))+sum(prof(dist+2:end));
+    end
+
+    score = stat(h);
+
+end
+
+function [acc,l,w] = mol_filt(B, score, lowLim, highLim, lengthLims, widthLims)
+    % from SDD Dots: filters molecules
+    
+    % estimate length 
+    l = sqrt((max(B(:,1))-min(B(:,1)))^2);
+    % estimate width
+    w =  sqrt( (max(B(:,2))-min(B(:,2)))^2);
+    % length limits
+    lOk = (l > lengthLims(1) && l < lengthLims(2));
+    wOk = (w > widthLims(1) && w < widthLims(2));
+
+    if score > lowLim && score < highLim && lOk
+        acc = true;
+%       [~,ecc,aRat,length,width] = cont_draw(B);
+%       testofboundary = (ecc > elim && aRat > ratlim && width < widthLims(2)) ;
+%       if testofboundary
+%         acc = true;
+%       else
+%         acc = false;
+%       end
+    else
+      acc = false;
+    end
+end
+

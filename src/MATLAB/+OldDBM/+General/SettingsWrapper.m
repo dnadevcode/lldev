@@ -160,6 +160,13 @@ classdef SettingsWrapper < handle
             defaultSettingsFilepath = fullfile(defaultSettingsDirpath, defaultSettingsFilename);
         end
         
+        function [defaultSettingsFilepath] = get_default_newDBM_ini_filepath()
+            defaultSettingsFilename = 'DBMnew.ini';
+            import Fancy.AppMgr.AppResourceMgr;
+            defaultSettingsDirpath = AppResourceMgr.get_dirpath('SettingFiles');
+            defaultSettingsFilepath = fullfile(defaultSettingsDirpath, defaultSettingsFilename);
+        end
+        
         function [dbmParamsIniFilepath] = prompt_DBM_ini_filepath(defaultSettingsFilepath)
             import OldDBM.General.SettingsWrapper;
             if nargin < 1
