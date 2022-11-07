@@ -54,16 +54,16 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     % settingsHPFL.numFrames = 1;
     for idx = 1:length(movieFilenames)
         if nargin >= 2
-            kymos=fileCells{idx}.precalculated.kymos;
-            wideKymos = fileCells{idx}.precalculated.wideKymos ;
-            posXUpd =  fileCells{idx}.precalculated.posXUpd;
-            posY = fileCells{idx}.precalculated.posY;
-            channelForDist =fileCells{idx}.precalculated.channelForDist;
-            minLen = fileCells{idx}.precalculated.minLen;
-            stdDifPos = fileCells{idx}.precalculated.stdDifPos;
-            name =  fileCells{idx}.precalculated.name;
-            meanRotatedMovieFrame =  fileCells{idx}.precalculated.meanRotatedMovieFrame;
-            maxCol = fileCells{idx}.precalculated.maxCol;
+            kymos=fileCells{idx}.preCells.kymos;
+            wideKymos = fileCells{idx}.preCells.wideKymos ;
+            posXUpd =  fileCells{idx}.preCells.posXUpd;
+            posY = fileCells{idx}.preCells.posY;
+            channelForDist =fileCells{idx}.preCells.channelForDist;
+            minLen = fileCells{idx}.preCells.minLen;
+            stdDifPos = fileCells{idx}.preCells.stdDifPos;
+            name =  fileCells{idx}.preCells.name;
+            meanRotatedMovieFrame =  fileCells{idx}.preCells.meanRotatedMovieFrame;
+            maxCol = fileCells{idx}.preCells.maxCol;
         else
             
         name = movieFilenames{idx};
@@ -220,16 +220,16 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 
         end
     %% re-saving of these structures based on "nicity" i.e. by filtering could be re-done from here
-    fileCells{idx}.precalculated.kymos = kymos;
-    fileCells{idx}.precalculated.wideKymos = wideKymos;
-    fileCells{idx}.precalculated.posXUpd = posXUpd;
-    fileCells{idx}.precalculated.posY = posY;
-    fileCells{idx}.precalculated.channelForDist = channelForDist;
-    fileCells{idx}.precalculated.minLen = minLen;
-    fileCells{idx}.precalculated.stdDifPos = stdDifPos;
-    fileCells{idx}.precalculated.name = name;
-    fileCells{idx}.precalculated.meanRotatedMovieFrame = meanRotatedMovieFrame;
-    fileCells{idx}.precalculated.maxCol = maxCol;
+    preCells.kymos = kymos;
+    preCells.wideKymos = wideKymos;
+    preCells.posXUpd = posXUpd;
+    preCells.posY = posY;
+    preCells.channelForDist = channelForDist;
+    preCells.minLen = minLen;
+    preCells.stdDifPos = stdDifPos;
+    preCells.name = name;
+    preCells.meanRotatedMovieFrame = meanRotatedMovieFrame;
+    preCells.maxCol = maxCol;
     % now final step is to extract "nice" kymographs
     [kymo, kymoW, kymoNames,Length,~,kymoOrig,idxOut] = extract_from_channels(kymos,wideKymos, posXUpd, posY, channelForDist, minLen, stdDifPos);
     
@@ -261,6 +261,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         colCenterIdxs = vertcat(posXUpd2{:});
     
         fileStruct = struct();
+        fileStruct.preCells = preCells;
         fileStruct.fileName = name;
         fileStruct.averagedImg = meanRotatedMovieFrame;
         fileStruct.locs = colCenterIdxs;
