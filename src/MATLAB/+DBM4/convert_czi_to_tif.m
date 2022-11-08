@@ -10,16 +10,24 @@ function [newNames, newInfo ] = convert_czi_to_tif(data, multiChannels)
     se = 'showinf';
     command = strcat([st ' -version']);
     [test,testmessage] = system(command);
-    isnotrecognized = strfind(testmessage,'not recognized');
+    isnotrecognized = isempty(strfind(testmessage,'not recognized'))||isempty(strfind(testmessage,'not found'));
     
     
     mFilePath = mfilename('fullpath');
     mfolders = split(mFilePath, {'\', '/'});
-    catcheFold = fullfile(mfolders{1:end - 4},'DataCache','bftools','bfconvert');
+    if ispc
+        catcheFold = fullfile(mfolders{1:end - 4},'DataCache','bftools','bfconvert');
+        seFold =   fullfile(mfolders{1:end - 4},'DataCache','bftools','showinf');
+    else
+        catcheFold = strcat('/',fullfile(mfolders{1:end - 4},'DataCache','bftools','bfconvert'));
+        seFold =   strcat('/',fullfile(mfolders{1:end - 4},'DataCache','bftools','showinf'));
+
+    end
+
     if exist(catcheFold, 'file')
         st = catcheFold;
-        se = fullfile(mfolders{1:end - 4},'DataCache','bftools','showinf');
-        isnotrecognized = 1;    
+        se = seFold;
+        isnotrecognized = [];    
     end
           
           
