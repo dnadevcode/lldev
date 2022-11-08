@@ -13,15 +13,14 @@ function [newNames, newInfo ] = convert_czi_to_tif(data, multiChannels)
     isnotrecognized = strfind(testmessage,'not recognized');
     
     
-              mFilePath = mfilename('fullpath');
-          mfolders = split(mFilePath, {'\', '/'});
-          catcheFold = fullfile(mfolders{1:end - 4},'DataCache','bftools','bfconvert');
-          exists(catcheFold)
-          if ~exist(catcheFold, 'file')
-              st = catcheFold;
-              se = fullfile(mfolders{1:end - 4},'DataCache','bftools','showinf');
-              isnotrecognized = 1;    
-          end
+    mFilePath = mfilename('fullpath');
+    mfolders = split(mFilePath, {'\', '/'});
+    catcheFold = fullfile(mfolders{1:end - 4},'DataCache','bftools','bfconvert');
+    if exist(catcheFold, 'file')
+        st = catcheFold;
+        se = fullfile(mfolders{1:end - 4},'DataCache','bftools','showinf');
+        isnotrecognized = 1;    
+    end
           
           
     if ~isempty(isnotrecognized)
