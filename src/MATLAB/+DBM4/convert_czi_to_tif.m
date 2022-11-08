@@ -6,14 +6,29 @@ function [newNames, newInfo ] = convert_czi_to_tif(data, multiChannels)
 % ./bftools/bfconvert -version
 % add to path
 %test
-    command = strcat(['bfconvert -version']);
+    st = 'bfconvert';
+    se = 'showinf';
+    command = strcat([st ' -version']);
     [test,testmessage] = system(command);
     isnotrecognized = strfind(testmessage,'not recognized');
     
+    
+              mFilePath = mfilename('fullpath');
+          mfolders = split(mFilePath, {'\', '/'});
+          catcheFold = fullfile(mfolders{1:end - 4},'DataCache','bftools','bfconvert');
+          exists(catcheFold)
+          if ~exist(catcheFold, 'file')
+              st = catcheFold;
+              se = fullfile(mfolders{1:end - 4},'DataCache','bftools','showinf');
+              isnotrecognized = 1;    
+          end
+          
+          
     if ~isempty(isnotrecognized)
         disp('Please download https://downloads.openmicroscopy.org/bio-formats/5.5.2/artifacts/bftools.zip unzip and add to path');
         newNames =[];
         newInfo = [];
+        return;
     end
     
 % [status,results] = system('badcmd');
@@ -59,14 +74,14 @@ for i=1:length(data)
     if exist(nameNew,'file')
         delete(nameNew); % in case already exists tif, remove 
     end
-    command = strcat(['bfconvert '  name ' ' nameNew]);
+    command = strcat([st ' '  name ' ' nameNew]);
     [a1,b1] = system(command);
     newNames{i} = nameNew;
 
     if exist(nameNew2,'file')
         delete(nameNew2); % in case already info, remove
     end
-    command = strcat(['showinf -nopix -nocore '  name ' > ' nameNew2 ]);
+    command = strcat([se ' -nopix -nocore '  name ' > ' nameNew2 ]);
     [a2,b2] = system(command);
     newInfo{i} = nameNew2;
 
