@@ -39,6 +39,8 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     numFrames = sets.numFrames; % numframes for angle detection
     minLen = sets.minLen;
     stdDifPos = sets.stdDifPos;
+    channels = sets.channels;
+    max_f = sets.max_f;
     
     max_number_of_frames = sets.max_number_of_frames;
     timeframes = sets.timeframes; % number of time-frames to use to detect positions of nanochannels
@@ -59,8 +61,8 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             posXUpd =  fileCells{idx}.preCells.posXUpd;
             posY = fileCells{idx}.preCells.posY;
             channelForDist =fileCells{idx}.preCells.channelForDist;
-            minLen = fileCells{idx}.preCells.minLen;
-            stdDifPos = fileCells{idx}.preCells.stdDifPos;
+%             minLen = fileCells{idx}.preCells.minLen;
+%             stdDifPos = fileCells{idx}.preCells.stdDifPos;
             name =  fileCells{idx}.preCells.name;
             meanRotatedMovieFrame =  fileCells{idx}.preCells.meanRotatedMovieFrame;
             maxCol = fileCells{idx}.preCells.maxCol;
@@ -77,9 +79,13 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             [newNames, newInfo ] = convert_czi_to_tif(data,0); % todo: convert fixed number of frames only/ newInfo contains info about file
             name = newNames{1}; 
         end
-
+        
+        if max_f == 0
+            max_f = inf;
+        end
+            
         % load data - support multi-channel // take from the first time frame
-        [ channelImg,imageData ] = load_first_frame_iris(name,max_number_of_frames);
+        [ channelImg,imageData ] = load_first_frame_iris(name,max_number_of_frames, max_f, channels);
         firstIdx = imageData{1}.IntensityInfo.firstIdx;
 %         firstIdx = 1; % 
         channels = imageData{1}.info.channels;
@@ -88,6 +94,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 
         if length(channelImg) == 1 % if single channel
             channelForDist = 1;
+            firstIdx = 1;
         end
         number_of_frames = length(channelImg{1}); % maximum number of frames
 
@@ -160,18 +167,21 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         %% find lambda molecules
         meanRotatedDenoisedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
 
+%         sets.detectlambdas = 1;
         if sets.detectlambdas
-            [posXlambda,posYlambda] = find_short_molecules(meanRotatedDenoisedMovieFrame,sets );
-            plot_result(channelImg,rotImg,rotImg,round(posXlambda),posYlambda(:,1))
+            [posX,posYcenter,posMax] = find_short_molecules(meanRotatedDenoisedMovieFrame,sets );
+%             plot_result(channelImg,rotImg,rotImg,round(posXlambda),posYlambda(:,1))
 
+        else
+            [posX,posMax] = find_mols_corr(rotImg, bgTrend, numPts, channelForDist, centralTend, farAwayShift, distbetweenChannels,timeframes );
+            posYcenter = [];
         end
         % find mol positions/ 
-        [posX,posMax] = find_mols_corr(rotImg, bgTrend, numPts, channelForDist, centralTend, farAwayShift, distbetweenChannels,timeframes );
         
 
     
       % background channels
-        extPos = [posX size(rotImg{1}{1},2)];
+        extPos = [sort(posX) size(rotImg{1}{1},2)];
         diffPeaks =  round(extPos(find(diff([1 extPos]) >= parForNoise))-parForNoise/2);
 
         meanVal = 0;
@@ -179,6 +189,12 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         % remove rows that don't have enough signal pixels
         numElts = find(sum(rotImg{1}{1}(:,posX)  > meanVal+3*stdVal) > numPts);
         posXUpd = posX(numElts);
+        posYcenter = posYcenter(numElts,:);
+
+
+        numEltsBg = find(sum(rotImg{1}{1}(:,diffPeaks)  > meanVal+3*stdVal) < numPts);
+        diffPeaksBg = diffPeaks(numEltsBg);
+       
 %     plot_result(channelImg,rotImg,rotImg,posXUpd,posMax)
 
     % todo: check which is best for SNR/
@@ -207,10 +223,10 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 %     end
     % 
     % what if we can't extract noise kymos?
-    [noiseKymos,noisewideKymos] = create_channel_kymos_one(diffPeaks,firstIdx,channels,movieAngle, name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+    [noiseKymos,noisewideKymos] = create_channel_kymos_one(diffPeaksBg,firstIdx,channels,movieAngle, name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
     % 
     try
-        posY = find_positions_in_nanochannel(noiseKymos,kymos );
+        posY = find_positions_in_nanochannel(noiseKymos,kymos,posYcenter );
     catch
         posY = [];
     end
@@ -360,7 +376,7 @@ end
 %     
     
 % function to load the first frame
-function [channelImg, imageData] = load_first_frame_iris(moleculeImgPath, max_number_of_frames,numFrames)
+function [channelImg, imageData] = load_first_frame_iris(moleculeImgPath, max_number_of_frames,numFrames,channels)
     % for irys data
 
 %     try
@@ -381,18 +397,26 @@ function [channelImg, imageData] = load_first_frame_iris(moleculeImgPath, max_nu
     if nargin < 3
         numFrames = inf;
     end
-        data = imfinfo(moleculeImgPath);
-        frames = length(data);
-        channels = 1; % default is 2
+    
+    firstFrame = 0;
+    if nargin < 4
+        channels = 1;
+    end
+    
+    if channels==1
         firstFrame = 1;
-        numFrames = min(numFrames,frames);
+    end
+    
+    data = imfinfo(moleculeImgPath);
+    frames = length(data);
+%     channels = 1; % default is 2
 %     end
     allDat = imfinfo(moleculeImgPath);
     
     if max_number_of_frames~=0
-        maxFr = min(max_number_of_frames,length(allDat));
+        maxFr = min(max_number_of_frames,length(allDat)/channels);
     else
-        maxFr = channels*frames;
+        maxFr = frames;
     end
     
     % this saves multiplechannels, single field of view
@@ -409,6 +433,10 @@ function [channelImg, imageData] = load_first_frame_iris(moleculeImgPath, max_nu
     end
 
     disp(strcat(['Assuming that images start from ' num2str(firstIdx)]));
+
+%     if channels~=1
+    numFrames = min(numFrames,frames/channels-firstIdx+1);
+%     end
 
     % also want to substract background, here already?
     channelImg = cell(1,channels);
@@ -1332,9 +1360,9 @@ function [pos] = molecule_positions(kymos, statsMol, stdF,percentageNonzero,minA
 end
 
 
-function posY = find_positions_in_nanochannel(noiseKymos,kymos,bgSigma,filterS )
+function posY = find_positions_in_nanochannel(noiseKymos,kymos,posYcenter, bgSigma,filterS )
 
-    if nargin < 3
+    if nargin < 4
         bgSigma = 4;
         filterS = [5 15];
     end
@@ -1356,13 +1384,23 @@ function posY = find_positions_in_nanochannel(noiseKymos,kymos,bgSigma,filterS )
 %         figure,imagesc(K)
 
         [labeledImage, numBlobs] = bwlabel(K);
-        props = regionprops(labeledImage, 'Area');
-        [maxArea, largestIndex] = max([props.Area]);
+         
+        if ~isempty(posYcenter)
+            largestIndex = labeledImage(1,round(mean(posYcenter(i,:))));
+            if largestIndex == 0;
+                posY{i} = [];
+                continue;
+            end
+        else
+            props = regionprops(labeledImage, 'Area');
+            [maxArea, largestIndex] = max([props.Area]);
+        end
+        
         try
-        labK = labeledImage==largestIndex; % either just max or create a loop here
+            labK = labeledImage==largestIndex; % either just max or create a loop here
 
-        posY{i}.leftEdgeIdxs = arrayfun(@(x) find(labK(x,:) >0,1,'first'),1:size(labK,1));
-        posY{i}.rightEdgeIdxs = arrayfun(@(x) find(labK(x,:) >0,1,'last'),1:size(labK,1)); 
+            posY{i}.leftEdgeIdxs = arrayfun(@(x) find(labK(x,:) >0,1,'first'),1:size(labK,1));
+            posY{i}.rightEdgeIdxs = arrayfun(@(x) find(labK(x,:) >0,1,'last'),1:size(labK,1)); 
         catch
            posY{i} = [];
         end
@@ -1430,12 +1468,18 @@ function [kymo, kymoW, kymoNames,Length,posXOut,kymoOrig,idxOut] = extract_from_
 %         Length = cell(1,length(posY));
         nonemptypos = find(cellfun(@(x) ~isempty(x),posY));
         for i=nonemptypos
-            
-            if mean(posY{i}.rightEdgeIdxs-posY{i}.leftEdgeIdxs)>numPts && std(diff(posY{i}.leftEdgeIdxs)) < stdDifPos && std(diff(posY{i}.rightEdgeIdxs)) < stdDifPos% threshold num pixels
+            if length(posY{i}.leftEdgeIdxs)==1
+                stdY = 0; stdX = 0;
+            else
+                stdX = std(diff(posY{i}.leftEdgeIdxs));
+                stdY = std(diff(posY{i}.rightEdgeIdxs));
+            end
+            if mean(posY{i}.rightEdgeIdxs-posY{i}.leftEdgeIdxs)>numPts && stdX < stdDifPos && stdY < stdDifPos% threshold num pixels
 %                 idx = 1;
                 kymo{idx} = nan(size(kymos{channel}{i}));
                 kymoOrig{idx} = kymos{channel}{i};
                 for j=1:length(posY{i}.rightEdgeIdxs)
+                   kymo{idx}(j,posY{i}.leftEdgeIdxs(j):posY{i}.rightEdgeIdxs(j)) = zeros(1,length(posY{i}.leftEdgeIdxs(j):posY{i}.rightEdgeIdxs(j)));
                    kymo{idx}(j,posY{i}.leftEdgeIdxs(j):posY{i}.rightEdgeIdxs(j)) = kymos{channel}{i}(j,posY{i}.leftEdgeIdxs(j):posY{i}.rightEdgeIdxs(j));
                 end
 %                 kymo{i} = kymos(idx,posY{i}(idx,1):posY{i}(idx,2));   
@@ -1663,7 +1707,7 @@ xlim([0 size(img,1)])
 end
 
 
-function [posXlambda,posYlambda] = find_short_molecules(meanRotatedDenoisedMovieFrame,sets )
+function [posXlambda,posYlambda,posMax] = find_short_molecules(meanRotatedDenoisedMovieFrame,sets )
         optics.logSigma = sets.psfnm / sets.nmPerPixel;
         n = ceil(6 * optics.logSigma);
         n = n + 1 -mod(n, 2);
@@ -1695,10 +1739,13 @@ function [posXlambda,posYlambda] = find_short_molecules(meanRotatedDenoisedMovie
         potLambda = find(acc==1);
         posXlambda = zeros(1,length(potLambda));
         posYlambda =  zeros(length(potLambda),2);
+        posMax =  zeros(1,length(potLambda));
         for j=1:length(potLambda)
-            posXlambda(j) = mean(B{potLambda(j)}(:,2));
+            posXlambda(j) = round(mean(B{potLambda(j)}(:,2)));
             posYlambda(j,:) = [min(B{potLambda(j)}(:,1)) max(B{potLambda(j)}(:,1))];
+            posMax(j) = round(mean(posYlambda(j,:)));            
         end
+        
         
         % now save posX and posY of these molecules.
         

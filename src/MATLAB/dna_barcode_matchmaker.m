@@ -25,125 +25,37 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         dbmOSW.DBMSettingsstruct.useGUI = useGUI;  
     end
 
+    import Core.hpfl_extract;
+
     if dbmOSW.DBMSettingsstruct.useGUI
         % generate menu
         % https://se.mathworks.com/help/matlab/ref/uimenu.html
-        
-        hFig = figure('Name', 'DNA Barcode Matchmaker', ...
-            'Units', 'normalized', ...
-            'OuterPosition', [0.05 0.1 0.8 0.8], ...
-            'NumberTitle', 'off', ...
-            'MenuBar', 'none', ...
-            'ToolBar', 'none' ...
-        );
-        m = uimenu('Text','DBM');
-        cells1 = {'Import','Export','Kymographs','Statistics','Convert czi to tif'};
-        mSub = cellfun(@(x) uimenu(m,'Text',x),cells1,'un',false);
-        mSub{5}.MenuSelectedFcn = @SelectedConvertToTif;
-
-
-        cellsImport = {'Load Session Data','Convert czi to tif','Load Movie(s) (tif format)','Load Raw Kymograph(s)'};
-        cellsExport = {'Save Session Data','Raw kymographs','Aligned Kymographs','Time Averages'};
-        cellsKymographs = {'Display Raw kymographs','Display Aligned Kymographs','Plot Time Averages','Display lambdas','Filter molecules'};
-        cellsStatistics = {'Calculate molecule lengths and intensities','Calculate Raw Kymos Center of Mass'};
-
-        mSubImport = cellfun(@(x) uimenu(mSub{1},'Text',x),cellsImport,'un',false);
-        mSubExport = cellfun(@(x) uimenu(mSub{2},'Text',x),cellsExport,'un',false);
-        mSubKymographs = cellfun(@(x) uimenu(mSub{3},'Text',x),cellsKymographs,'un',false);
-        mSubStatistics = cellfun(@(x) uimenu(mSub{4},'Text',x),cellsStatistics,'un',false);
-        
-        mSubImport{2}.MenuSelectedFcn = @SelectedConvertToTif;
-        mSubImport{3}.Accelerator = 'L';
-        mSubImport{3}.MenuSelectedFcn = @SelectedImportTif;
-
-        mSubExport{1}.MenuSelectedFcn = @save_session_data;
-        mSubExport{2}.MenuSelectedFcn = @export_raw_kymos;
-        mSubExport{3}.MenuSelectedFcn = @export_aligned_kymos;
-        mSubExport{4}.MenuSelectedFcn = @export_time_averages_kymos;
-
-        
-        mSubKymographs{1}.MenuSelectedFcn = @display_raw_kymographs;
-        mSubKymographs{2}.MenuSelectedFcn = @display_aligned_kymographs;
-        mSubKymographs{3}.MenuSelectedFcn = @display_time_averages;
-        mSubKymographs{4}.MenuSelectedFcn = @display_lambdas;
-        mSubKymographs{5}.MenuSelectedFcn = @filter_molecules;
-
-
-        %
-        hPanel = uipanel('Parent', hFig);
-        h = uitabgroup('Parent',hPanel);
-        t1 = uitab(h, 'title', 'DBM');
-        tsHCC = uitabgroup('Parent',t1);
-        hPanelImport = uitab(tsHCC, 'title', 'DBM settings');
-        
-        hHomeScreen= uitab(tsHCC, 'title',strcat('HomeScreen'));
-        hPanelRawKymos= uitab(tsHCC, 'title',strcat('unaligned Kymos'));
-        hPanelAlignedKymos = uitab(tsHCC, 'title',strcat('aligned Kymos'));
-        hPanelTimeAverages = uitab(tsHCC, 'title',strcat('time Averages'));
-        hAdditional = uitab(tsHCC, 'title',strcat('Additional'));
-
-% set(hHomeScreen,'Visible','off')
-    sets =  dbmOSW.DBMSettingsstruct;
-
-        % Put the loaded settings into the GUI.
-            % make into loop
-    checkItems =  {'Molecule angle validation','Single frame molecule detection','Denoise (Experimental)','Detect lambdas'};
-    checkValues = [sets.moleculeAngleValidation  sets.timeframes  sets.denoise, sets.detectlambdas ] ;
-   % checkbox for things to plot and threshold
-    for i=1:length(checkItems)
-        itemsList{i} = uicontrol('Parent', hPanelImport, 'Style', 'checkbox','Value',checkValues(i),'String',{checkItems{i}},'Units', 'normal', 'Position', [0.45 .83-0.05*i 0.3 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
-    end
-    
-    
-    % parameters with initial values
-   textItems =  {'averagingWindowWidth (px)','nmPerPixel (nm/px)','rowSidePadding (unused)','parForNoise','distbetweenChannels','numFrames',...
-       'Max number frames','timeframes (unused)','stdDifPos','numPts','minLen'};
-   values =  {num2str(sets.averagingWindowWidth),num2str(sets.nmPerPixel),num2str(sets.rowSidePadding),num2str(sets.parForNoise),...
-       num2str(sets.distbetweenChannels),num2str(sets.numFrames),...
-       num2str(sets.max_number_of_frames),num2str(sets.timeframes),num2str(sets.stdDifPos), num2str(sets.numPts),num2str(sets.minLen)};
-   
-    for i=1:length(textItems) % these will be in two columns
-        positionsText{i} =   [0.2-0.2*mod(i,2) .88-0.1*ceil(i/2) 0.2 0.03];
-        positionsBox{i} =   [0.2-0.2*mod(i,2) .83-0.1*ceil(i/2) 0.15 0.05];
-    end
-%     
-%     for i=7:11 % these will be in two columns
-%         positionsText{i} =   [0.2*(i-7) .45 0.15 0.03];
-%         positionsBox{i} =   [0.2*(i-7) .4 0.15 0.05];
-%     end
-
-    for i=1:length(textItems)
-        textListT{i} = uicontrol('Parent', hPanelImport, 'Style', 'text','String',{textItems{i}},'Units', 'normal', 'Position', positionsText{i},'HorizontalAlignment','Left');%, 'Max', Inf, 'Min', 0);  [left bottom width height]
-        textList{i} = uicontrol('Parent', hPanelImport, 'Style', 'edit','String',{values{i}},'Units', 'normal', 'Position', positionsBox{i});%, 'Max', Inf, 'Min', 0);  [left bottom width height]
-    end
-   
-    
-    runButton = uicontrol('Parent', hPanelImport, 'Style', 'pushbutton','String',{'Save settings'},'Callback',@save_settings,'Units', 'normal', 'Position', [0.7 0.4 0.2 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
-    clearButton = uicontrol('Parent', hPanelImport, 'Style', 'pushbutton','String',{'Restore settings'},'Callback',@restore_settings,'Units', 'normal', 'Position', [0.7 0.3 0.2 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
-    reRunButton = uicontrol('Parent', hPanelImport, 'Style', 'pushbutton','String',{'Re-run analysis'},'Callback',@re_run,'Units', 'normal', 'Position', [0.7 0.2 0.2 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
-    reRunFiltering = uicontrol('Parent', hPanelImport, 'Style', 'pushbutton','String',{'Re-run filtering kymos'},'Callback',@re_run_filtering,'Units', 'normal', 'Position', [0.7 0.1 0.2 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
-
+  
+        [sets,tsHCC,textList,textListT,itemsList,...
+                hHomeScreen,hPanelRawKymos,hPanelAlignedKymos,hPanelTimeAverages,hAdditional]= generate_gui();
+%         show_home();
 
     else
         
-        import Core.hpfl_extract;
         [dbmStruct.fileCells, dbmStruct.fileMoleculeCells,dbmStruct.kymoCells] = hpfl_extract(dbmOSW.DBMSettingsstruct);
 
-              
-        hFig = figure('Name', 'DNA Barcode Matchmaker', ...
-            'Units', 'normalized', ...
-            'OuterPosition', [0.05 0.1 0.8 0.8], ...
-            'NumberTitle', 'off', ...
-            'MenuBar', 'none', ...
-            'ToolBar', 'none' ...
-        );
-   
-        hPanel = uipanel('Parent', hFig);
-        h = uitabgroup('Parent',hPanel);
-        t1 = uitab(h, 'title', 'DBM');
-        tsHCC = uitabgroup('Parent',t1);
-%         hPanelImport = uitab(tsHCC, 'title', 'DBM settings');
-        hHomeScreen= uitab(tsHCC, 'title',strcat('HomeScreen'));
+        [sets,tsHCC,textList,textListT,itemsList,...
+        hHomeScreen,hPanelRawKymos,hPanelAlignedKymos,hPanelTimeAverages,hAdditional]= generate_gui();
+            
+%         hFig = figure('Name', 'DNA Barcode Matchmaker', ...
+%             'Units', 'normalized', ...
+%             'OuterPosition', [0.05 0.1 0.8 0.8], ...
+%             'NumberTitle', 'off', ...
+%             'MenuBar', 'none', ...
+%             'ToolBar', 'none' ...
+%         );
+%    
+%         hPanel = uipanel('Parent', hFig);
+%         h = uitabgroup('Parent',hPanel);
+%         t1 = uitab(h, 'title', 'DBM');
+%         tsHCC = uitabgroup('Parent',t1);
+% %         hPanelImport = uitab(tsHCC, 'title', 'DBM settings');
+%         hHomeScreen= uitab(tsHCC, 'title',strcat('HomeScreen'));
         show_home();
         
     end
@@ -231,7 +143,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 %         f= figure;
 %         axes(hHomeScreen);
         numP = ceil(sqrt(length(dbmStruct.fileCells)));
-        hHomeScreenTile = tiledlayout(hHomeScreen,numP,numP,'TileSpacing','none','Padding','none');
+        hHomeScreenTile = tiledlayout(hHomeScreen,ceil(length(dbmStruct.fileCells)/numP),numP,'TileSpacing','none','Padding','none');
 %                   set(gca,'XTick',[])
 %             set(gca,'YTick',[])
         for jj=1:length(dbmStruct.fileCells)
@@ -506,7 +418,102 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 %         disp(strcat(['Selected ' num2str(length( dbmStruct.rawMovieFilenames )) ' movies']));  
     end
     
+        function [sets,tsHCC,textList,textListT,itemsList,...
+               hHomeScreen, hPanelRawKymos,hPanelAlignedKymos,hPanelTimeAverages,hAdditional] = generate_gui()
+      
+            hFig = figure('Name', 'DNA Barcode Matchmaker', ...
+                'Units', 'normalized', ...
+                'OuterPosition', [0.05 0.1 0.8 0.8], ...
+                'NumberTitle', 'off', ...
+                'MenuBar', 'none', ...
+                'ToolBar', 'none' ...
+            );
+            m = uimenu('Text','DBM');
+            cells1 = {'Import','Export','Kymographs','Statistics','Convert czi to tif'};
+            mSub = cellfun(@(x) uimenu(m,'Text',x),cells1,'un',false);
+            mSub{5}.MenuSelectedFcn = @SelectedConvertToTif;
 
-   
+
+            cellsImport = {'Load Session Data','Convert czi to tif','Load Movie(s) (tif format)','Load Raw Kymograph(s)'};
+            cellsExport = {'Save Session Data','Raw kymographs','Aligned Kymographs','Time Averages'};
+            cellsKymographs = {'Display Raw kymographs','Display Aligned Kymographs','Plot Time Averages','Display lambdas','Filter molecules'};
+            cellsStatistics = {'Calculate molecule lengths and intensities','Calculate Raw Kymos Center of Mass'};
+
+            mSubImport = cellfun(@(x) uimenu(mSub{1},'Text',x),cellsImport,'un',false);
+            mSubExport = cellfun(@(x) uimenu(mSub{2},'Text',x),cellsExport,'un',false);
+            mSubKymographs = cellfun(@(x) uimenu(mSub{3},'Text',x),cellsKymographs,'un',false);
+            mSubStatistics = cellfun(@(x) uimenu(mSub{4},'Text',x),cellsStatistics,'un',false);
+
+            mSubImport{2}.MenuSelectedFcn = @SelectedConvertToTif;
+            mSubImport{3}.Accelerator = 'L';
+            mSubImport{3}.MenuSelectedFcn = @SelectedImportTif;
+
+            mSubExport{1}.MenuSelectedFcn = @save_session_data;
+            mSubExport{2}.MenuSelectedFcn = @export_raw_kymos;
+            mSubExport{3}.MenuSelectedFcn = @export_aligned_kymos;
+            mSubExport{4}.MenuSelectedFcn = @export_time_averages_kymos;
+
+
+            mSubKymographs{1}.MenuSelectedFcn = @display_raw_kymographs;
+            mSubKymographs{2}.MenuSelectedFcn = @display_aligned_kymographs;
+            mSubKymographs{3}.MenuSelectedFcn = @display_time_averages;
+            mSubKymographs{4}.MenuSelectedFcn = @display_lambdas;
+            mSubKymographs{5}.MenuSelectedFcn = @filter_molecules;
+
+
+            %
+            hPanel = uipanel('Parent', hFig);
+            h = uitabgroup('Parent',hPanel);
+            t1 = uitab(h, 'title', 'DBM');
+            tsHCC = uitabgroup('Parent',t1);
+            hPanelImport = uitab(tsHCC, 'title', 'DBM settings');
+
+            hHomeScreen= uitab(tsHCC, 'title',strcat('HomeScreen'));
+            hPanelRawKymos= uitab(tsHCC, 'title',strcat('unaligned Kymos'));
+            hPanelAlignedKymos = uitab(tsHCC, 'title',strcat('aligned Kymos'));
+            hPanelTimeAverages = uitab(tsHCC, 'title',strcat('time Averages'));
+            hAdditional = uitab(tsHCC, 'title',strcat('Additional'));
+        % set(hHomeScreen,'Visible','off')
+            sets =  dbmOSW.DBMSettingsstruct;
+
+                % Put the loaded settings into the GUI.
+                    % make into loop
+            checkItems =  {'Molecule angle validation','Single frame molecule detection','Denoise (Experimental)','Detect lambdas'};
+            checkValues = [sets.moleculeAngleValidation  sets.timeframes  sets.denoise, sets.detectlambdas ] ;
+           % checkbox for things to plot and threshold
+            for i=1:length(checkItems)
+                itemsList{i} = uicontrol('Parent', hPanelImport, 'Style', 'checkbox','Value',checkValues(i),'String',{checkItems{i}},'Units', 'normal', 'Position', [0.45 .83-0.05*i 0.3 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
+            end
+
+
+            % parameters with initial values
+           textItems =  {'averagingWindowWidth (px)','nmPerPixel (nm/px)','rowSidePadding (unused)','parForNoise','distbetweenChannels','numFrames',...
+               'Max number frames','timeframes (unused)','stdDifPos','numPts','minLen'};
+           values =  {num2str(sets.averagingWindowWidth),num2str(sets.nmPerPixel),num2str(sets.rowSidePadding),num2str(sets.parForNoise),...
+               num2str(sets.distbetweenChannels),num2str(sets.numFrames),...
+               num2str(sets.max_number_of_frames),num2str(sets.timeframes),num2str(sets.stdDifPos), num2str(sets.numPts),num2str(sets.minLen)};
+
+            for i=1:length(textItems) % these will be in two columns
+                positionsText{i} =   [0.2-0.2*mod(i,2) .88-0.1*ceil(i/2) 0.2 0.03];
+                positionsBox{i} =   [0.2-0.2*mod(i,2) .83-0.1*ceil(i/2) 0.15 0.05];
+            end
+        %     
+        %     for i=7:11 % these will be in two columns
+        %         positionsText{i} =   [0.2*(i-7) .45 0.15 0.03];
+        %         positionsBox{i} =   [0.2*(i-7) .4 0.15 0.05];
+        %     end
+
+            for i=1:length(textItems)
+                textListT{i} = uicontrol('Parent', hPanelImport, 'Style', 'text','String',{textItems{i}},'Units', 'normal', 'Position', positionsText{i},'HorizontalAlignment','Left');%, 'Max', Inf, 'Min', 0);  [left bottom width height]
+                textList{i} = uicontrol('Parent', hPanelImport, 'Style', 'edit','String',{values{i}},'Units', 'normal', 'Position', positionsBox{i});%, 'Max', Inf, 'Min', 0);  [left bottom width height]
+            end
+
+
+            runButton = uicontrol('Parent', hPanelImport, 'Style', 'pushbutton','String',{'Save settings'},'Callback',@save_settings,'Units', 'normal', 'Position', [0.7 0.4 0.2 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
+            clearButton = uicontrol('Parent', hPanelImport, 'Style', 'pushbutton','String',{'Restore settings'},'Callback',@restore_settings,'Units', 'normal', 'Position', [0.7 0.3 0.2 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
+            reRunButton = uicontrol('Parent', hPanelImport, 'Style', 'pushbutton','String',{'Re-run analysis'},'Callback',@re_run,'Units', 'normal', 'Position', [0.7 0.2 0.2 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
+            reRunFiltering = uicontrol('Parent', hPanelImport, 'Style', 'pushbutton','String',{'Re-run filtering kymos'},'Callback',@re_run_filtering,'Units', 'normal', 'Position', [0.7 0.1 0.2 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
+
+        end
 end
 

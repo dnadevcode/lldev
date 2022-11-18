@@ -14,7 +14,7 @@ function [alignedKymos, stretchFactorsMats, shiftAlignedKymos] = create_aligned_
         try 
             mask = dbmODW.DBMMainstruct.fileMoleculeCell{fileIdx}{fileMoleculeIdx}.moleculeMasks;
         catch
-            mask =  true(size(unalignedKymo));
+            mask =  true(size(rawKymos{moleculeNum}));
         end
         if not(isempty(rawKymo))
             fprintf('Aligning kymograph for file molecule #%d in file #%d (%s)...\n', fileMoleculeIdx, fileIdx, fileName);

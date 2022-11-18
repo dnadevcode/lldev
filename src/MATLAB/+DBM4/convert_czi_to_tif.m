@@ -10,16 +10,24 @@ function [newNames, newInfo ] = convert_czi_to_tif(data, multiChannels)
     se = 'showinf';
     command = strcat([st ' -version']);
     [test,testmessage] = system(command);
-    isnotrecognized = strfind(testmessage,'not recognized');
+    isnotrecognized = isempty(strfind(testmessage,'not recognized'))||isempty(strfind(testmessage,'not found'));
     
     
     mFilePath = mfilename('fullpath');
     mfolders = split(mFilePath, {'\', '/'});
-    catcheFold = fullfile(mfolders{1:end - 4},'DataCache','bftools','bfconvert');
+    if ispc
+        catcheFold = fullfile(mfolders{1:end - 4},'DataCache','bftools','bfconvert');
+        seFold =   fullfile(mfolders{1:end - 4},'DataCache','bftools','showinf');
+    else
+        catcheFold = strcat('/',fullfile(mfolders{1:end - 4},'DataCache','bftools','bfconvert'));
+        seFold =   strcat('/',fullfile(mfolders{1:end - 4},'DataCache','bftools','showinf'));
+
+    end
+
     if exist(catcheFold, 'file')
         st = catcheFold;
-        se = fullfile(mfolders{1:end - 4},'DataCache','bftools','showinf');
-        isnotrecognized = 1;    
+        se = seFold;
+        isnotrecognized = [];    
     end
           
           
@@ -73,25 +81,48 @@ for i=1:length(data)
     if exist(nameNew,'file')
         delete(nameNew); % in case already exists tif, remove 
     end
-    command = strcat([st ' '  name ' ' nameNew]);
+    command = strcat([st ' "'  name '" "' nameNew '"']);
     [a1,b1] = system(command);
     newNames{i} = nameNew;
 
     if exist(nameNew2,'file')
         delete(nameNew2); % in case already info, remove
     end
-    command = strcat([se ' -nopix -nocore '  name ' > ' nameNew2 ]);
+    command = strcat([se ' -nopix -nocore "'  name '" > "' nameNew2 '"']);
     [a2,b2] = system(command);
     newInfo{i} = nameNew2;
-
-
 %     info = rawinfo(name);
-
+    
     if multiChannels
         ch1 = imread(nameNew,1);
         imwrite(ch1,strcat(name,'_C=0.tif'));
         ch2 = imread(nameNew,2);
         imwrite(ch2,strcat(name,'_C=1.tif'));
+    else
+        d = importdata(nameNew2);
+        pos = cellfun(@(x) ~isempty(strfind(x,'Information|Image|SizeS')),d);
+        sizeS = strsplit(d{find(pos)},":");
+        sizeM =  strsplit(d{find(pos)-1},":");
+        sizeT =  strsplit(d{find(pos)+1},":");
+        sizeS = str2double(sizeS(end));
+        sizeT = str2double(sizeT(end));
+        sizeM = str2double(sizeM(end));
+%         outputFile = regexprep(name, 'czi','');
+
+        for k=1:sizeS
+            strn=num2str(k);
+            % rename the original image file with series number
+            nameNew2 = strrep(name,'.czi',strcat(['_' strn '.tif']));
+            if exist(nameNew2, 'file')
+                delete(nameNew2);
+            end
+
+            for n = 1: sizeT 
+                imwrite( imread(nameNew,sizeT*(k-1)+n),nameNew2,'WriteMode','append');  
+            end
+        end
+
+
     end
 
 end
