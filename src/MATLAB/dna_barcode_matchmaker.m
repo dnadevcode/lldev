@@ -181,6 +181,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         export_dbm_session_struct_mat(dbmODW, dbmOSW, defaultOutputDirpath);  
     end
 
+
+
     function [] = export_raw_kymos(src,event)
 %         import OldDBM.General.Export.export_raw_kymos;
     %             if nargin < 2
@@ -237,8 +239,53 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
 
     % loading session data
+
     function load_session_data(src,event)
         
+        defaultSessionDirpath = dbmOSW.get_default_import_dirpath('session');
+
+        import OldDBM.General.Import.try_prompt_single_session_filepath;
+        sessionFilepath = try_prompt_single_session_filepath(defaultSessionDirpath);
+
+        if isempty(sessionFilepath)
+            return;
+        end
+
+       
+        dbmODW = load(sessionFilepath);
+        
+        sets = dbmODW.DBMSettingsstruct;
+        dbmStruct = dbmODW.DBMMainstruct;
+
+        show_home();
+        
+        
+%                import Core.hpfl_extract;
+%         [dbmStruct.fileCells, dbmStruct.fileMoleculeCells,dbmStruct.kymoCells] = hpfl_extract(sets);
+
+
+%         import OldDBM.General.Import.try_loading_from_session_file;
+%         dbmODW2 = try_loading_from_session_file(sessionFilepath);
+        
+%                 dbmODW.DBMMainstruct = dbmStruct;
+%         dbmOSW.DBMSettingsstruct = sets;
+
+%         dbmODW.update_data(dbmODW2);
+% 
+%         import OldDBM.General.SettingsWrapper;
+%         dbmOSW2 = SettingsWrapper.import_dbm_settings_from_session_path(sessionFilepath);
+%         dbmOSW.update_settings(dbmOSW2);
+% 
+%         on_update_home_screen(dbmODW, tsDBM);
+
+        
+%         import OldDBM.General.Export.export_dbm_session_struct_mat;
+%         %             if nargin < 2
+%         defaultOutputDirpath = dbmOSW.get_default_export_dirpath('session');
+%         %             end
+%         dbmODW.DBMMainstruct = dbmStruct;
+%         dbmOSW.DBMSettingsstruct = sets;
+%         export_dbm_session_struct_mat(dbmODW, dbmOSW, defaultOutputDirpath);  
     end
 
     function display_raw_kymographs(src, event)
@@ -444,6 +491,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             mSubKymographs = cellfun(@(x) uimenu(mSub{3},'Text',x),cellsKymographs,'un',false);
             mSubStatistics = cellfun(@(x) uimenu(mSub{4},'Text',x),cellsStatistics,'un',false);
 
+            mSubImport{1}.MenuSelectedFcn = @load_session_data;
             mSubImport{2}.MenuSelectedFcn = @SelectedConvertToTif;
             mSubImport{3}.Accelerator = 'L';
             mSubImport{3}.MenuSelectedFcn = @SelectedImportTif;
@@ -460,7 +508,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             mSubKymographs{4}.MenuSelectedFcn = @display_lambdas;
             mSubKymographs{5}.MenuSelectedFcn = @filter_molecules;
 
-
+            mSubStatistics{1}.MenuSelectedFcn = @calculate_lengths;
             %
             hPanel = uipanel('Parent', hFig);
             h = uitabgroup('Parent',hPanel);
@@ -515,5 +563,139 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             reRunFiltering = uicontrol('Parent', hPanelImport, 'Style', 'pushbutton','String',{'Re-run filtering kymos'},'Callback',@re_run_filtering,'Units', 'normal', 'Position', [0.7 0.1 0.2 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
 
         end
+    
+    function calculate_lengths(src, event)
+        import OldDBM.Kymo.UI.prompt_kymo_analysis_method;
+        [kymoAnalysisMethod, shouldSaveTF] = prompt_kymo_analysis_method();
+        
+        skipEdgeDetection = false;
+        skipDoubleTanhAdjustmentTF = true;
+        switch kymoAnalysisMethod
+            case 'kymo_edge'
+                skipEdgeDetection = true;
+            case 'basic_otsu_edge_detection'
+                skipDoubleTanhAdjustmentTF = true;
+            case 'double_tanh_edge_detection'
+                skipDoubleTanhAdjustmentTF = false;
+            otherwise
+                return;
+        end
+        %         import OldDBM.Kymo.UI.run_calc_plot_save_kymo_analysis;
+%         import DBM4.run_calc_plot_save_kymo_analysis;
+        run_calculate_lengths(skipDoubleTanhAdjustmentTF, shouldSaveTF,sets,skipEdgeDetection)
+     
+    end
+
+function [] = run_calculate_lengths(skipDoubleTanhAdjustmentTF, shouldSaveTF, sets, skipEdgeDetection)
+    %
+    %   Args:
+    %       tsDBM, dbmODW, skipDoubleTanhAdjustmentTF, shouldSavePngTF
+    %
+    %   Returns:
+    %
+    % TODO:
+    
+% %     % generate
+% %     import OldDBM.Kymo.UI.run_kymo_analysis;
+% %     kymoStatsTable = run_kymo_analysis(dbmODW, skipDoubleTanhAdjustmentTF,skipEdgeDetection);
+% % 
+% %     defaultStatsOutputDirpath =   settings.dirs.stats;
+% %     
+% %     % add timestamp
+% %     timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
+% %     filename = sprintf('stats_%s.mat', timestamp);
+% % 
+% %     defaultStatsOutputFilepath = fullfile(defaultStatsOutputDirpath, filename);
+% %     [statsOutputMatFilename, statsOutputMatDirpath, ~] = uiputfile('*.mat', 'Save Molecule Stats As', defaultStatsOutputFilepath);
+% %     
+% %     if not(isequal(statsOutputMatDirpath, 0))
+% %        statsOutputMatFilepath = fullfile(statsOutputMatDirpath, statsOutputMatFilename);
+% %        save(statsOutputMatFilepath, 'kymoStatsTable');
+% % 
+% %         numRows = size(kymoStatsTable, 1);
+% %         for rowIdx = 1:numRows
+% %             fileIdx = kymoStatsTable(rowIdx, :).fileIdx;
+% %             fileMoleculeIdx = kymoStatsTable(rowIdx, :).fileMoleculeIdx;
+% %             srcFilename = kymoStatsTable{rowIdx, 'srcFilename'};
+% %             if iscell(srcFilename)
+% %                 if isempty(srcFilename)
+% %                     srcFilename = '';
+% %                 else
+% %                     srcFilename = srcFilename{1};
+% %                 end
+% %             end
+% %             [~, name] = fileparts(srcFilename);
+% %             csvFilename = sprintf('stats_%d_(%s)_%d.csv', fileIdx, name, fileMoleculeIdx);
+% %             csvFilepath = fullfile(statsOutputMatDirpath, csvFilename);
+% % 
+% %             framewiseStatsTable = struct();
+% %             framewiseStatsTable.moleculeLeftEdgeIdxs = kymoStatsTable{rowIdx, 'moleculeLeftEdgeIdxs'}{1};
+% %             framewiseStatsTable.moleculeRightEdgeIdxs = kymoStatsTable{rowIdx, 'moleculeRightEdgeIdxs'}{1};
+% %             framewiseStatsTable.framewiseMoleculeExts = kymoStatsTable{rowIdx, 'framewiseMoleculeExts'}{1};
+% %             framewiseStatsTable.meanFramewiseMoleculeIntensity = kymoStatsTable{rowIdx, 'meanFramewiseMoleculeIntensity'}{1};
+% %             framewiseStatsTable.stdFramewiseMoleculeIntensity = kymoStatsTable{rowIdx, 'stdFramewiseMoleculeIntensity'}{1};
+% %             framewiseStatsTable = struct2table(framewiseStatsTable);
+% %             writetable(framewiseStatsTable, csvFilepath);
+% %         end
+% %     end
+% % 
+% %     [fileIdxs, fileMoleculeIdxs] = dbmODW.get_molecule_idxs();
+% % 
+% %     [moleculeStatuses] = dbmODW.get_molecule_statuses(fileIdxs, fileMoleculeIdxs);
+% %     selectionMask = moleculeStatuses.hasRawKymo;
+% %     % selectionMask = selectionMask & moleculeStatuses.passesFilters;
+% % 
+% %     fileIdxs = fileIdxs(selectionMask);
+% %     fileMoleculeIdxs = fileMoleculeIdxs(selectionMask);
+% % 
+% %     numKymos = length(fileMoleculeIdxs);
+% %     kymosMoleculeLeftEdgeIdxs = cell(numKymos, 1);
+% %     kymosMoleculeRightEdgeIdxs = cell(numKymos, 1);
+% %     for kymoNum = 1:numKymos
+% %         fileIdx = fileIdxs(kymoNum);
+% %         fileMoleculeIdx = fileMoleculeIdxs(kymoNum);
+% %         rowIdx = find((kymoStatsTable.fileIdx == fileIdx) & (kymoStatsTable.fileMoleculeIdx == fileMoleculeIdx), 1, 'first');
+% %         
+% %         if not(isempty(rowIdx))
+% %             kymoMoleculeLeftEdgeIdxs = kymoStatsTable{rowIdx, 'moleculeLeftEdgeIdxs'}{1};
+% %             kymoMoleculeRightEdgeIdxs = kymoStatsTable{rowIdx, 'moleculeRightEdgeIdxs'}{1};
+% %             kymosMoleculeLeftEdgeIdxs{kymoNum} = kymoMoleculeLeftEdgeIdxs;
+% %             kymosMoleculeRightEdgeIdxs{kymoNum} = kymoMoleculeRightEdgeIdxs;
+% %         end
+% %     end
+% % 
+% %     % [kymosMoleculeLeftEdgeIdxs, kymosMoleculeRightEdgeIdxs] = dbmODW.get_raw_kymos_molecules_edge_idxs(fileIdxs, fileMoleculeIdxs);
+% %     
+% %     % should not display this if there are too many molecules..!
+% %     
+% %     if shouldSavePngTF ~= 2
+% %         hTabEdgeDetection = tsDBM.create_tab('Raw Kymo Edge Detection');
+% %         tsDBM.select_tab(hTabEdgeDetection);
+% %         hPanel = uipanel('Parent', hTabEdgeDetection);
+% %     % hPanel = figure('visible','off');
+% %         import OldDBM.Kymo.UI.plot_detected_raw_kymo_edges;
+% %         hAxesPlots = plot_detected_raw_kymo_edges(dbmODW, fileIdxs, fileMoleculeIdxs, hPanel, kymosMoleculeLeftEdgeIdxs, kymosMoleculeRightEdgeIdxs);
+% %     end
+% %     
+% %     if not(shouldSavePngTF)
+% %         return;
+% %     end
+% %     
+% %     
+% %     import OldDBM.Kymo.Helper.get_raw_kymo_edge_plot_png_output_filepaths;
+% %     pngOutputFilepaths = get_raw_kymo_edge_plot_png_output_filepaths(dbmODW, fileIdxs, fileMoleculeIdxs, settings.dirs.pngs,timestamp);
+% % 
+% %     fprintf('Saving kymographs with edges as png files...\n');
+% %     if shouldSavePngTF ~= 2
+% %     % Save images of the axes
+% %         import OldDBM.General.Export.export_axis_image_as_png;
+% %         arrayfun(@(kymoIdx) export_axis_image_as_png(hAxesPlots(kymoIdx), pngOutputFilepaths{kymoIdx}), (1:numKymos)', 'UniformOutput', false);
+% %     else
+% %         import DBM4.export_image_as_png;
+% %         export_image_as_png(dbmODW, fileIdxs, fileMoleculeIdxs,kymosMoleculeLeftEdgeIdxs, kymosMoleculeRightEdgeIdxs,pngOutputFilepaths);
+% %     end
+% %     fprintf('Finished saving png files.\n');
+
+end
 end
 

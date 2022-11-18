@@ -71,7 +71,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         name = movieFilenames{idx};
         fprintf('Importing data from: %s\n', name);
         
-        [beg,mid,ending] =  fileparts(name);
+        [beg,mid,ending] =  fileparts(name); % todo: move outside since can be multiple files
         if isequal(ending,'.czi')
             data(1).folder = beg;
             data(1).name = strcat(mid,ending);
@@ -189,8 +189,9 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         % remove rows that don't have enough signal pixels
         numElts = find(sum(rotImg{1}{1}(:,posX)  > meanVal+3*stdVal) > numPts);
         posXUpd = posX(numElts);
-        posYcenter = posYcenter(numElts,:);
-
+        if ~isempty(posYcenter)
+            posYcenter = posYcenter(numElts,:);
+        end
 
         numEltsBg = find(sum(rotImg{1}{1}(:,diffPeaks)  > meanVal+3*stdVal) < numPts);
         diffPeaksBg = diffPeaks(numEltsBg);
