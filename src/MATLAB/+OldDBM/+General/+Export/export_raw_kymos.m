@@ -33,22 +33,22 @@ function [] = export_raw_kymos(dbmODW, defaultOutputDirpath)
     end
     
     cellfun(@(rawKymo, outputKymoFilepath)...
-        imwrite(uint16(rawKymo), outputKymoFilepath, 'tif'),...
+        imwrite(rawKymo, outputKymoFilepath, 'tif'),...
         rawKymos, outputKymoFilepaths);
     
-    try
-        rawBitmasks = cell(1,length(rawKymos));
-        t=1;
-        for i=1:length(dbmODW.DBMMainstruct.fileMoleculeCell)
-            for j=1:length(dbmODW.DBMMainstruct.fileMoleculeCell{i})
-                rawBitmasks{t} = dbmODW.DBMMainstruct.fileMoleculeCell{i}{j}.moleculeMasks;
-                t = t+1;
-            end
-        end
-        cellfun(@(rawKymo, outputKymoFilepath)...
-            imwrite(rawKymo, outputKymoFilepath, 'tif'),...
-            rawBitmasks', outputKymoFilepaths2);
-    end
+%     try
+%         rawBitmasks = cell(1,length(rawKymos));
+%         t=1;
+%         for i=1:length(dbmODW.DBMMainstruct.fileMoleculeCell)
+%             for j=1:length(dbmODW.DBMMainstruct.fileMoleculeCell{i})
+%                 rawBitmasks{t} = dbmODW.DBMMainstruct.fileMoleculeCell{i}{j}.moleculeMasks;
+%                 t = t+1;
+%             end
+%         end
+%         cellfun(@(rawKymo, outputKymoFilepath)...
+%             imwrite(rawKymo, outputKymoFilepath, 'tif'),...
+%             rawBitmasks', outputKymoFilepaths2);
+%     end
     
     
 end

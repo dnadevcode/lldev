@@ -84,8 +84,10 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             max_f = inf;
         end
             
+        % here could be a loop over multiple images.
+        
         % load data - support multi-channel // take from the first time frame
-        [ channelImg,imageData ] = load_first_frame_iris(name,max_number_of_frames, max_f, channels);
+        [ channelImg, imageData ] = load_first_frame_iris(name,max_number_of_frames, max_f, channels);
         firstIdx = imageData{1}.IntensityInfo.firstIdx;
 %         firstIdx = 1; % 
         channels = imageData{1}.info.channels;
@@ -106,25 +108,88 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         % angle calculated from meanMovieframe or numFrames
 
         % movie angle
+%         if sets.detectAngle
 %         [movieAngle, CC, allAngles] = get_angle(channelImg,numFrames,sets.maxMinorAxis, sets.tubeSize);
-        [movieAngle, CC, allAngles] = get_angle({{meanMovieFrame}},1,sets.maxMinorAxis, sets.tubeSize);
         % if angle not detected, skip
         
         
         maxCol = [];
 
         if sets.moleculeAngleValidation
-            % TEST ANGLE DETECTION
-            pos = -sets.minAngle:sets.angleStep:sets.minAngle;
-            for j=pos
-%                 j
-                % quicker rotation?
-                [rotImgT, ~] = rotate_images({{meanMovieFrame}}, movieAngle+j);
-    %             meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
-                maxCol = [maxCol max(nanmean(rotImgT{1}{1}))];
+            
+            % 
+            movieAngle = sets.initialAngle;        
+
+            % check1: angle closer to 90 or to 0
+            thet = [max(nanmean(meanMovieFrame')) max(nanmean(meanMovieFrame))];
+%             [H, theta, rho] = hough(meanMovieFrame,'Theta',[-90 0],'RhoResolution',0.01);
+%             vals = max(H);
+            [int,pos] = max(thet) ;
+            if pos==2
+                movieAngle = movieAngle + 90;
             end
+            
+            % TEST ANGLE DETECTION
+            pos = movieAngle+[-sets.minAngle:sets.angleStep:sets.minAngle];
+            
+%             tic
+                
+            method = 'bilinear'; %bicubic
+            resSize = 1; % put to settings
+            sz = size(meanMovieFrame);
+            % resize images to bigger
+            %     tic
+            resizedImg = imresize(meanMovieFrame,  [resSize*sz(1) resSize*sz(2)], method);
+            
+%             tic
+            maxCol = arrayfun(@(x)  max(nanmean(imrotate(resizedImg, -(90+x), method))),pos);
+%             toc
             [a,b] = max(maxCol);
-            movieAngle = movieAngle+pos(b);
+%             pos(b)
+
+% %             tic
+% %             maxCol = zeros(1,length(pos));
+% %             
+% %             
+% %             for j=1:length(pos)
+% %                 rotImg = imrotate(resizedImg, -(90+pos(j)), method);
+% %                 maxCol(j) = max(nanmean(rotImg));
+% %             end
+% %             toc
+%             
+%             % maybe not needed?
+%             %             [movieAngle, CC, allAngles] = get_angle({{meanMovieFrame}},1,sets.maxMinorAxis, sets.tubeSize);
+% 
+% %             pos(pos>89) =   pos(pos>89)-180;
+%             % Find the Hough information about the lines
+%             pos = -2:0.01:2;
+%             for j=pos
+% %                 j
+%                 % quicker rotation?
+%                 [rotImgT, ~] = rotate_images({{meanMovieFrame}}, movieAngle+j);
+%     %             meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
+%                 maxCol = [maxCol max(nanmean(rotImgT{1}{1}))];
+%             end
+% 
+% %             tic
+% %             [H, theta, rho] = hough(meanMovieFrame,'Theta',pos,'RhoResolution',0.01);
+% %             toc
+%             maxCol = max(H);
+%             [a,b] = max(maxCol);
+% %             pos(b)
+% %             
+%             for j=pos
+% %                 j
+%                 % quicker rotation?
+%                 [rotImgT, ~] = rotate_images({{meanMovieFrame}}, movieAngle+j);
+%     %             meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
+%                 maxCol = [maxCol max(nanmean(rotImgT{1}{1}))];
+%             end
+%             [a,b] = max(maxCol);
+            movieAngle =  pos(b);
+            
+%             BW = edge(meanMovieFrame,'canny');
+
         end
         
         
@@ -154,7 +219,8 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
        
 
         
-        % remove noise. this also calculates central and bg trend
+        % remove noise. this also calculates central and bg trend /instead
+        % could remove based on bg images
         %     [rotImg,centralTend,bgTrend,bgSub] = remove_noise(rotImg, rotMask);
         [rotImg, centralTend, bgTrend, bgSub,background] = remove_noise_mean(rotImg, rotMask, remNonuniform);
 %         visual_mean(rotImg{1}{1}) % visualize channel vs mean
@@ -169,9 +235,13 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 
 %         sets.detectlambdas = 1;
         if sets.detectlambdas
+%             [posX,posYcenter,posMax] = find_short_molecules(rotImg{1}{1},sets );
+            
             [posX,posYcenter,posMax] = find_short_molecules(meanRotatedDenoisedMovieFrame,sets );
-%             plot_result(channelImg,rotImg,rotImg,round(posXlambda),posYlambda(:,1))
-
+            posYcenter = []; % TODO: activate posYcenter if multi-mol extraction is fixed
+%             plot_result(channelImg,rotImg,rotImg,round(posX),posMax)
+            % later one needs to check if same Y does not lead to dublicate
+            % molecules
         else
             [posX,posMax] = find_mols_corr(rotImg, bgTrend, numPts, channelForDist, centralTend, farAwayShift, distbetweenChannels,timeframes );
             posYcenter = [];
@@ -201,8 +271,10 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     % todo: check which is best for SNR/
     tic
     % import AB.create_channel_kymos_one;                                 % for this only one frame in IRIS../bionano would have several
-    [kymos, wideKymos,kmChanginW, kmChangingPos] = create_channel_kymos_one(posXUpd,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
-   
+    [kymos, wideKymos, kmChanginW, kmChangingPos] = create_channel_kymos_one(posXUpd,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+   % means - max should be center
+%     figure,plot(cellfun(@(x) nanmean(x,[1 2]), kmChangingPos{1}{1}))
+    
     disp(strcat(['Barcodes extracted in ' num2str(toc) ' seconds']));
 %     figure,imagesc(kymos{1}{1})
 
@@ -226,8 +298,9 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     % what if we can't extract noise kymos?
     [noiseKymos,noisewideKymos] = create_channel_kymos_one(diffPeaksBg,firstIdx,channels,movieAngle, name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
     % 
+    sz = size(meanRotatedDenoisedMovieFrame);
     try
-        posY = find_positions_in_nanochannel(noiseKymos,kymos,posYcenter );
+        posY = find_positions_in_nanochannel(noiseKymos,kymos,posYcenter,sz );
     catch
         posY = [];
     end
@@ -320,6 +393,9 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     kymoCells = [];
     kymoCells.rawKymos = [];
     kymoCells.rawBitmask = [];
+    kymoCells.kymosMoleculeLeftEdgeIdxs = [];
+    kymoCells.kymosMoleculeRightEdgeIdxs = [];
+
     kymoCells.rawKymoFileIdxs = [];
     kymoCells.rawKymoFileMoleculeIdxs = [];
     kymoCells.rawKymoName = [];
@@ -330,6 +406,9 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             [~, srcFilenameNoExt, ~] = fileparts(movieFilenames{rawMovieIdx});
             kymoCells.rawKymos{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymograph;
             kymoCells.rawBitmask{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.moleculeMasks;
+            kymoCells.kymosMoleculeLeftEdgeIdxs{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymosMoleculeLeftEdgeIdxs;
+            kymoCells.kymosMoleculeRightEdgeIdxs{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymosMoleculeRightEdgeIdxs;
+
             kymoCells.rawKymoFileIdxs(end+1) = rawMovieIdx;
             kymoCells.rawKymoFileMoleculeIdxs(end+1) = rawKymoNum;
             kymoCells.rawKymoName{end+1} = sprintf('%s_molecule_%d_kymograph.tif', srcFilenameNoExt, rawKymoNum);
@@ -660,7 +739,7 @@ function [rotImg, meanTrend, bgTrend, firstMeanPrediction,background] = remove_n
                     else
                         rotImg{i}{k} =  rotImg{i}{k}-firstMeanPrediction(i);
                     end
-                    rotImg{i}{k}(rotImg{i}{k} < 0 ) = nan;
+%                     rotImg{i}{k}(rotImg{i}{k} < 0 ) = nan;
                 end
             end
         else
@@ -1361,13 +1440,16 @@ function [pos] = molecule_positions(kymos, statsMol, stdF,percentageNonzero,minA
 end
 
 
-function posY = find_positions_in_nanochannel(noiseKymos,kymos,posYcenter, bgSigma,filterS )
+function posY = find_positions_in_nanochannel(noiseKymos,kymos,posYcenter,sz, bgSigma,filterS )
 
-    if nargin < 4
+    if nargin < 5
         bgSigma = 4;
         filterS = [5 15];
     end
     
+%     if ~isempty(sz)
+%         mask = zeros(sz(1), sz(2));
+%     end
     % TODO: more accurate?
 %     threshval = mean(cellfun(@(x) nanmean(x(:)), noiseKymos{1}));%+ 3*nanstd(noiseKymos{1}{1}(:));
 %     threshstd = mean(cellfun(@(x) nanstd(x(:)), noiseKymos{1}));%+ 3*nanstd(noiseKymos{1}{1}(:));
@@ -1399,9 +1481,14 @@ function posY = find_positions_in_nanochannel(noiseKymos,kymos,posYcenter, bgSig
         
         try
             labK = labeledImage==largestIndex; % either just max or create a loop here
-
-            posY{i}.leftEdgeIdxs = arrayfun(@(x) find(labK(x,:) >0,1,'first'),1:size(labK,1));
-            posY{i}.rightEdgeIdxs = arrayfun(@(x) find(labK(x,:) >0,1,'last'),1:size(labK,1)); 
+%             mask2 = zeros(sz(1),sz(2));
+%             if sum(mask.*labK,'all') == 0 % check if molecule repeats/overlaps
+                posY{i}.leftEdgeIdxs = arrayfun(@(x) find(labK(x,:) >0,1,'first'),1:size(labK,1));
+                posY{i}.rightEdgeIdxs = arrayfun(@(x) find(labK(x,:) >0,1,'last'),1:size(labK,1)); 
+%                 mask(labK) = 1;
+%             else
+%                 posY{i} = [];
+%             end
         catch
            posY{i} = [];
         end
@@ -1711,23 +1798,68 @@ end
 function [posXlambda,posYlambda,posMax] = find_short_molecules(meanRotatedDenoisedMovieFrame,sets )
         optics.logSigma = sets.psfnm / sets.nmPerPixel;
         n = ceil(6 * optics.logSigma);
-        n = n + 1 -mod(n, 2);
-        filt = fspecial('log', n, optics.logSigma);
+        n = n + 1 - mod(n, 2);
+        filt = fspecial('log', n,  optics.logSigma);
         logim = imfilter(meanRotatedDenoisedMovieFrame, filt);
 
         thedges = imbinarize(logim, 0);
-        thedges(1:end,[ 1 end]) = 1; % things around the boundary should also be considered
+        
+        thedges = imclose(thedges, true(3));
+%         se1 = strel('line',3,0)
+%         thedges = imdilate(thedges,se1);
+%         
+%         thedges(1:end,[ 1 end]) = 1; % things around the boundary should also be considered
         thedges([ 1 end],1:end) = 1;
+        
+        
+        % for each feature, cut pixels deviating from the central line
 
         [B, L] = bwboundaries(thedges, 'holes');
 
         [~, Gdir] = imgradient(logim);
+        
+        % todo: score for each position based on imgradient
+        
         stat = @(h) mean(h); % This should perhaps be given from the outside
+        
+        longFeats = cellfun(@(x) size(x,1) >= sets.numPts,B);
+        B = B(longFeats);
+        
+        % now hist of B will have two peaks
+%         closedImg = imclose(B{14},strel('disk',30));
+%         k =14;
+    
+
+%         [counts, binlocation] = imhist(B{14}(:,2));  %plus whatever option you used for imhist
+% [sortedcount, indices] = sort(count);    %sort your histogram
+% peakvalues = sortedcount(1:3)              %highest 3 count in the histogram
+% peaklocations = binlocation(indices(1:3))  %respective image intensities for these peaks
+
+
         meh = zeros(1, length(B));
 
+%         % find center
+%         posX = cellfun(@(x) mean(x(:,2)),B);
+%         for k = 1:length(B)% Filter out any regions with artifacts in them
+% 
+% 
+%         end
+%         
+
         for k = 1:length(B)% Filter out any regions with artifacts in them
+            [N,edges] = histcounts(B{k}(:,2));
+            bcenters = (edges(2:end)+edges(1:end-1))/2;
+            [Ypk,Xpk] = findpeaks([0 N 0],'SortStr','desc','Npeaks',2);
+            % 
+            posEdges = bcenters(Xpk-1);
+
+            % allow a few pixs variation
+            pL = min(posEdges)-3;  pR = max(posEdges)+3;
+
+            tooWide = (B{k}(:,2) < pL)+(B{k}(:,2) > pR);
+            B{k}(logical(tooWide),:) = [];
             meh(k) = edge_score(B{k}, logim, Gdir, 5, stat); %how many points along the gradient to take?
-        end
+         end
         
         %
         acc  = zeros(1, length(B));
@@ -1736,6 +1868,7 @@ function [posXlambda,posYlambda,posMax] = find_short_molecules(meanRotatedDenois
         for k = 1:length(B)% Filter any edges with lower scores than lim
             [acc(k),l(k),w(k)] = mol_filt(B{k}, meh(k), sets.minScoreLambda, inf, [sets.minLambdaLen sets.maxLambdaLen], [1 sets.maxLambdaWidth]); % width depends on psf
         end
+        
         
         potLambda = find(acc==1);
         posXlambda = zeros(1,length(potLambda));
@@ -1790,7 +1923,7 @@ function [acc,l,w] = mol_filt(B, score, lowLim, highLim, lengthLims, widthLims)
     lOk = (l > lengthLims(1) && l < lengthLims(2));
     wOk = (w > widthLims(1) && w < widthLims(2));
 
-    if score > lowLim && score < highLim && lOk
+    if score > lowLim && score < highLim && lOk && wOk
         acc = true;
 %       [~,ecc,aRat,length,width] = cont_draw(B);
 %       testofboundary = (ecc > elim && aRat > ratlim && width < widthLims(2)) ;

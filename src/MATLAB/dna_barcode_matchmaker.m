@@ -316,10 +316,13 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
         if ~isfield(dbmStruct.kymoCells,'alignedKymos')
             import OptMap.KymoAlignment.NRAlign.nralign;
+%             import DBM4.kymograph_align;
 
             for ix=1:numK
                     fprintf('Aligning kymograph for file molecule #%d of #%d ...\n', ix, numK);
                     [alignedKymo, stretchFactorsMat, shiftAlignedKymo] = nralign(dbmStruct.kymoCells.rawKymos{ix},false,dbmStruct.kymoCells.rawBitmask{ix});
+
+%                     [alignedKymo, stretchFactorsMat, shiftAlignedKymo] = kymograph_align(dbmStruct.kymoCells.rawKymos{ix},false,dbmStruct.kymoCells.rawBitmask{ix});
                     dbmStruct.kymoCells.alignedKymos{ix} = alignedKymo;
                     dbmStruct.kymoCells.alignedBitmasks{ix} = ~isnan(alignedKymo);
                     dbmStruct.kymoCells.stretchFactorsMat{ix} = stretchFactorsMat;
@@ -352,6 +355,11 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
     function display_time_averages(src,event)
         numK = length(dbmStruct.kymoCells.rawKymos);
         numP = ceil(sqrt(numK));
+        
+        if  ~isfield(dbmStruct.kymoCells,'alignedKymos')
+            display_aligned_kymographs;
+        end
+
 
         if  ~isfield(dbmStruct.kymoCells,'barcodes')
             for ix=1:numK
@@ -378,8 +386,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             hAxis = nexttile(hPanelTimeAveragesTile);
             hold on
             set(gca,'color',[0 0 0]);
-            set(hAxis,'XTick',[]);
-            set(hAxis,'YTick',[]);
+%             set(hAxis,'XTick',[]);
+%             set(hAxis,'YTick',[]);
             [fb,fe] = fileparts(dbmStruct.kymoCells.rawKymoName{jj});
 %             import OldDBM.General.UI.disp_img_with_header;
             plot_aligned_kymo_time_avg(hAxis, fe,  dbmStruct.kymoCells.fgStartIdxsMean(jj), dbmStruct.kymoCells.fgEndIdxsMean(jj),...
@@ -471,8 +479,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             hFig = figure('Name', 'DNA Barcode Matchmaker', ...
                 'Units', 'normalized', ...
                 'OuterPosition', [0.05 0.1 0.8 0.8], ...
-                'NumberTitle', 'off', ...
-                'MenuBar', 'none', ...
+                'NumberTitle', 'off',... 
+                'MenuBar', 'none',...
                 'ToolBar', 'none' ...
             );
             m = uimenu('Text','DBM');
@@ -509,6 +517,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             mSubKymographs{5}.MenuSelectedFcn = @filter_molecules;
 
             mSubStatistics{1}.MenuSelectedFcn = @calculate_lengths;
+            mSubStatistics{2}.MenuSelectedFcn = @calculate_com;
+
             %
             hPanel = uipanel('Parent', hFig);
             h = uitabgroup('Parent',hPanel);
@@ -520,7 +530,9 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             hPanelRawKymos= uitab(tsHCC, 'title',strcat('unaligned Kymos'));
             hPanelAlignedKymos = uitab(tsHCC, 'title',strcat('aligned Kymos'));
             hPanelTimeAverages = uitab(tsHCC, 'title',strcat('time Averages'));
-            hAdditional = uitab(tsHCC, 'title',strcat('Additional'));
+            hAdditional.hAdd= uitab(tsHCC, 'title',strcat('Additional'));
+            tshAdd = uitabgroup('Parent',hAdditional.hAdd);
+            hAdditional.length = uitab(tshAdd, 'title',strcat('Mol lengths'));
         % set(hHomeScreen,'Visible','off')
             sets =  dbmOSW.DBMSettingsstruct;
 
@@ -573,16 +585,48 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         switch kymoAnalysisMethod
             case 'kymo_edge'
                 skipEdgeDetection = true;
-            case 'basic_otsu_edge_detection'
-                skipDoubleTanhAdjustmentTF = true;
-            case 'double_tanh_edge_detection'
-                skipDoubleTanhAdjustmentTF = false;
+%             case 'basic_otsu_edge_detection'
+%                 skipDoubleTanhAdjustmentTF = true;
+%             case 'double_tanh_edge_detection'
+%                 skipDoubleTanhAdjustmentTF = false;
             otherwise
                 return;
         end
         %         import OldDBM.Kymo.UI.run_calc_plot_save_kymo_analysis;
 %         import DBM4.run_calc_plot_save_kymo_analysis;
-        run_calculate_lengths(skipDoubleTanhAdjustmentTF, shouldSaveTF,sets,skipEdgeDetection)
+        run_calculate_lengths(skipDoubleTanhAdjustmentTF, shouldSaveTF,sets,skipEdgeDetection);
+        
+        % plot
+        numP = ceil(sqrt(length(dbmStruct.kymoCells.rawKymos)));
+        hPanelRawKymosTile = tiledlayout(hAdditional.length,numP,numP,'TileSpacing','none','Padding','none');
+%                   set(gca,'XTick',[])
+%             set(gca,'YTick',[])
+        for jj=1:length(dbmStruct.kymoCells.rawKymos)
+            hAxis = nexttile(hPanelRawKymosTile);
+            hold on
+            set(gca,'color',[0 0 0]);
+            set(hAxis,'XTick',[]);
+            set(hAxis,'YTick',[]);
+            [fb,fe] = fileparts(dbmStruct.kymoCells.rawKymoName{jj});
+
+            % Show the raw kymographs with labeled edges and header text on
+            %  their alloted axis handles
+       
+    
+            import OldDBM.General.UI.disp_img_with_header;
+            disp_img_with_header(hAxis, dbmStruct.kymoCells.rawKymos{jj}, fe);
+            import DBM4.plot_kymo_edges;
+
+                 plot_kymo_edges(hAxis,...
+            dbmStruct.kymoCells.kymosMoleculeLeftEdgeIdxs{jj}', ...
+            dbmStruct.kymoCells.kymosMoleculeRightEdgeIdxs{jj}');
+    
+        
+%             disp_rect_annotated_image(, fe, {});
+
+        end
+        tsHCC.SelectedTab = hAdditional.hAdd;
+
      
     end
 
@@ -596,48 +640,48 @@ function [] = run_calculate_lengths(skipDoubleTanhAdjustmentTF, shouldSaveTF, se
     % TODO:
     
 % %     % generate
-% %     import OldDBM.Kymo.UI.run_kymo_analysis;
-% %     kymoStatsTable = run_kymo_analysis(dbmODW, skipDoubleTanhAdjustmentTF,skipEdgeDetection);
+    import DBM4.run_kymo_analysis;
+    kymoStatsTable = run_kymo_analysis(dbmStruct.kymoCells,skipEdgeDetection);
 % % 
-% %     defaultStatsOutputDirpath =   settings.dirs.stats;
+    defaultStatsOutputDirpath =   sets.dirs.stats;
 % %     
 % %     % add timestamp
-% %     timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
-% %     filename = sprintf('stats_%s.mat', timestamp);
+    timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
+    filename = sprintf('stats_%s.mat', timestamp);
 % % 
-% %     defaultStatsOutputFilepath = fullfile(defaultStatsOutputDirpath, filename);
-% %     [statsOutputMatFilename, statsOutputMatDirpath, ~] = uiputfile('*.mat', 'Save Molecule Stats As', defaultStatsOutputFilepath);
+    defaultStatsOutputFilepath = fullfile(defaultStatsOutputDirpath, filename);
+    [statsOutputMatFilename, statsOutputMatDirpath, ~] = uiputfile('*.mat', 'Save Molecule Stats As', defaultStatsOutputFilepath);
 % %     
-% %     if not(isequal(statsOutputMatDirpath, 0))
-% %        statsOutputMatFilepath = fullfile(statsOutputMatDirpath, statsOutputMatFilename);
-% %        save(statsOutputMatFilepath, 'kymoStatsTable');
-% % 
-% %         numRows = size(kymoStatsTable, 1);
-% %         for rowIdx = 1:numRows
-% %             fileIdx = kymoStatsTable(rowIdx, :).fileIdx;
-% %             fileMoleculeIdx = kymoStatsTable(rowIdx, :).fileMoleculeIdx;
-% %             srcFilename = kymoStatsTable{rowIdx, 'srcFilename'};
-% %             if iscell(srcFilename)
-% %                 if isempty(srcFilename)
-% %                     srcFilename = '';
-% %                 else
-% %                     srcFilename = srcFilename{1};
-% %                 end
-% %             end
-% %             [~, name] = fileparts(srcFilename);
-% %             csvFilename = sprintf('stats_%d_(%s)_%d.csv', fileIdx, name, fileMoleculeIdx);
-% %             csvFilepath = fullfile(statsOutputMatDirpath, csvFilename);
-% % 
-% %             framewiseStatsTable = struct();
-% %             framewiseStatsTable.moleculeLeftEdgeIdxs = kymoStatsTable{rowIdx, 'moleculeLeftEdgeIdxs'}{1};
-% %             framewiseStatsTable.moleculeRightEdgeIdxs = kymoStatsTable{rowIdx, 'moleculeRightEdgeIdxs'}{1};
-% %             framewiseStatsTable.framewiseMoleculeExts = kymoStatsTable{rowIdx, 'framewiseMoleculeExts'}{1};
-% %             framewiseStatsTable.meanFramewiseMoleculeIntensity = kymoStatsTable{rowIdx, 'meanFramewiseMoleculeIntensity'}{1};
-% %             framewiseStatsTable.stdFramewiseMoleculeIntensity = kymoStatsTable{rowIdx, 'stdFramewiseMoleculeIntensity'}{1};
-% %             framewiseStatsTable = struct2table(framewiseStatsTable);
-% %             writetable(framewiseStatsTable, csvFilepath);
-% %         end
-% %     end
+    if not(isequal(statsOutputMatDirpath, 0))
+       statsOutputMatFilepath = fullfile(statsOutputMatDirpath, statsOutputMatFilename);
+       save(statsOutputMatFilepath, 'kymoStatsTable');
+
+        numRows = size(kymoStatsTable, 1);
+        for rowIdx = 1:numRows
+            fileIdx = kymoStatsTable(rowIdx, :).fileIdx;
+            fileMoleculeIdx = kymoStatsTable(rowIdx, :).fileMoleculeIdx;
+            srcFilename = kymoStatsTable{rowIdx, 'srcFilename'};
+            if iscell(srcFilename)
+                if isempty(srcFilename)
+                    srcFilename = '';
+                else
+                    srcFilename = srcFilename{1};
+                end
+            end
+            [~, name] = fileparts(srcFilename);
+            csvFilename = sprintf('stats_%d_(%s)_%d.csv', fileIdx, name, fileMoleculeIdx);
+            csvFilepath = fullfile(statsOutputMatDirpath, csvFilename);
+
+            framewiseStatsTable = struct();
+            framewiseStatsTable.moleculeLeftEdgeIdxs = kymoStatsTable{rowIdx, 'moleculeLeftEdgeIdxs'}{1};
+            framewiseStatsTable.moleculeRightEdgeIdxs = kymoStatsTable{rowIdx, 'moleculeRightEdgeIdxs'}{1};
+            framewiseStatsTable.framewiseMoleculeExts = kymoStatsTable{rowIdx, 'framewiseMoleculeExts'}{1};
+            framewiseStatsTable.meanFramewiseMoleculeIntensity = kymoStatsTable{rowIdx, 'meanFramewiseMoleculeIntensity'}{1};
+            framewiseStatsTable.stdFramewiseMoleculeIntensity = kymoStatsTable{rowIdx, 'stdFramewiseMoleculeIntensity'}{1};
+            framewiseStatsTable = struct2table(framewiseStatsTable);
+            writetable(framewiseStatsTable, csvFilepath);
+        end
+    end
 % % 
 % %     [fileIdxs, fileMoleculeIdxs] = dbmODW.get_molecule_idxs();
 % % 
@@ -697,5 +741,37 @@ function [] = run_calculate_lengths(skipDoubleTanhAdjustmentTF, shouldSaveTF, se
 % %     fprintf('Finished saving png files.\n');
 
 end
+end
+
+
+function [] = calculate_com(src, event)
+    if nargin < 3
+        writeToTSV = true;
+    end
+    % todo..
+
+%     import OldDBM.Kymo.Core.calc_raw_kymos_centers_of_mass;
+%     [centerOfMassTable] = calc_raw_kymos_centers_of_mass(dbmODW);
+%     disp(centerOfMassTable);
+% 
+%     if writeToTSV
+%         timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
+%         defaultOutputDirpath = dbmOSW.get_default_export_dirpath('raw_kymo_center_of_mass');
+%         defaultOutputFilename = sprintf('centerOfMassTable_%s.tsv', timestamp);
+%         defaultOutputFilepath = fullfile(defaultOutputDirpath, defaultOutputFilename);
+% 
+%         [outputFilename, outputDirpath] = uiputfile('*.tsv', 'Save Centers of Mass As', defaultOutputFilepath);
+% 
+%         if isequal(outputDirpath, 0)
+%             return;
+%         end
+%         outputFilepath = fullfile(outputDirpath, outputFilename);
+% 
+%         writetable(centerOfMassTable, outputFilepath, ...
+%             'Delimiter', sprintf('\t'), ...
+%             'FileType', 'text');
+%     end
+
+
 end
 
