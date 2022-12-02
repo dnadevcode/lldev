@@ -29,12 +29,12 @@ dbmOSW.DBMSettingsstruct.maxLambdaLen = inf;
 % files = dir('C:\Users\Lenovo\postdoc\DATA\LUISDATAMOV\test\*.tif');
 % files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\testlong\*.tif');
 % files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDrive_1_11-17-2022\Movies\*.tif');
-% files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDrive_1_11-17-2022\lambda\*.tif');
-files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\t\*.tif');
-
+files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDrive_1_11-17-2022\lambda\*.tif');
+% files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\t\*.tif');
+% files=dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\lambda\*.tif');
 
 filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:length(files),'un',false);
-filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),2,'un',false);
+filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1,'un',false);
 
 dbmOSW.DBMSettingsstruct.movies.movieNames = filesC;
 % dbmOSW.DBMSettingsstruct.movies.movieNames = {filesC{1:3}};

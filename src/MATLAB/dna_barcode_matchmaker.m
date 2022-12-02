@@ -156,12 +156,13 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             %            imagesc(dbmStruct.fileCells{jj}.averagedImg)
             moleculeRectPositions = cell(1,length( dbmStruct.fileCells{jj}.locs));
             for ii=1:length(dbmStruct.fileCells{jj}.locs)
-                moleculeRectPositions{ii} = [ dbmStruct.fileCells{jj}.locs(ii)-1 dbmStruct.fileCells{jj}.regions(ii,1)  3 dbmStruct.fileCells{jj}.regions(ii,2)- dbmStruct.fileCells{jj}.regions(ii,1)];
+%                 moleculeRectPositions{ii} = [ dbmStruct.fileCells{jj}.locs(ii)-1 dbmStruct.fileCells{jj}.regions(ii,1)  3 dbmStruct.fileCells{jj}.regions(ii,2)- dbmStruct.fileCells{jj}.regions(ii,1)];
+                moleculeRectPositions{ii} = [  dbmStruct.fileCells{jj}.regions(ii,1) dbmStruct.fileCells{jj}.locs(ii)-1  dbmStruct.fileCells{jj}.regions(ii,2)- dbmStruct.fileCells{jj}.regions(ii,1) 3];
 
             end
             import OldDBM.General.UI.disp_rect_annotated_image;
             [fb,fe] = fileparts(dbmStruct.fileCells{jj}.fileName);
-            disp_rect_annotated_image(hAxis, dbmStruct.fileCells{jj}.averagedImg, fe, moleculeRectPositions);
+            disp_rect_annotated_image(hAxis, dbmStruct.fileCells{jj}.averagedImg', fe, moleculeRectPositions);
 
         end
         tsHCC.SelectedTab = hHomeScreen;
@@ -195,8 +196,12 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         dbmStruct.kymoCells.rawKymos, dbmStruct.kymoCells.rawKymoName);
     
         cellfun(@(rawKymo, outputKymoFilepath)...
-        imwrite(uint16(rawKymo), fullfile(outputDirpath,outputKymoFilepath), 'tif'),...
+        imwrite(rawKymo, fullfile(outputDirpath,outputKymoFilepath), 'tif'),...
         dbmStruct.kymoCells.rawBitmask, dbmStruct.kymoCells.rawBitmaskName);
+    
+        cellfun(@(rawKymo, outputKymoFilepath)...
+        imwrite(rawKymo, fullfile(outputDirpath,outputKymoFilepath), 'tif'),...
+        dbmStruct.kymoCells.enhanced, dbmStruct.kymoCells.enhancedName);
     end
     
     function [] = export_aligned_kymos(src,event)

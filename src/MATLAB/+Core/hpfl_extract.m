@@ -400,12 +400,22 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     kymoCells.rawKymoFileMoleculeIdxs = [];
     kymoCells.rawKymoName = [];
     kymoCells.rawBitmaskName = [];
+    kymoCells.enhanced = [];
+    kymoCells.enhancedName = [];
     for rawMovieIdx=1:length(fileMoleculeCells)
         numRawKymos = length(fileMoleculeCells{rawMovieIdx});
         for rawKymoNum = 1:numRawKymos
             [~, srcFilenameNoExt, ~] = fileparts(movieFilenames{rawMovieIdx});
             kymoCells.rawKymos{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymograph;
             kymoCells.rawBitmask{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.moleculeMasks;
+            % enhanced
+            sampIm = mat2gray( kymoCells.rawKymos{end});
+            minInt = min(sampIm(:));
+            medInt = median(sampIm(:));
+%             maxInt = max(sampIm(:));
+            J = imadjust(sampIm,[minInt 4*medInt]);
+            kymoCells.enhanced{end+1} = J;
+
             kymoCells.kymosMoleculeLeftEdgeIdxs{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymosMoleculeLeftEdgeIdxs;
             kymoCells.kymosMoleculeRightEdgeIdxs{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymosMoleculeRightEdgeIdxs;
 
@@ -413,6 +423,8 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             kymoCells.rawKymoFileMoleculeIdxs(end+1) = rawKymoNum;
             kymoCells.rawKymoName{end+1} = sprintf('%s_molecule_%d_kymograph.tif', srcFilenameNoExt, rawKymoNum);
             kymoCells.rawBitmaskName{end+1} =  sprintf('%s_molecule_%d_bitmask.tif', srcFilenameNoExt, rawKymoNum);
+            kymoCells.enhancedName{end+1} =  sprintf('%s_molecule_%d_enhanced.tif', srcFilenameNoExt, rawKymoNum);
+
         end
     end
 
