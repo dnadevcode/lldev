@@ -36,11 +36,16 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 %         show_home();
 
     else
-        
-        [dbmStruct.fileCells, dbmStruct.fileMoleculeCells,dbmStruct.kymoCells] = hpfl_extract(dbmOSW.DBMSettingsstruct);
+        if dbmOSW.DBMSettingsstruct.auto_run     
+            [dbmStruct.fileCells, dbmStruct.fileMoleculeCells,dbmStruct.kymoCells] = hpfl_extract(dbmOSW.DBMSettingsstruct);
 
-        [sets,tsHCC,textList,textListT,itemsList,...
-        hHomeScreen,hPanelRawKymos,hPanelAlignedKymos,hPanelTimeAverages,hAdditional]= generate_gui();
+            [sets,tsHCC,textList,textListT,itemsList,...
+            hHomeScreen,hPanelRawKymos,hPanelAlignedKymos,hPanelTimeAverages,hAdditional]= generate_gui();
+        
+            show_home();
+        else
+            sets = dbmOSW.DBMSettingsstruct;
+        end
             
 %         hFig = figure('Name', 'DNA Barcode Matchmaker', ...
 %             'Units', 'normalized', ...
@@ -56,7 +61,11 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 %         tsHCC = uitabgroup('Parent',t1);
 % %         hPanelImport = uitab(tsHCC, 'title', 'DBM settings');
 %         hHomeScreen= uitab(tsHCC, 'title',strcat('HomeScreen'));
-        show_home();
+        
+    end
+    
+    if dbmOSW.DBMSettingsstruct.genome_assembly_pipeline
+        genome_assembly_pipeline()
         
     end
     
@@ -117,6 +126,9 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
     end
 
     function re_run(src, event)
+        
+        save_settings(); % first save settigns
+        
         import Core.hpfl_extract;
         [dbmStruct.fileCells, dbmStruct.fileMoleculeCells,dbmStruct.kymoCells] = hpfl_extract(sets);
 
@@ -127,6 +139,10 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
 
     function re_run_filtering(src, event)
+        
+        % first save settings
+        save_settings();
+        
         % only filter kymo's that have already been found.
         import Core.hpfl_extract;
         [dbmStruct.fileCells, dbmStruct.fileMoleculeCells,dbmStruct.kymoCells] = hpfl_extract(sets,dbmStruct.fileCells);
@@ -188,9 +204,13 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 %         import OldDBM.General.Export.export_raw_kymos;
     %             if nargin < 2
 
-        defaultOutputDirpath = dbmOSW.get_default_export_dirpath('raw_kymo');
-        outputDirpath = uigetdir(defaultOutputDirpath, 'Select Directory to Save Raw Kymo Files');
-
+    	if sets.choose_output_folder
+            defaultOutputDirpath = dbmOSW.get_default_export_dirpath('raw_kymo');
+            outputDirpath = uigetdir(defaultOutputDirpath, 'Select Directory to Save Raw Kymo Files');
+        else
+            outputDirpath = sets.outputDirpath;
+        end
+        
         cellfun(@(rawKymo, outputKymoFilepath)...
         imwrite(uint16(rawKymo), fullfile(outputDirpath,outputKymoFilepath), 'tif'),...
         dbmStruct.kymoCells.rawKymos, dbmStruct.kymoCells.rawKymoName);
@@ -293,6 +313,59 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 %         export_dbm_session_struct_mat(dbmODW, dbmOSW, defaultOutputDirpath);  
     end
 
+
+    function load_kymo_data(src,event)
+        
+%         defaultSessionDirpath = dbmOSW.get_default_import_dirpath('session');
+% 
+        import OldDBM.General.Import.import_raw_kymos;
+        [dbmStruct.kymoCells.rawKymos, dbmStruct.kymoCells.rawKymoName,...
+            dbmStruct.kymoCells.rawBitmask,dbmStruct.kymoCells.enhanced]  = import_raw_kymos();
+
+        
+        display_raw_kymographs()
+%         if isempty(sessionFilepath)
+%             return;
+%         end
+% 
+%        
+% %         dbmODW = load(sessionFilepath);
+%         
+%         sets = dbmODW.DBMSettingsstruct;
+%         dbmStruct = dbmODW.DBMMainstruct;
+
+        show_home();
+        
+        
+%                import Core.hpfl_extract;
+%         [dbmStruct.fileCells, dbmStruct.fileMoleculeCells,dbmStruct.kymoCells] = hpfl_extract(sets);
+
+
+%         import OldDBM.General.Import.try_loading_from_session_file;
+%         dbmODW2 = try_loading_from_session_file(sessionFilepath);
+        
+%                 dbmODW.DBMMainstruct = dbmStruct;
+%         dbmOSW.DBMSettingsstruct = sets;
+
+%         dbmODW.update_data(dbmODW2);
+% 
+%         import OldDBM.General.SettingsWrapper;
+%         dbmOSW2 = SettingsWrapper.import_dbm_settings_from_session_path(sessionFilepath);
+%         dbmOSW.update_settings(dbmOSW2);
+% 
+%         on_update_home_screen(dbmODW, tsDBM);
+
+        
+%         import OldDBM.General.Export.export_dbm_session_struct_mat;
+%         %             if nargin < 2
+%         defaultOutputDirpath = dbmOSW.get_default_export_dirpath('session');
+%         %             end
+%         dbmODW.DBMMainstruct = dbmStruct;
+%         dbmOSW.DBMSettingsstruct = sets;
+%         export_dbm_session_struct_mat(dbmODW, dbmOSW, defaultOutputDirpath);  
+    end
+
+
     function display_raw_kymographs(src, event)
     % 1: verify information score & length, etc. threshold
     
@@ -368,8 +441,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
         if  ~isfield(dbmStruct.kymoCells,'barcodes')
             for ix=1:numK
-                dbmStruct.kymoCells.barcodes{ix} = nanmean(dbmStruct.kymoCells.alignedKymos{ix});
-                dbmStruct.kymoCells.barcodesStd{ix} = nanstd(dbmStruct.kymoCells.alignedKymos{ix});
+                dbmStruct.kymoCells.barcodes{ix} = nanmean(dbmStruct.kymoCells.alignedKymos{ix},1);
+                dbmStruct.kymoCells.barcodesStd{ix} = nanstd(dbmStruct.kymoCells.alignedKymos{ix},1,1);
                 dbmStruct.kymoCells.numsKymoFrames(ix) = size(dbmStruct.kymoCells.alignedKymos{ix},1);
                 bitmask = ~isnan(dbmStruct.kymoCells.alignedKymos{ix});
                 dbmStruct.kymoCells.fgStartIdxs{ix} = arrayfun(@(x) find(bitmask(x,:),1,'first'),1:size(bitmask,1));
@@ -481,7 +554,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         function [sets,tsHCC,textList,textListT,itemsList,...
                hHomeScreen, hPanelRawKymos,hPanelAlignedKymos,hPanelTimeAverages,hAdditional] = generate_gui()
       
-            hFig = figure('Name', 'DNA Barcode Matchmaker', ...
+            hFig = figure('Name', 'DNA Barcode Matchmaker v0.6.6', ...% get from VERSION file
                 'Units', 'normalized', ...
                 'OuterPosition', [0.05 0.1 0.8 0.8], ...
                 'NumberTitle', 'off',... 
@@ -489,15 +562,17 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
                 'ToolBar', 'none' ...
             );
             m = uimenu('Text','DBM');
-            cells1 = {'Import','Export','Kymographs','Statistics','Convert czi to tif'};
+            cells1 = {'Import','Export','Kymographs','Statistics','Convert czi to tif','Pipelines'};
             mSub = cellfun(@(x) uimenu(m,'Text',x),cells1,'un',false);
             mSub{5}.MenuSelectedFcn = @SelectedConvertToTif;
 
 
             cellsImport = {'Load Session Data','Convert czi to tif','Load Movie(s) (tif format)','Load Raw Kymograph(s)'};
+
             cellsExport = {'Save Session Data','Raw kymographs','Aligned Kymographs','Time Averages'};
             cellsKymographs = {'Display Raw kymographs','Display Aligned Kymographs','Plot Time Averages','Display lambdas','Filter molecules'};
             cellsStatistics = {'Calculate molecule lengths and intensities','Calculate Raw Kymos Center of Mass'};
+            cellsPipelines = {'Genome assembly','Lambda lengths'};
 
             mSubImport = cellfun(@(x) uimenu(mSub{1},'Text',x),cellsImport,'un',false);
             mSubExport = cellfun(@(x) uimenu(mSub{2},'Text',x),cellsExport,'un',false);
@@ -508,6 +583,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             mSubImport{2}.MenuSelectedFcn = @SelectedConvertToTif;
             mSubImport{3}.Accelerator = 'L';
             mSubImport{3}.MenuSelectedFcn = @SelectedImportTif;
+            mSubImport{4}.MenuSelectedFcn = @load_kymo_data;
 
             mSubExport{1}.MenuSelectedFcn = @save_session_data;
             mSubExport{2}.MenuSelectedFcn = @export_raw_kymos;
@@ -523,6 +599,14 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
             mSubStatistics{1}.MenuSelectedFcn = @calculate_lengths;
             mSubStatistics{2}.MenuSelectedFcn = @calculate_com;
+
+            mSubPipelines = cellfun(@(x) uimenu(mSub{6},'Text',x),cellsPipelines,'un',false);
+            mSubPipelines{1}.MenuSelectedFcn = @genome_assembly_pipeline;
+            set( mSubPipelines{1}, 'Enable', 'off');
+            set( mSubPipelines{2}, 'Enable', 'off');
+
+            
+%             mSubPipelines = cellfun(@(x) uimenu(mSub{4},'Text',x),cellsStatistics,'un',false);
 
             %
             hPanel = uipanel('Parent', hFig);
@@ -543,17 +627,17 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
                 % Put the loaded settings into the GUI.
                     % make into loop
-            checkItems =  {'Molecule angle validation','Single frame molecule detection','Denoise (Experimental)','Detect lambdas'};
+            checkItems =  {'Molecule angle calculation (skip if angle is known)','Single frame molecule detection','Denoise (Experimental)','Detect lambdas'};
             checkValues = [sets.moleculeAngleValidation  sets.timeframes  sets.denoise, sets.detectlambdas ] ;
            % checkbox for things to plot and threshold
             for i=1:length(checkItems)
                 itemsList{i} = uicontrol('Parent', hPanelImport, 'Style', 'checkbox','Value',checkValues(i),'String',{checkItems{i}},'Units', 'normal', 'Position', [0.45 .83-0.05*i 0.3 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
             end
-
+            set(itemsList{2}, 'Enable', 'off');
 
             % parameters with initial values
            textItems =  {'averagingWindowWidth (px)','nmPerPixel (nm/px)','rowSidePadding (unused)','parForNoise','distbetweenChannels','numFrames',...
-               'Max number frames','timeframes (unused)','stdDifPos','numPts','minLen'};
+               'Max number frames (0-all)','timeframes (unused)','stdDifPos','numPts','minLen'};
            values =  {num2str(sets.averagingWindowWidth),num2str(sets.nmPerPixel),num2str(sets.rowSidePadding),num2str(sets.parForNoise),...
                num2str(sets.distbetweenChannels),num2str(sets.numFrames),...
                num2str(sets.max_number_of_frames),num2str(sets.timeframes),num2str(sets.stdDifPos), num2str(sets.numPts),num2str(sets.minLen)};
@@ -562,6 +646,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
                 positionsText{i} =   [0.2-0.2*mod(i,2) .88-0.1*ceil(i/2) 0.2 0.03];
                 positionsBox{i} =   [0.2-0.2*mod(i,2) .83-0.1*ceil(i/2) 0.15 0.05];
             end
+
         %     
         %     for i=7:11 % these will be in two columns
         %         positionsText{i} =   [0.2*(i-7) .45 0.15 0.03];
@@ -572,6 +657,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
                 textListT{i} = uicontrol('Parent', hPanelImport, 'Style', 'text','String',{textItems{i}},'Units', 'normal', 'Position', positionsText{i},'HorizontalAlignment','Left');%, 'Max', Inf, 'Min', 0);  [left bottom width height]
                 textList{i} = uicontrol('Parent', hPanelImport, 'Style', 'edit','String',{values{i}},'Units', 'normal', 'Position', positionsBox{i});%, 'Max', Inf, 'Min', 0);  [left bottom width height]
             end
+            set(textList{8}, 'Enable', 'off');
+            set(textList{6}, 'Enable', 'off');
 
 
             runButton = uicontrol('Parent', hPanelImport, 'Style', 'pushbutton','String',{'Save settings'},'Callback',@save_settings,'Units', 'normal', 'Position', [0.7 0.4 0.2 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
@@ -746,6 +833,21 @@ function [] = run_calculate_lengths(skipDoubleTanhAdjustmentTF, shouldSaveTF, se
 % %     fprintf('Finished saving png files.\n');
 
 end
+
+
+
+function genome_assembly_pipeline(src, event)
+    % from czi/tifs to kymos/barcodes
+%     save_settings(); % first save settigns
+
+    import Core.hpfl_extract;
+    [dbmStruct.fileCells, dbmStruct.fileMoleculeCells,dbmStruct.kymoCells] = hpfl_extract(sets);
+    export_raw_kymos();
+    save_session_data();
+%     save('kymoCellsOut.mat','kymoCellsOut')
+
+end
+
 end
 
 
@@ -779,4 +881,3 @@ function [] = calculate_com(src, event)
 
 
 end
-

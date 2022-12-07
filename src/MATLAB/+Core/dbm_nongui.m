@@ -13,7 +13,7 @@ dbmOSW.DBMSettingsstruct.askForDBMtoolSettings = 0;
 
 dbmOSW.DBMSettingsstruct.movies.askForMovies = 0;
 
-dbmOSW.DBMSettingsstruct.detectlambdas = 1;
+dbmOSW.DBMSettingsstruct.detectlambdas = 0;
 dbmOSW.DBMSettingsstruct.initialAngle = 0;
 dbmOSW.DBMSettingsstruct.maxLambdaLen = inf;
 
@@ -48,7 +48,7 @@ dbmOSW.DBMSettingsstruct.movies.movieNames = filesC;
 dna_barcode_matchmaker(0,dbmOSW);
  
 %% czi to tif
-% data = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDrive_1_11-17-2022\czi file\*.czi');
-% 
+% data = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\Yeast_Luis_processed\220318\czi\*.czi');
+% % 
 % DBM4.convert_czi_to_tif(data,0);
- 
+%  

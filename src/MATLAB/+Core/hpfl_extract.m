@@ -28,6 +28,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     end
     
     fileMoleculeCells = cell(numFiles, 1);
+    fileStruct = struct();
 
     % params: should be in settings file
     numPts = sets.numPts; % minimum length of barcode
@@ -112,21 +113,31 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 %         [movieAngle, CC, allAngles] = get_angle(channelImg,numFrames,sets.maxMinorAxis, sets.tubeSize);
         % if angle not detected, skip
         
+%         import DBM4.lambda_estimation;
+%         %         if sets.estBg
+%         tic
+%         [EX,STD] = lambda_estimation(channelImg{1}{1});
+%         toc
+            %         end
+
+        
         
         maxCol = [];
+
+        movieAngle = sets.initialAngle;        
 
         if sets.moleculeAngleValidation
             
             % 
-            movieAngle = sets.initialAngle;        
 
-            % check1: angle closer to 90 or to 0
+            % check1: angle closer to 90 or to 0 // can get this from info
+            % file?
             thet = [max(nanmean(meanMovieFrame')) max(nanmean(meanMovieFrame))];
 %             [H, theta, rho] = hough(meanMovieFrame,'Theta',[-90 0],'RhoResolution',0.01);
 %             vals = max(H);
             [int,pos] = max(thet) ;
             if pos==2
-                movieAngle = movieAngle + 90;
+                movieAngle = 90;
             end
             
             % TEST ANGLE DETECTION
@@ -413,7 +424,11 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             minInt = min(sampIm(:));
             medInt = median(sampIm(:));
 %             maxInt = max(sampIm(:));
+            try
             J = imadjust(sampIm,[minInt 4*medInt]);
+            catch
+                J =  imadjust(sampIm,[0.1 0.9]);
+            end
             kymoCells.enhanced{end+1} = J;
 
             kymoCells.kymosMoleculeLeftEdgeIdxs{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymosMoleculeLeftEdgeIdxs;
@@ -429,6 +444,8 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     end
 
     
+    assignin('base','fileStructOut',fileStruct);
+    assignin('base','kymoCellsOut',kymoCells);
 
 end
 
