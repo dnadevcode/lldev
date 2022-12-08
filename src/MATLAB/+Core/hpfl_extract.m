@@ -138,6 +138,8 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             [int,pos] = max(thet) ;
             if pos==2
                 movieAngle = 90;
+            else
+                movieAngle = 0;
             end
             
             % TEST ANGLE DETECTION
