@@ -1485,7 +1485,7 @@ function posY = find_positions_in_nanochannel(noiseKymos,kymos,posYcenter,sz, bg
 %     threshval = mean(cellfun(@(x) nanmean(x(:)), noiseKymos{1}));%+ 3*nanstd(noiseKymos{1}{1}(:));
 %     threshstd = mean(cellfun(@(x) nanstd(x(:)), noiseKymos{1}));%+ 3*nanstd(noiseKymos{1}{1}(:));
 
-    threshval = nanmean(cellfun(@(x) nanmean(medfilt2(x,filterS,'symmetric'),[1 2]), noiseKymos{1}));%+ 3*nanstd(noiseKymos{1}{1}(:));
+    threshval = max(0,nanmean(cellfun(@(x) nanmean(medfilt2(x,filterS,'symmetric'),[1 2]), noiseKymos{1})));%+ 3*nanstd(noiseKymos{1}{1}(:));
     threshstd = nanmean(cellfun(@(x) nanstd(medfilt2(x,filterS,'symmetric'),0, [1 2]), noiseKymos{1}));%+ 3*nanstd(noiseKymos{1}{1}(:));
 
 % medfilt2(kymos{1}{i},filterS,'symmetric')
@@ -1495,7 +1495,7 @@ function posY = find_positions_in_nanochannel(noiseKymos,kymos,posYcenter,sz, bg
     for i=1:length(kymos{1})
         kymos{1}{i}(isnan(kymos{1}{i}))=0;
         K = medfilt2(kymos{1}{i},filterS,'symmetric') > threshval+bgSigma*threshstd;
-%         figure,imagesc(K)
+        figure,imagesc(K)
 
         [labeledImage, numBlobs] = bwlabel(K);
          
