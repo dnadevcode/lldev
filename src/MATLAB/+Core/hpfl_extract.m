@@ -1495,7 +1495,7 @@ function posY = find_positions_in_nanochannel(noiseKymos,kymos,posYcenter,sz, bg
     for i=1:length(kymos{1})
         kymos{1}{i}(isnan(kymos{1}{i}))=0;
         K = medfilt2(kymos{1}{i},filterS,'symmetric') > threshval+bgSigma*threshstd;
-        figure,imagesc(K)
+%         figure,imagesc(K)
 
         [labeledImage, numBlobs] = bwlabel(K);
          
