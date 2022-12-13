@@ -1,8 +1,19 @@
 function [refSeqsFailedImport] = import_fastas(plasmidFastaDirpath, maxNumImports)
+
+    % Get default settings path
+    import OldDBM.General.SettingsWrapper;
+    defaultSettingsFilepath = SettingsWrapper.get_default_DBM_ini_filepath();
+    if not(exist(defaultSettingsFilepath, 'file'))
+    defaultSettingsFilepath = '';
+    end
+    dbmOSW = SettingsWrapper.import_dbm_settings_from_ini(defaultSettingsFilepath);
+        
+    defaultOutputDirpath = dbmOSW.get_default_export_dirpath('plasmids');
+
     import NCBI.try_prompt_plasmid_fastas_dirpath;
     refSeqsFailedImport = [];
     if (nargin < 1) || isempty(plasmidFastaDirpath)
-        [aborted, plasmidFastaDirpath] = try_prompt_plasmid_fastas_dirpath();
+        [aborted, plasmidFastaDirpath] = try_prompt_plasmid_fastas_dirpath(defaultOutputDirpath);
     else
         aborted = false;
     end

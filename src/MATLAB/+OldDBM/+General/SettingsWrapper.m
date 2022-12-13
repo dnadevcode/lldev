@@ -42,6 +42,8 @@ classdef SettingsWrapper < handle
                      outputDirpath = dbmOSW.DBMSettingsstruct.dirs.analyses;
                 case 'raw_kymo_stats'
                      outputDirpath = dbmOSW.DBMSettingsstruct.dirs.stats;
+                case 'plasmids'
+                     outputDirpath = dbmOSW.DBMSettingsstruct.dirs.plasmids;
                 otherwise
                     import Fancy.AppMgr.AppResourceMgr;
                     appRsrcMgr = AppResourceMgr.get_instance();
@@ -76,7 +78,8 @@ classdef SettingsWrapper < handle
             defaultSettingsDBM.dirs.fileInfo = 'FileInfo';
             defaultSettingsDBM.dirs.consensus = 'Consensus';
             defaultSettingsDBM.dirs.stats = 'Stats';
-            
+            defaultSettingsDBM.dirs.plasmids = 'Plasmids';
+
             
             
             
@@ -212,8 +215,8 @@ classdef SettingsWrapper < handle
             import Fancy.IO.mkdirp;
             mkdirp(fileParamsDBM.dirs.outputs)
 
-            outputDirTypes = {'sessions', 'rawKymos','pngs','rawChannels', 'alignedKymos', 'analyses', 'fileInfo', 'consensus', 'stats'};
-            defaultDefaultOutputDirs = {'Sessions', 'RawKymos','PNG','RawChannels', 'AlignedKymos', 'Analyses', 'FileInfo', 'Consensus', 'Stats'};
+            outputDirTypes = {'sessions', 'rawKymos','pngs','rawChannels', 'alignedKymos', 'analyses', 'fileInfo', 'consensus', 'stats','plasmids'};
+            defaultDefaultOutputDirs = {'Sessions', 'RawKymos','PNG','RawChannels', 'AlignedKymos', 'Analyses', 'FileInfo', 'Consensus', 'Stats','Plasmids'};
 
             for sectionFieldNameIdx=1:length(outputDirTypes)
                 outputDirType = outputDirTypes{sectionFieldNameIdx};
