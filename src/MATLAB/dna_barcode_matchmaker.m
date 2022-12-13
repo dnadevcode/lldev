@@ -843,7 +843,37 @@ function genome_assembly_pipeline(src, event)
     import Core.hpfl_extract;
     [dbmStruct.fileCells, dbmStruct.fileMoleculeCells,dbmStruct.kymoCells] = hpfl_extract(sets);
     export_raw_kymos();
+    
+    import OptMap.KymoAlignment.NRAlign.nralign;
+    %             import DBM4.kymograph_align;
+    numK = length(dbmStruct.kymoCells.rawKymos);
+    numP = ceil(sqrt(numK));
+    for ix=1:numK
+            fprintf('Aligning kymograph for file molecule #%d of #%d ...\n', ix, numK);
+            [alignedKymo, stretchFactorsMat, shiftAlignedKymo] = nralign(dbmStruct.kymoCells.rawKymos{ix},false,dbmStruct.kymoCells.rawBitmask{ix});
+
+%                     [alignedKymo, stretchFactorsMat, shiftAlignedKymo] = kymograph_align(dbmStruct.kymoCells.rawKymos{ix},false,dbmStruct.kymoCells.rawBitmask{ix});
+            dbmStruct.kymoCells.alignedKymos{ix} = alignedKymo;
+            dbmStruct.kymoCells.alignedBitmasks{ix} = ~isnan(alignedKymo);
+            dbmStruct.kymoCells.stretchFactorsMat{ix} = stretchFactorsMat;
+            dbmStruct.kymoCells.shiftAlignedKymo{ix} = shiftAlignedKymo;     
+            dbmStruct.kymoCells.alignedNames{ix} =  strrep(dbmStruct.kymoCells.rawKymoName{ix},'_kymograph','_alignedkymograph');
+            dbmStruct.kymoCells.alignedNamesBitmask{ix} =  strrep(dbmStruct.kymoCells.rawBitmaskName{ix},'_bitmask','_alignedbitmask');
+
+    end 
+    for ix=1:numK
+        dbmStruct.kymoCells.barcodes{ix} = nanmean(dbmStruct.kymoCells.alignedKymos{ix},1);
+        dbmStruct.kymoCells.barcodesStd{ix} = nanstd(dbmStruct.kymoCells.alignedKymos{ix},1,1);
+        dbmStruct.kymoCells.numsKymoFrames(ix) = size(dbmStruct.kymoCells.alignedKymos{ix},1);
+        bitmask = ~isnan(dbmStruct.kymoCells.alignedKymos{ix});
+        dbmStruct.kymoCells.fgStartIdxs{ix} = arrayfun(@(x) find(bitmask(x,:),1,'first'),1:size(bitmask,1));
+        dbmStruct.kymoCells.fgEndIdxs{ix} = arrayfun(@(x) find(bitmask(x,:),1,'last'),1:size(bitmask,1));
+        dbmStruct.kymoCells.fgStartIdxsMean(ix) = round(mean( dbmStruct.kymoCells.fgStartIdxs{ix}));
+        dbmStruct.kymoCells.fgEndIdxsMean(ix) = round(mean(  dbmStruct.kymoCells.fgEndIdxs{ix}));
+    end
     save_session_data();
+%     assignin('base','fileStructOut',fileStruct);
+    assignin('base','dbmStruct',dbmStruct);
 %     save('kymoCellsOut.mat','kymoCellsOut')
 
 end
