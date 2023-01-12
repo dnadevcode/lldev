@@ -301,7 +301,10 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         else
             poss = {};
         end
-        rowEdgeIdxs = vertcat(poss{:})+posYcoord(:,1)-1;
+        rowEdgeIdxs = vertcat(poss{:});
+        try
+           rowEdgeIdxs = rowEdgeIdxs+ posYcoord(:,1)-1;
+        end
         posXUpd2 = num2cell(posXUpd(find(idxOut)));
         colCenterIdxs = vertcat(posXUpd2{:});
     

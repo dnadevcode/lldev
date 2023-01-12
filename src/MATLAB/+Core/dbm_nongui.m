@@ -31,13 +31,13 @@ dbmOSW.DBMSettingsstruct.auto_run = 1;
 % files = dir('C:\Users\Lenovo\postdoc\DATA\LUISDATAMOV\test\*.tif');
 % files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\testlong\*.tif');
 files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDrive_1_11-17-2022\Movies\*.tif');
-% files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDrive_1_11-17-2022\lambda\*.tif');
+files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDrive_1_11-17-2022\lambda\*.tif');
 % files  =dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\lambda\20220610_32087-4-st1_e.coli_filter-2_lambda-1.tif');
-files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\*.tif');
+% files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\*.tif');
 % files=dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\lambda\*.tif');
 
 filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:length(files),'un',false);
-filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),19,'un',false);
+% filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),4,'un',false);
 
 dbmOSW.DBMSettingsstruct.movies.movieNames = filesC;
 % dbmOSW.DBMSettingsstruct.movies.movieNames = {filesC{1:3}};
