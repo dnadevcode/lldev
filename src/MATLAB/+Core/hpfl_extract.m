@@ -65,6 +65,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 %             minLen = fileCells{idx}.preCells.minLen;
 %             stdDifPos = fileCells{idx}.preCells.stdDifPos;
             name =  fileCells{idx}.preCells.name;
+            posYcoord =  fileCells{idx}.preCells.posYcoord;
             meanRotatedMovieFrame =  fileCells{idx}.preCells.meanRotatedMovieFrame;
             maxCol = fileCells{idx}.preCells.maxCol;
         else
@@ -105,110 +106,12 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         disp(strcat(['Image loaded in ' num2str(toc) ' seconds']));
         
         meanMovieFrame = mean(cat(3, channelImg{1}{:}), 3, 'omitnan');
+        [rotImg, rotMask, movieAngle,maxCol] = image_rotation(channelImg, meanMovieFrame, sets);
         
-        % angle calculated from meanMovieframe or numFrames
-
-        % movie angle
-%         if sets.detectAngle
-%         [movieAngle, CC, allAngles] = get_angle(channelImg,numFrames,sets.maxMinorAxis, sets.tubeSize);
-        % if angle not detected, skip
-        
-%         import DBM4.lambda_estimation;
-%         %         if sets.estBg
-%         tic
-%         [EX,STD] = lambda_estimation(channelImg{1}{1});
-%         toc
-            %         end
-
-        
-        
-        maxCol = [];
-
-        movieAngle = sets.initialAngle;        
-
-        if sets.moleculeAngleValidation
-            
-            % 
-
-            % check1: angle closer to 90 or to 0 // can get this from info
-            % file?
-            thet = [max(nanmean(meanMovieFrame')) max(nanmean(meanMovieFrame))];
-%             [H, theta, rho] = hough(meanMovieFrame,'Theta',[-90 0],'RhoResolution',0.01);
-%             vals = max(H);
-            [int,pos] = max(thet) ;
-            if pos==2
-                movieAngle = 90;
-            else
-                movieAngle = 0;
-            end
-            
-            % TEST ANGLE DETECTION
-            pos = movieAngle+[-sets.minAngle:sets.angleStep:sets.minAngle];
-            
-%             tic
-                
-            method = 'bilinear'; %bicubic
-            resSize = 1; % put to settings
-            sz = size(meanMovieFrame);
-            % resize images to bigger
-            %     tic
-            resizedImg = imresize(meanMovieFrame,  [resSize*sz(1) resSize*sz(2)], method);
-            
-%             tic
-            maxCol = arrayfun(@(x)  max(nanmean(imrotate(resizedImg, -(90+x), method))),pos);
-%             toc
-            [a,b] = max(maxCol);
-%             pos(b)
-
-% %             tic
-% %             maxCol = zeros(1,length(pos));
-% %             
-% %             
-% %             for j=1:length(pos)
-% %                 rotImg = imrotate(resizedImg, -(90+pos(j)), method);
-% %                 maxCol(j) = max(nanmean(rotImg));
-% %             end
-% %             toc
-%             
-%             % maybe not needed?
-%             %             [movieAngle, CC, allAngles] = get_angle({{meanMovieFrame}},1,sets.maxMinorAxis, sets.tubeSize);
-% 
-% %             pos(pos>89) =   pos(pos>89)-180;
-%             % Find the Hough information about the lines
-%             pos = -2:0.01:2;
-%             for j=pos
-% %                 j
-%                 % quicker rotation?
-%                 [rotImgT, ~] = rotate_images({{meanMovieFrame}}, movieAngle+j);
-%     %             meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
-%                 maxCol = [maxCol max(nanmean(rotImgT{1}{1}))];
-%             end
-% 
-% %             tic
-% %             [H, theta, rho] = hough(meanMovieFrame,'Theta',pos,'RhoResolution',0.01);
-% %             toc
-%             maxCol = max(H);
-%             [a,b] = max(maxCol);
-% %             pos(b)
-% %             
-%             for j=pos
-% %                 j
-%                 % quicker rotation?
-%                 [rotImgT, ~] = rotate_images({{meanMovieFrame}}, movieAngle+j);
-%     %             meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
-%                 maxCol = [maxCol max(nanmean(rotImgT{1}{1}))];
-%             end
-%             [a,b] = max(maxCol);
-            movieAngle =  pos(b);
-            
-%             BW = edge(meanMovieFrame,'canny');
-
-        end
-        
-        
-        tic
-        [rotImg, rotMask] = rotate_images(channelImg, movieAngle);
         disp(strcat(['Rotation done in ' num2str(toc) ' seconds']));
+
+        
+        
         meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
         
 %         visual_mean(rotImg{1}{1}) % visualize channel vs mean
@@ -249,22 +152,52 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 %         sets.detectlambdas = 1;
         if sets.detectlambdas
 %             [posX,posYcenter,posMax] = find_short_molecules(rotImg{1}{1},sets );
+            tic
+            [posX, posYcoord, posMax] = find_short_molecules(meanRotatedDenoisedMovieFrame,sets );
+            disp(strcat(['Molecules found in ' num2str(toc) ' seconds']));
+            % extract kymos at posX and posY
+%             tic
+%             [kymos, wideKymos, kmChanginW, kmChangingPos] = create_molecule_kymos_lambda(rotImg,posX, posY,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+%             disp(strcat(['Kymo extraction done in ' num2str(toc) ' seconds']));
+
+            tic
+            [kymos,wideKymos] = create_molecule_kymos_lambda(rotImg,posX, posYcoord,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+            disp(strcat(['Kymo extraction done in ' num2str(toc) ' seconds']));
+
+            % an approach to edge detection
+            import OptMap.MoleculeDetection.EdgeDetection.median_filt;
+            [bitmask, positions, mat] = median_filt(kymos{1}, [5 15]);
             
-            [posX,posYcenter,posMax] = find_short_molecules(meanRotatedDenoisedMovieFrame,sets );
-            posYcenter = []; % TODO: activate posYcenter if multi-mol extraction is fixed
+            posXUpd = posX;
+
+            posY = cell(1,length(bitmask));
+            for i=1:length(bitmask)
+                posY{i}.leftEdgeIdxs = arrayfun(@(x) find(bitmask{i}(x,:) >0,1,'first'),1:size(bitmask{i},1));
+                posY{i}.rightEdgeIdxs = arrayfun(@(x) find(bitmask{i}(x,:) >0,1,'last'),1:size(bitmask{i},1)); 
+            end
+%             ix = 16;
+%             figure,tiledlayout(2,1)
+%             nexttile
+%             imagesc(bitmask{ix})
+%             nexttile
+%             imagesc(kymos{1}{ix})
+
+
+%             posYcenter = []; % TODO: activate posYcenter if multi-mol extraction is fixed
 %             plot_result(channelImg,rotImg,rotImg,round(posX),posMax)
             % later one needs to check if same Y does not lead to dublicate
             % molecules
         else
             [posX,posMax] = find_mols_corr(rotImg, bgTrend, numPts, channelForDist, centralTend, farAwayShift, distbetweenChannels,timeframes );
-            posYcenter = [];
-        end
+%             posYcenter = [];
+        
         % find mol positions/ 
         
 
     
       % background channels
-        extPos = [sort(posX) size(rotImg{1}{1},2)];
+      lastPos = find(sum(rotImg{1}{1}~=0),1,'last');
+      extPos = [sort(posX) lastPos];
         diffPeaks =  round(extPos(find(diff([1 extPos]) >= parForNoise))-parForNoise/2);
 
         meanVal = 0;
@@ -272,11 +205,11 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         % remove rows that don't have enough signal pixels
         numElts = find(sum(rotImg{1}{1}(:,posX)  > meanVal+3*stdVal) > numPts);
         posXUpd = posX(numElts);
-        if ~isempty(posYcenter)
-            posYcenter = posYcenter(numElts,:);
-        end
+%         if ~isempty(posYcenter)
+%             posYcenter = posYcenter(numElts,:);
+%         end
 
-        numEltsBg = find(sum(rotImg{1}{1}(:,diffPeaks)  > meanVal+3*stdVal) < numPts);
+        numEltsBg = find(sum(rotImg{1}{1}(:,diffPeaks)  > meanVal+4*stdVal) < numPts);
         diffPeaksBg = diffPeaks(numEltsBg);
        
 %     plot_result(channelImg,rotImg,rotImg,posXUpd,posMax)
@@ -284,7 +217,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     % todo: check which is best for SNR/
     tic
     % import AB.create_channel_kymos_one;                                 % for this only one frame in IRIS../bionano would have several
-    [kymos, wideKymos, kmChanginW, kmChangingPos] = create_channel_kymos_one(posXUpd,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+    [kymos, wideKymos, kmChanginW, kmChangingPos] = create_channel_kymos_one(posXUpd,rotImg,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
    % means - max should be center
 %     figure,plot(cellfun(@(x) nanmean(x,[1 2]), kmChangingPos{1}{1}))
     
@@ -309,34 +242,43 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 %     end
     % 
     % what if we can't extract noise kymos?
-    [noiseKymos,noisewideKymos] = create_channel_kymos_one(diffPeaksBg,firstIdx,channels,movieAngle, name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+    [noiseKymos,noisewideKymos] = create_channel_kymos_one(diffPeaksBg,rotImg,firstIdx,channels,movieAngle, name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
     % 
     sz = size(meanRotatedDenoisedMovieFrame);
     try
-        posY = find_positions_in_nanochannel(noiseKymos,kymos,posYcenter,sz );
+        posY = find_positions_in_nanochannel(noiseKymos,kymos,[],sz );
+        posYcoord = ones(length(posY),2);
     catch
         posY = [];
+        posYcoord =[];
+    end
+    
     end
 %     posY = find_positions_in_nanochannel(noisewideKymos,wideKymos );
 
 %     wideKymos
 
-        end
+    end
     %% re-saving of these structures based on "nicity" i.e. by filtering could be re-done from here
     preCells.kymos = kymos;
     preCells.wideKymos = wideKymos;
     preCells.posXUpd = posXUpd;
     preCells.posY = posY;
+    preCells.posYcoord = posYcoord;
     preCells.channelForDist = channelForDist;
     preCells.minLen = minLen;
     preCells.stdDifPos = stdDifPos;
     preCells.name = name;
     preCells.meanRotatedMovieFrame = meanRotatedMovieFrame;
     preCells.maxCol = maxCol;
-    % now final step is to extract "nice" kymographs
-    [kymo, kymoW, kymoNames,Length,~,kymoOrig,idxOut] = extract_from_channels(kymos,wideKymos, posXUpd, posY, channelForDist, minLen, stdDifPos);
     
-     posY = posY(find(idxOut));
+    % now final step is to extract "nice" kymographs
+%     if sets.detectlambdas
+%     else         
+        [kymo, kymoW, kymoNames, Length,~, kymoOrig, idxOut] = extract_from_channels(kymos,wideKymos, posXUpd, posY, channelForDist, minLen, stdDifPos);
+%     end
+	posY = posY(find(idxOut));
+    posYcoord = posYcoord((find(idxOut)),:);
     numMoleculesDetected=length(kymo);
     moleculeStructs = cell(1,numMoleculesDetected);
 
@@ -359,8 +301,8 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         else
             poss = {};
         end
-        rowEdgeIdxs = vertcat(poss{:});
-        posXUpd2=num2cell(posXUpd(find(idxOut)));
+        rowEdgeIdxs = vertcat(poss{:})+posYcoord(:,1)-1;
+        posXUpd2 = num2cell(posXUpd(find(idxOut)));
         colCenterIdxs = vertcat(posXUpd2{:});
     
         fileStruct = struct();
@@ -485,6 +427,114 @@ end
 % 
 % end
 %     
+
+function [rotImg, rotMask,movieAngle,maxCol] = image_rotation(channelImg, meanMovieFrame, sets)
+       % angle calculated from meanMovieframe or numFrames
+
+        % movie angle
+%         if sets.detectAngle
+%         [movieAngle, CC, allAngles] = get_angle(channelImg,numFrames,sets.maxMinorAxis, sets.tubeSize);
+        % if angle not detected, skip
+        
+%         import DBM4.lambda_estimation;
+%         %         if sets.estBg
+%         tic
+%         [EX,STD] = lambda_estimation(channelImg{1}{1});
+%         toc
+            %         end
+        resSizeAll = sets.resSizeAll;
+        
+        
+        maxCol = [];
+
+        movieAngle = sets.initialAngle;        
+
+        if sets.moleculeAngleValidation
+            
+            % 
+
+            % check1: angle closer to 90 or to 0 // can get this from info
+            % file?
+            thet = [max(nanmean(meanMovieFrame')) max(nanmean(meanMovieFrame))];
+%             [H, theta, rho] = hough(meanMovieFrame,'Theta',[-90 0],'RhoResolution',0.01);
+%             vals = max(H);
+            [int,pos] = max(thet) ;
+            if pos==2
+                movieAngle = 90;
+            else
+                movieAngle = 0;
+            end
+            
+            % TEST ANGLE DETECTION
+            pos = movieAngle+[-sets.minAngle:sets.angleStep:sets.minAngle];
+            
+%             tic
+                
+            method = 'bilinear'; %bicubic
+            resSize = 1; % put to settings
+            sz = size(meanMovieFrame);
+            % resize images to bigger
+            %     tic
+            resizedImg = imresize(meanMovieFrame,  [resSize*sz(1) resSize*sz(2)], method);
+            
+%             tic
+            maxCol = arrayfun(@(x)  max(nanmean(imrotate(resizedImg, -(90+x), method))),pos);
+%             toc
+            [a,b] = max(maxCol);
+%             pos(b)
+
+% %             tic
+% %             maxCol = zeros(1,length(pos));
+% %             
+% %             
+% %             for j=1:length(pos)
+% %                 rotImg = imrotate(resizedImg, -(90+pos(j)), method);
+% %                 maxCol(j) = max(nanmean(rotImg));
+% %             end
+% %             toc
+%             
+%             % maybe not needed?
+%             %             [movieAngle, CC, allAngles] = get_angle({{meanMovieFrame}},1,sets.maxMinorAxis, sets.tubeSize);
+% 
+% %             pos(pos>89) =   pos(pos>89)-180;
+%             % Find the Hough information about the lines
+%             pos = -2:0.01:2;
+%             for j=pos
+% %                 j
+%                 % quicker rotation?
+%                 [rotImgT, ~] = rotate_images({{meanMovieFrame}}, movieAngle+j);
+%     %             meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
+%                 maxCol = [maxCol max(nanmean(rotImgT{1}{1}))];
+%             end
+% 
+% %             tic
+% %             [H, theta, rho] = hough(meanMovieFrame,'Theta',pos,'RhoResolution',0.01);
+% %             toc
+%             maxCol = max(H);
+%             [a,b] = max(maxCol);
+% %             pos(b)
+% %             
+%             for j=pos
+% %                 j
+%                 % quicker rotation?
+%                 [rotImgT, ~] = rotate_images({{meanMovieFrame}}, movieAngle+j);
+%     %             meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
+%                 maxCol = [maxCol max(nanmean(rotImgT{1}{1}))];
+%             end
+%             [a,b] = max(maxCol);
+            movieAngle =  pos(b);
+            
+%             BW = edge(meanMovieFrame,'canny');
+
+        end
+        
+        
+        tic
+        [rotImg, rotMask] = rotate_images(channelImg, movieAngle,resSizeAll);
+    
+
+
+end
     
 % function to load the first frame
 function [channelImg, imageData] = load_first_frame_iris(moleculeImgPath, max_number_of_frames,numFrames,channels)
@@ -700,7 +750,11 @@ function [allAngles,CC] = estimate_angle(img, maxMinorAxis,tubeSize)
 end
 
 % function to rotate images
-function [resizedImgRot,rotMask] = rotate_images(channelImg,movieAngle)
+function [resizedImgRot,rotMask] = rotate_images(channelImg,movieAngle,resSize)
+
+    if nargin < 3
+        resSize = 5;
+    end
     % rotate image. do proper interpolation
     sz = size(channelImg{1}{1});
 %     interpimg = imresize(channelImg{1}{1}{1}, [5*sz(1) 5*sz(2)], 'bilinear');
@@ -708,7 +762,6 @@ function [resizedImgRot,rotMask] = rotate_images(channelImg,movieAngle)
 %     rotimUpd = imresize(rotim,[max(sz) min(sz)]);% get proper size..
     
     method = 'bilinear'; %bicubic
-    resSize = 5;
     % resize images to bigger
 %     tic
     resizedImg = cellfun(@(y) cellfun(@(z) ...
@@ -1246,7 +1299,74 @@ function [st, stop] = local_window(posA,barcode,numPoints)
 end
 % 
 
-function [kymos, wideKymos,kymosDifferentwidth, kymosDifferentPos] = create_channel_kymos_one(peakpos, firstIdx,channels,movieAngle, name,max_number_of_frames,averagingWindowWidth,rotMask,bgSub,background)
+
+function [kymos, wideKymos,kymosDifferentwidth, kymosDifferentPos] = create_molecule_kymos_lambda(rotImg,posX, posY, firstIdx,channels,movieAngle, name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background)
+    % create_molecule_kymos_lambda - create kymos for each of the detected
+    % lambda molecules
+    % assumes images already loaded and rotated in rotImg
+    
+    %   Args:
+    
+    %   Returns:
+    
+    
+    if nargin < 2
+        averagingWindowWidth = 3;
+    end
+   
+    % for each peakpos, we create a kymo
+    kymos = cell(1,length(channels));
+    wideKymos = cell(1,length(channels));
+    kymosDifferentPos = cell(1,length(posX));
+
+    kymosDifferentwidth =  cell(1,length(posX));
+    numSegsLeft = floor((averagingWindowWidth-1)/2);
+    numSegsRight = floor(averagingWindowWidth/2);
+    averagingWindowWidthMax = 5;
+    
+%     adddetail = 1;
+    % if there is no setting about the details
+%     if ~isfield(settings,'adddetail')
+%         settings.adddetail = 1;
+%     end
+    
+    
+    % what to do if too many frames are selected, make sure this does not
+    % error. This just takes average over the time frames.
+    for idx=1:number_of_frames % this loop can be outside this function!
+        for j=1:length(rotImg) % go through different channels. Could be a cellfun to remove the loop
+            rotImg{j}{idx}(rotImg{j}{idx}==0) = nan;
+            for idy=1:length(posX) % different peak positions. Could be cellfun
+                % main part: take some segs left and some right
+                img = rotImg{j}{idx}(posY(idy,1):posY(idy,2),max(1,posX(idy)-numSegsLeft):min(end,posX(idy)+numSegsRight));% should also write out how many rows we took in case not all..
+                img(img==0)=nan;
+                kymos{j}{idy}(idx,:) =  nanmean(img,2); 
+                        
+                if nargout >= 2
+                    wideKymos{j}{idy}{idx} = img;
+                    %% extra.. first create kymographs for different averaging window widths
+
+                    for k =1:averagingWindowWidthMax
+                        numSegsLeftT = floor((k-1)/2);
+                        numSegsRightT = floor(k/2);
+                        img = rotImg{j}{idx}(posY(idy,1):posY(idy,2),max(1,posX(idy)-numSegsLeftT):min(end,posX(idy)+numSegsRightT));
+                        kymosDifferentwidth{idy}{j}{k}(idx,:) =  nanmean(img,2); 
+                    end
+
+                    for k =-averagingWindowWidthMax:averagingWindowWidthMax
+                        img = rotImg{j}{idx}(posY(idy,1):posY(idy,2),max(1,posX(idy)+k):min(end,posX(idy)+k));
+
+                        kymosDifferentPos{idy}{j}{k+averagingWindowWidthMax+1}(idx,:) =  nanmean(img,2); 
+
+                    end
+                end                
+            end
+        end
+    end
+end
+
+
+function [kymos, wideKymos,kymosDifferentwidth, kymosDifferentPos] = create_channel_kymos_one(peakpos,rotImg, firstIdx,channels,movieAngle, name,max_number_of_frames,averagingWindowWidth,rotMask,bgSub,background)
     % create_channel_kymos - create kymos for each of the channels
     % this version loads frames on by one.
     if nargin < 2
@@ -1278,12 +1398,12 @@ function [kymos, wideKymos,kymosDifferentwidth, kymosDifferentPos] = create_chan
     for idx=1:max_number_of_frames % this loop can be outside this function!
        try
            % load image. Important, this rotates & also removes backgroun
-           rotImg = load_rot_img(name,firstIdx+idx-1,channels,movieAngle,1,rotMask,bgSub,background);
+%            rotImg = load_rot_img(name,firstIdx+idx-1,channels,movieAngle,1,rotMask,bgSub,background);
             for j=1:length(rotImg) % go through different channels. Could be a cellfun to remove the loop
-                rotImg{j}{1}(rotImg{j}{1}==0) = nan;
+%                 rotImg{j}{1}(rotImg{j}{1}==0) = nan;
                     for idy=1:length(peakpos) % different peak positions. Could be cellfun
                         % main part: take some segs left and some right
-                        img = rotImg{j}{1}(:,max(1,peakpos(idy)-numSegsLeft):min(end,peakpos(idy)+numSegsRight),:);% should also write out how many rows we took in case not all..
+                        img = rotImg{j}{idx}(:,max(1,peakpos(idy)-numSegsLeft):min(end,peakpos(idy)+numSegsRight),:);% should also write out how many rows we took in case not all..
                         img(img==0)=nan;
                         kymos{j}{idy}(idx,:) =  nanmean(img,2); 
                         
@@ -1294,13 +1414,13 @@ function [kymos, wideKymos,kymosDifferentwidth, kymosDifferentPos] = create_chan
                             for k =1:averagingWindowWidthMax
                                 numSegsLeftT = floor((k-1)/2);
                                 numSegsRightT = floor(k/2);
-                                img = rotImg{j}{1}(:,max(1,peakpos(idy)-numSegsLeftT):min(end,peakpos(idy)+numSegsRightT),:);
+                                img = rotImg{j}{idx}(:,max(1,peakpos(idy)-numSegsLeftT):min(end,peakpos(idy)+numSegsRightT),:);
                                 kymosDifferentwidth{idy}{j}{k}(idx,:) =  nanmean(img,2); 
 
                             end
 
                             for k =-averagingWindowWidthMax:averagingWindowWidthMax
-                                img = rotImg{j}{1}(:,max(1,peakpos(idy)+k):min(end,peakpos(idy)+k),:);
+                                img = rotImg{j}{idx}(:,max(1,peakpos(idy)+k):min(end,peakpos(idy)+k),:);
 
                                 kymosDifferentPos{idy}{j}{k+averagingWindowWidthMax+1}(idx,:) =  nanmean(img,2); 
 

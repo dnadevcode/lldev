@@ -13,7 +13,7 @@ function [stretchFactorsMat] = compute_rescale_factors(pathsColIdxs, imgSz)
     %   stretchFactorsMat
     %     matrix containing the horizontal stretch factor of each pixel
 
-
+    % number of rows and columns
     numRows = imgSz(1);
     numCols = imgSz(2);
 %     validateattributes(pathsColIdxs, {'numeric'}, {'positive', 'integer', 'nrows', numRows}, 1);
@@ -33,24 +33,27 @@ function [stretchFactorsMat] = compute_rescale_factors(pathsColIdxs, imgSz)
 
     %Array for containing the stretch factor for each "gap" between
     %features is pre-allocated.
-    regionalStretchFactors = zeros(numRows, numFeatures + 1);
-    stretchFactorsMat = ones(numRows, numCols);
+    regionalStretchFactors = zeros(numRows, numFeatures - 1);
+    stretchFactorsMat = nan(numRows, numCols);
 
     for rowNum = 1:numRows
         stretchRow = pathsColIdxs(rowNum, :); 
 
         % The first stretch factor for the current row is determined
-        regionalStretchFactors(rowNum, 1) = xMean(1) / stretchRow(1);
-        stretchFactorsMat(rowNum, (1:stretchRow(1))) = regionalStretchFactors(rowNum, 1);
+%         regionalStretchFactors(rowNum, 1) = xMean(1) / stretchRow(1);
+%         stretchFactorsMat(rowNum, (1:stretchRow(1))) = regionalStretchFactors(rowNum, 1);
+%         stretchFactorsMat(rowNum, (1:stretchRow(1))) = 1;%regionalStretchFactors(rowNum, 1);
 
         % The stretch factors between each of the features are determined
         for featureNum = 2:numFeatures
-            regionalStretchFactors(rowNum, featureNum) = (xMean(featureNum) - xMean(featureNum - 1)) / (stretchRow(featureNum) - stretchRow(featureNum - 1));
-            stretchFactorsMat(rowNum, (stretchRow(featureNum-1) + 1):stretchRow(featureNum)) = regionalStretchFactors(rowNum, featureNum);    
+            regionalStretchFactors(rowNum, featureNum-1) = (xMean(featureNum) - xMean(featureNum - 1)) / (stretchRow(featureNum) - stretchRow(featureNum - 1));
+            stretchFactorsMat(rowNum, (stretchRow(featureNum-1) + 1):stretchRow(featureNum)) = regionalStretchFactors(rowNum, featureNum-1);    
         end
 
         % The last stretch factor for the current row is determined
-        regionalStretchFactors(rowNum, end) = (numCols - xMean(end)) / (numCols - stretchRow(end));
-        stretchFactorsMat(rowNum, (stretchRow(end) + 1):end) = regionalStretchFactors(rowNum, end);
+%         regionalStretchFactors(rowNum, end) = (numCols - xMean(end)) / (numCols - stretchRow(end));
+% %         stretchFactorsMat(rowNum, (stretchRow(end) + 1):end) = 1;% regionalStretchFactors(rowNum, end);
+%         stretchFactorsMat(rowNum, (stretchRow(end) + 1):end) =  regionalStretchFactors(rowNum, end);
+
     end
 end

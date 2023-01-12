@@ -17,6 +17,8 @@ dbmOSW.DBMSettingsstruct.detectlambdas = 0;
 dbmOSW.DBMSettingsstruct.initialAngle = 0;
 dbmOSW.DBMSettingsstruct.maxLambdaLen = inf;
 
+dbmOSW.DBMSettingsstruct.auto_run = 1;
+
 % files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\Yeast_09_27_22\Example_tifs\Albertas\*.tif');
 % files = dir('C:\Users\Lenovo\postdoc\MEETINGS\workgroup\workgroupdata\*.tif');
 % files = dir('C:\Users\Lenovo\postdoc\MEETINGS\workgroup\test4\*.tif');
@@ -28,13 +30,14 @@ dbmOSW.DBMSettingsstruct.maxLambdaLen = inf;
 % files = dir('C:\Users\Lenovo\postdoc\DATA\LUISDATAMOV\2022-02-21\Experiment-5065.tif');
 % files = dir('C:\Users\Lenovo\postdoc\DATA\LUISDATAMOV\test\*.tif');
 % files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\testlong\*.tif');
-% files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDrive_1_11-17-2022\Movies\*.tif');
-files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDrive_1_11-17-2022\lambda\*.tif');
-% files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\t\*.tif');
+files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDrive_1_11-17-2022\Movies\*.tif');
+% files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDrive_1_11-17-2022\lambda\*.tif');
+% files  =dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\lambda\20220610_32087-4-st1_e.coli_filter-2_lambda-1.tif');
+files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\*.tif');
 % files=dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\lambda\*.tif');
 
 filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:length(files),'un',false);
-filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1,'un',false);
+filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),19,'un',false);
 
 dbmOSW.DBMSettingsstruct.movies.movieNames = filesC;
 % dbmOSW.DBMSettingsstruct.movies.movieNames = {filesC{1:3}};

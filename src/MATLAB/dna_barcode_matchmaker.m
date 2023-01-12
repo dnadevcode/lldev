@@ -222,7 +222,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             dbmStruct.kymoCells.rawKymos, dbmStruct.kymoCells.rawKymoName);
         end
 
-        
+    
+            
          cellfun(@(rawKymo, outputKymoFilepath)...
         imwrite(uint16(round(double(rawKymo)./max(rawKymo(:))*2^16)), fullfile(outputDirpath,outputKymoFilepath), 'tif','WriteMode','append'),...
         dbmStruct.kymoCells.enhanced, dbmStruct.kymoCells.rawKymoName);

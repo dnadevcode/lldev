@@ -22,6 +22,7 @@ function [bitmask, posY,mat] = median_filt(km, filterM)
     fullmat = fullmat(~isnan(fullmat)); % remove nan's
 
     vals = kmeans(fullmat,2);
+    % alternative: thresh based on min point between first two peaks
 
     % check which is larger
     mat1 = fullmat(vals==1);
@@ -47,7 +48,7 @@ mat = cell(1,length(km));
 bitmask =  cell(1,length(km));
 for i=1:length(km)
 %         km(isnan(kymos{1}{i}))=0;
-    K = medfilt2(km{i},filterM,'symmetric') > threshval+bgSigma*threshstd;
+    K = medfilt2(km{i},filterM,'zeros') > threshval+bgSigma*threshstd;
     mat{i} = K;
     [labeledImage, numBlobs] = bwlabel(K);
 
