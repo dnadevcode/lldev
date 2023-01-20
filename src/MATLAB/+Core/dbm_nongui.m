@@ -40,7 +40,7 @@ files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\zhara\Lambda_Zara\Lambda_Zara\
 files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\zhara\czi\*.tif');
 
 filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:length(files),'un',false);
-% filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),4,'un',false);
+% filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),length(files),'un',false);
 
 dbmOSW.DBMSettingsstruct.movies.movieNames = filesC;
 % dbmOSW.DBMSettingsstruct.movies.movieNames = {filesC{1:3}};
