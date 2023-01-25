@@ -16,7 +16,8 @@ dbmOSW.DBMSettingsstruct.movies.askForMovies = 0;
 dbmOSW.DBMSettingsstruct.detectlambdas = 0;
 dbmOSW.DBMSettingsstruct.initialAngle = 0;
 dbmOSW.DBMSettingsstruct.maxLambdaLen = inf;
-
+dbmOSW.DBMSettingsstruct.angleStep = 0.01;
+dbmOSW.DBMSettingsstruct.numPts = 100;
 dbmOSW.DBMSettingsstruct.auto_run = 1;
 
 % files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\Yeast_09_27_22\Example_tifs\Albertas\*.tif');
@@ -38,11 +39,16 @@ files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDriv
 % files=dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\lambda\*.tif');
 files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\zhara\Lambda_Zara\Lambda_Zara\*.tif');
 files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\zhara\czi\*.tif');
+files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\*.tif');
+files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\czi files\czi files\*.tif');
+% files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\czi files\czi files\20221219_87-st7_filter-2_int-35_mol-58-2.tif')
 
 filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:length(files),'un',false);
-% filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),length(files),'un',false);
+% filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1,'un',false);
 
+ dbmOSW.DBMSettingsstruct.genome_assembly_pipeline = 1;
 dbmOSW.DBMSettingsstruct.movies.movieNames = filesC;
+dbmOSW.DBMSettingsstruct.averagingWindowWidth = 3;
 % dbmOSW.DBMSettingsstruct.movies.movieNames = {filesC{1:3}};
 
 % fd =fopen(dbmOSW.DBMSettingsstruct.movies.movieFile);

@@ -394,6 +394,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 %             set(gca,'YTick',[])
         for jj=1:length(dbmStruct.kymoCells.rawKymos)
             hAxis = nexttile(hPanelRawKymosTile);
+            hAxis.YDir = 'reverse'; % show kymo's flowing down
+
             hold on
             set(gca,'color',[0 0 0]);
             set(hAxis,'XTick',[]);
@@ -402,10 +404,18 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             import OldDBM.General.UI.disp_img_with_header;
             disp_img_with_header(hAxis, dbmStruct.kymoCells.rawKymos{jj}, fe);
 %             disp_rect_annotated_image(, fe, {});
+%             set(hAxis, 'buttondownfcn', {@loads_of_stuff,jj}); % maybe
+%             add possibiility to select individual kymos
+
 
         end
+
         tsHCC.SelectedTab = hPanelRawKymos;
+%         uiwait()
+
+        % todo: allow selecting kymo's in this window
     end
+
 
     function display_aligned_kymographs(src, event)
         numK = length(dbmStruct.kymoCells.rawKymos);
@@ -930,3 +940,18 @@ function [] = calculate_com(src, event)
 
 
 end
+
+    
+% 
+% function loads_of_stuff(src,eventdata,x)
+%     if get(src,'UserData')
+%         set(src,'UserData',0)
+%         title('');
+%     else
+%         set(src,'UserData',1)
+%         title('Selected');
+%     end
+%         fprintf('%s\n',num2str(x));
+% %         C = get(h, 'UserData')
+% 
+% end

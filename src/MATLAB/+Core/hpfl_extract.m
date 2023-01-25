@@ -506,13 +506,34 @@ function [rotImg, rotMask,movieAngle,maxCol] = image_rotation(channelImg, meanMo
 %             tic
 %             maxCol = arrayfun(@(x)  max(nansum(imrotate(resizedImg, -(90+x), method))),pos); % 90?
 %             maxRow = arrayfun(@(x)  max(nansum(imrotate(resizedImg, -(x), method))),pos); % 90?
-
+            tic
             npeaks = sets.npeaks;
             maxCol = arrayfun(@(x) sum(findpeaks(nansum(imrotate(resizedImg, -(90+x), method)),'Npeaks',npeaks,'SortStr','descend')),pos);
 %             figure,plot(maxCol)
-
+            toc
 %             toc
             [a,b] = max(maxCol);
+            movieAngle =  pos(b);
+% 
+%             BW2 = edge(resizedImg,'canny');
+%             
+% %             consistency check.. replace as main? just detect single peak.
+% %             could be wrong
+%             tic % check if this proc works allways.. would significantly
+% %             speed up things..
+%             thetas = 90-pos;
+%             [H,theta,rho] = hough(BW2,'Theta',thetas);
+% 
+%             peaks = houghpeaks(H,1);
+%             toc
+%             allAngles = 90-theta(peaks(:,2))
+%             movieAngle = allAngles;
+
+%             [H, theta, rho] = hough(BW,'Theta',90-pos);
+%             P = houghpeaks(H,1,'threshold',ceil(0.3*max(H(:))));
+%             lines = houghlines(BW,theta,rho,P,'FillGap',5,'MinLength',7);
+
+            % alternative is to do hough!
 %             pos(b)
 
 % %             tic
@@ -554,7 +575,6 @@ function [rotImg, rotMask,movieAngle,maxCol] = image_rotation(channelImg, meanMo
 %                 maxCol = [maxCol max(nanmean(rotImgT{1}{1}))];
 %             end
 %             [a,b] = max(maxCol);
-            movieAngle =  pos(b);
             
 %             BW = edge(meanMovieFrame,'canny');
 
