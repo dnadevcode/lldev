@@ -1,10 +1,14 @@
-function [spalignedKymo,spalignedBitmask,cutKymo,cutMaskF,f] = spalign(kymo,bitmask, minOverlap,maxShift)
+function [spalignedKymo,spalignedBitmask,cutKymo,cutMaskF,f] = spalign(kymo,bitmask, minOverlap,maxShift, skipAlign, detPeaks)
     % spalign  shifted peaks alignment
     %
     %       Args:
     %           kymo - kymograph
     %           bitmask - where the signal is in the kymograph
     %           minOverlap - minimum overlap between two rows
+    %           maxShift - max allowed shift
+    %           skipAlign - whether to skip shift align (should skip for
+    %           short barcodes, since then the local alignment not
+    %           trustworthy)
     %
     %       Returns:
     %           spalignedKymo - kymo aligned using spalign
@@ -22,24 +26,71 @@ function [spalignedKymo,spalignedBitmask,cutKymo,cutMaskF,f] = spalign(kymo,bitm
     % avoid erranoreously matching small regions)
     import OptMap.KymoAlignment.SPAlign.apply_stretching;
     import OptMap.KymoAlignment.SPAlign.compute_rescale_factors;
+    if ~skipAlign
+        [cutKymo,cutMaskF] = shift_align(kymo,bitmask,minOverlap,maxShift);
+    else
+        cutKymo = kymo;
+        cutMaskF = bitmask;
+    end
+    
+        alignedkymo = double(cutKymo);
+        alignedkymo(~cutMaskF) = nan;
+    
+%                figure;
+%  imshowpair(imresize(bitmask,[200 500]),imresize(kymo,[200 500]), 'ColorChannels','red-cyan'  )
 
-    [cutKymo,cutMaskF] = shift_align(kymo,bitmask,minOverlap,maxShift);
-    alignedkymo = double(cutKymo);
-    alignedkymo(~cutMaskF) = nan;
     
     %% STEP 2: find peaks
 %     https://github.com/BorgwardtLab/Topf
-    
+%     skipPeakDet = 0;
     % TDA to make peaks more prominent
-    maxNumFeaturesSoughtK = 20;
-    minPeakDistance = 11;
-    gfiltSigma = 5;
-    [vec,Ws,Ypk,Xpk,Wpk] = find_mat_peaks(alignedkymo, gfiltSigma,maxNumFeaturesSoughtK, minPeakDistance);
-    
-        %% STEP 3: track peaks
+    if detPeaks
+        maxNumFeaturesSoughtK = 20;
+        minPeakDistance = 11;
+        gfiltSigma = 5;
+        [vec,Ws,Ypk,Xpk,Wpk] = find_mat_peaks(alignedkymo, gfiltSigma,maxNumFeaturesSoughtK, minPeakDistance);
         try
-    distPar = 5;
-    [sourcesLong,pathsColIdxs,longFeatures,sources] = track_peaks(alignedkymo,vec,Ws,distPar);
+            %% STEP 3: track peaks
+
+            distPar = 5;
+            [sourcesLong,pathsColIdxs,longFeatures,sources] = track_peaks(alignedkymo,vec,Ws,distPar);
+        catch
+            pathsColIdxs = [];
+        end
+    else
+        pathsColIdxs = [];
+    end
+    
+       % Two extra features
+    leftF =  arrayfun(@(frameNum) find(cutMaskF(frameNum, :), 1, 'first'), 1:size(cutMaskF,1));
+    rightF = arrayfun(@(frameNum) find(cutMaskF(frameNum, :), 1, 'last'), 1:size(cutMaskF,1));
+
+    %The paths are sorted.
+    pathsColIdxs = sortrows(pathsColIdxs');
+    pathsColIdxs = [leftF'  pathsColIdxs'  rightF'];
+%         pathsColIdxs =pathsColIdxs';
+
+    imgSz = size(alignedkymo);
+    % import DBM4.compute_rescale_factors;
+    stretchFactorsMat = compute_rescale_factors(pathsColIdxs, imgSz);
+
+    if size(pathsColIdxs,2)<=1
+        stretchFactorsMat = ones(size(alignedkymo));
+    end
+
+% catch
+%     stretchFactorsMat = ones(size(alignedkymo));
+%             
+% end
+
+
+      
+%        
+%     figure
+%     hold on
+%         for s = 1:length(sources)
+%             plot( sources{s}(:, 2),sources{s}(:, 1),'|','linewidth', 2)
+%         end
 %     sourcesLong
 % img = alignedKymoF(:,st:stop);
 
@@ -54,23 +105,8 @@ function [spalignedKymo,spalignedBitmask,cutKymo,cutMaskF,f] = spalign(kymo,bitm
 %     
 % end
 
-    %The paths are sorted.
-    pathsColIdxs = sortrows(pathsColIdxs');
-    pathsColIdxs = pathsColIdxs';
+ 
     
-    
-imgSz = size(alignedkymo);
-% import DBM4.compute_rescale_factors;
-stretchFactorsMat = compute_rescale_factors(pathsColIdxs, imgSz);
-
-if size(pathsColIdxs,2)<=1
-    stretchFactorsMat = ones(size(alignedkymo));
-end
-
-catch
-    stretchFactorsMat = ones(size(alignedkymo));
-            
-end
 
 % 
 % stretchFactorsMat([1 end],:) = 1;

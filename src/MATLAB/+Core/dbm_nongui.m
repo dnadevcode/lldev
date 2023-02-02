@@ -42,6 +42,7 @@ files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\zhara\czi\*.tif');
 files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\*.tif');
 files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\czi files\czi files\*.tif');
 % files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\czi files\czi files\20221219_87-st7_filter-2_int-35_mol-58-2.tif')
+% files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\czi files\czi files\*.tif');
 
 filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:length(files),'un',false);
 % filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1,'un',false);

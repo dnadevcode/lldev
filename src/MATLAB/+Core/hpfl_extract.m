@@ -107,11 +107,8 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         
         meanMovieFrame = mean(cat(3, channelImg{1}{:}), 3, 'omitnan');
         [rotImg, rotMask, movieAngle,maxCol] = image_rotation(channelImg, meanMovieFrame, sets);
-        
         disp(strcat(['Rotation done in ' num2str(toc) ' seconds']));
-
-        
-        
+  
         meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
         
 %         visual_mean(rotImg{1}{1}) % visualize channel vs mean
@@ -132,9 +129,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 
         % max should be at center
 %         visual_mean(meanRotatedMovieFrame)
-       
 
-        
         % remove noise. this also calculates central and bg trend /instead
         % could remove based on bg images
         rotImgOrig = rotImg;
@@ -147,56 +142,15 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             rotImg{ch}{1}(isnan(rotImg{ch}{1}))=0;
         end
      
-        %% find lambda molecules
         meanRotatedDenoisedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
 
-%         sets.detectlambdas = 1;
-        if sets.detectlambdas
-%             [posX,posYcenter,posMax] = find_short_molecules(rotImg{1}{1},sets );
-            tic
-            [posX, posYcoord, posMax] = find_short_molecules(meanRotatedDenoisedMovieFrame,sets );
-            disp(strcat(['Molecules found in ' num2str(toc) ' seconds']));
-            
-            % plot detected positions
-            figure,imagesc(meanRotatedDenoisedMovieFrame)
-            hold on
-            for ii=1:length(posX)
-                rectangle('Position',[posX(ii)-1 posYcoord(ii,1) 3   posYcoord(ii,2)-posYcoord(ii,1)+1 ]);
-            end
-            % extract kymos at posX and posY
-%             tic
-%             [kymos, wideKymos, kmChanginW, kmChangingPos] = create_molecule_kymos_lambda(rotImg,posX, posY,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
-%             disp(strcat(['Kymo extraction done in ' num2str(toc) ' seconds']));
+        if sets.detectlambdas         
+            %% find lambda molecules
+             [posY,posX, posYcoord, posMax,thedges,kymos,wideKymos,pxBg,bgmean,bgstd,posXUpd,bitmask,...
+    positions, mat,threshval,threshstd, badMol,bitWithGaps] = detect_lambda_positions(meanRotatedDenoisedMovieFrame,...
+    sets,rotImgOrig,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
 
-            tic
-            [kymos,wideKymos] = create_molecule_kymos_lambda(rotImgOrig,posX, posYcoord,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
-            disp(strcat(['Kymo extraction done in ' num2str(toc) ' seconds']));
-
-            % an approach to edge detection // for images including
-            % lambdas, there should be three peaks (small lambda, big
-            % lambda, bg)
-            import OptMap.MoleculeDetection.EdgeDetection.median_filt;
-            [bitmask, positions, mat] = median_filt(kymos{1}, [5 15]);
-            
-            posXUpd = posX;
-
-            posY = cell(1,length(bitmask));
-            for i=1:length(bitmask)
-                posY{i}.leftEdgeIdxs = arrayfun(@(x) find(bitmask{i}(x,:) >0,1,'first'),1:size(bitmask{i},1));
-                posY{i}.rightEdgeIdxs = arrayfun(@(x) find(bitmask{i}(x,:) >0,1,'last'),1:size(bitmask{i},1)); 
-            end
-%             ix = 16;
-%             figure,tiledlayout(2,1)
-%             nexttile
-%             imagesc(bitmask{ix})
-%             nexttile
-%             imagesc(kymos{1}{ix})
-
-
-%             posYcenter = []; % TODO: activate posYcenter if multi-mol extraction is fixed
-%             plot_result(channelImg,rotImg,rotImg,round(posX),posMax)
-            % later one needs to check if same Y does not lead to dublicate
-            % molecules
+%             detect_lambda_positions(meanRotatedDenoisedMovieFrame,sets,rotImgOrig,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
         else
             [posX,posMax] = find_mols_corr(rotImg, bgTrend, numPts, channelForDist, firstIdx, centralTend, farAwayShift, distbetweenChannels,timeframes );
 %             posYcenter = [];
@@ -205,9 +159,9 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         
 
     
-      % background channels
-      lastPos = find(sum(rotImg{1}{1}~=0),1,'last');
-      extPos = [sort(posX) lastPos];
+        % background channels
+        lastPos = find(sum(rotImg{1}{1}~=0),1,'last');
+        extPos = [sort(posX) lastPos];
         diffPeaks =  round(extPos(find(diff([1 extPos]) >= parForNoise))-parForNoise/2);
 
         meanVal = 0;
@@ -283,10 +237,10 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     preCells.maxCol = maxCol;
     
     % now final step is to extract "nice" kymographs
-%     if sets.detectlambdas
-%     else         
-        [kymo, kymoW, kymoNames, Length,~, kymoOrig, idxOut] = extract_from_channels(kymos,wideKymos, posXUpd, posY, channelForDist, minLen, stdDifPos);
-%     end
+       
+    [kymo, kymoW, kymoNames, Length,~, kymoOrig, idxOut] = extract_from_channels(kymos, wideKymos, posXUpd, posY, channelForDist, minLen, stdDifPos);
+    disp(strcat(['Removed ' num2str(length(kymos{1})-length(kymo)) ' due to minLen & stdDifPos constraint']));
+
 	posY = posY(find(idxOut));
     posYcoord = posYcoord((find(idxOut)),:);
     numMoleculesDetected=length(kymo);
@@ -297,6 +251,10 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         moleculeStructs{i}.kymograph = kymoOrig{i};
         moleculeStructs{i}.kymosMoleculeLeftEdgeIdxs = posY{i}.leftEdgeIdxs;
         moleculeStructs{i}.kymosMoleculeRightEdgeIdxs = posY{i}.rightEdgeIdxs;
+        try
+             moleculeStructs{i}.threshval = threshval;
+             moleculeStructs{i}.threshstd = threshstd;
+        end
         moleculeStructs{i}.moleculeMasks = ~isnan(kymo{i});
         moleculeStructs{i}.rawKymoFileIdxs = i;
         moleculeStructs{i}.rawKymoFileMoleculeIdxs = i;
@@ -370,12 +328,20 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     kymoCells.rawBitmaskName = [];
     kymoCells.enhanced = [];
     kymoCells.enhancedName = [];
+    kymoCells.threshval = []; % for threshval (Bg mean)
+    kymoCells.threshstd = [];
+    
     for rawMovieIdx=1:length(fileMoleculeCells)
         numRawKymos = length(fileMoleculeCells{rawMovieIdx});
         for rawKymoNum = 1:numRawKymos
             [~, srcFilenameNoExt, ~] = fileparts(movieFilenames{rawMovieIdx});
             kymoCells.rawKymos{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymograph;
             kymoCells.rawBitmask{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.moleculeMasks;
+            try
+                kymoCells.threshval{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.threshval;
+                kymoCells.threshstd{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.threshstd;
+            end
+
             % enhanced
             sampIm = mat2gray( kymoCells.rawKymos{end});
             minInt = min(sampIm(:));
@@ -406,6 +372,95 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 
 end
 
+function [posY,posX, posYcoord, posMax,thedges,kymos,wideKymos,pxBg,bgmean,bgstd,posXUpd,bitmask,...
+    positions, mat,threshval,threshstd, badMol,bitWithGaps]= detect_lambda_positions(meanRotatedDenoisedMovieFrame,sets,rotImgOrig,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background)
+    %    Args:
+    
+    %   Returns
+    %    posY,posX, posYcoord, posMax,thedges,kymos,wideKymos,pxBg,bgmean,bgstd,posXUpd,bitmask,...
+    %     positions, mat,threshval,threshstd, badMol,bitWithGaps// todo:
+    %     not all used, so can keep some inside this loop
+    
+%             [posX,posYcenter,posMax] = find_short_molecules(rotImg{1}{1},sets );
+            tic
+            [posX, posYcoord, posMax,thedges] = find_short_molecules(meanRotatedDenoisedMovieFrame,sets );
+            disp(strcat(['Molecules found in ' num2str(toc) ' seconds']));
+            
+    
+            
+            % calculate mean and standard deviation
+%             threshval = nanmean(medfilt2(cell2mat(pxBg(:)),filterS,'symmetric'));
+%             threshstd = nanstd(medfilt2(cell2mat(pxBg(:)),filterS,'symmetric'));
+
+
+            % fit half Gaussian to bg intensityes
+            % plot detected positions
+%             figure,imagesc(meanRotatedDenoisedMovieFrame)
+%             hold on
+%             for ii=1:length(posX)
+%                 rectangle('Position',[posX(ii)-1 posYcoord(ii,1) 3   posYcoord(ii,2)-posYcoord(ii,1)+1 ]);
+%                 text(posX(ii)-1, posYcoord(ii,1),num2str(ii))
+%             end
+%             % extract kymos at posX and posY
+%             tic
+%             [kymos, wideKymos, kmChanginW, kmChangingPos] = create_molecule_kymos_lambda(rotImg,posX, posY,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+%             disp(strcat(['Kymo extraction done in ' num2str(toc) ' seconds']));
+
+            tic
+            [kymos,wideKymos] = create_molecule_kymos_lambda(rotImgOrig,posX, posYcoord,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+            disp(strcat(['Kymo extraction done in ' num2str(toc) ' seconds']));
+
+%             
+            pxBg = cellfun(@(x) x(thedges),rotImgOrig{1},'un',false);      
+            bgmean = nanmean(cellfun(@(x) nanmean(x),pxBg));
+            bgstd = nanmean(cellfun(@(x) nanstd(x),pxBg));
+%             
+%             figure,tiledlayout(8,8,'TileSpacing','none','Padding','none')
+%             for i=1:length(kymos{1})
+%                 K = medfilt2(kymos{1}{i},[5 15],'symmetric') > bgmean+1*bgstd;
+% %                 mat{i} = K;
+%                 [labeledImage, numBlobs] = bwlabel(K);
+%                 nexttile 
+%                 imshowpair(imresize(K,[200 500]),imresize(kymos{1}{i},[200 500]), 'ColorChannels','red-cyan'  )
+%                 title(num2str(i));
+%             end
+
+
+
+            % an approach to edge detection // for images including
+            % lambdas, there should be three peaks (small lambda, big
+            % lambda, bg)
+            import OptMap.MoleculeDetection.EdgeDetection.median_filt; % todo: change to median_filt_alt
+            [bitmask, positions, mat,threshval,threshstd, badMol,bitWithGaps] = median_filt(kymos{1}, [5 15],sets.SigmaLambdaDet,bgmean,bgstd);
+            
+            posXUpd = posX(find(~badMol));
+            posYcoord = posYcoord(find(~badMol),:);
+            
+            kymos{1} = kymos{1}(find(~badMol));
+            bitmask = bitmask(find(~badMol));
+            
+            disp(strcat(['Removed ' num2str(sum(badMol)) ' molecules due to bad edges']));
+
+            posY = cell(1,length(bitmask));
+            for i=1:length(bitmask)
+                posY{i}.leftEdgeIdxs = arrayfun(@(x) find(bitmask{i}(x,:) >0,1,'first'),1:size(bitmask{i},1));
+                posY{i}.rightEdgeIdxs = arrayfun(@(x) find(bitmask{i}(x,:) >0,1,'last'),1:size(bitmask{i},1));       
+            end
+%             ix = 16;
+%             figure,tiledlayout(2,1)
+%             nexttile
+%             imagesc(bitmask{ix})
+%             nexttile
+%             imagesc(kymos{1}{ix})
+
+
+%             posYcenter = []; % TODO: activate posYcenter if multi-mol extraction is fixed
+%             plot_result(channelImg,rotImg,rotImg,round(posX),posMax)
+            % later one needs to check if same Y does not lead to dublicate
+            % molecules
+
+
+end
 % 
 % function sets=preload_movie_folder_names(sets);
 %     if ~sets.movies.askForMovies % if movies already provided in input file (supports scripting)
@@ -465,10 +520,25 @@ function [rotImg, rotMask,movieAngle,maxCol] = image_rotation(channelImg, meanMo
         if sets.moleculeAngleValidation
             
             % 
+            npeaks = sets.npeaks;
+            
+            method = 'bilinear'; %bicubic bilinear
+            resSize = 1; % put to settings
+            sz = size(meanMovieFrame);
+            % resize images to bigger
+            
+            try % for big image, take the enter
+                resizedImg = meanMovieFrame(end/2-250:end/2+250,end/2-250:end/2+250);
+            catch
+                resizedImg = meanMovieFrame;
+            end
 
             % check1: angle closer to 90 or to 0 // can get this from info
             % file?
-            thet = [max(nanmean(meanMovieFrame')) max(nanmean(meanMovieFrame))];
+%                         maxCol = arrayfun(@(x) sum(findpeaks(nansum(imrotate(resizedImg, -(90+x), method)),'Npeaks',npeaks,'SortStr','descend')),pos);
+            thet = [sum(findpeaks(nanmean(resizedImg'),'Npeaks',npeaks,'SortStr','descend')) sum(findpeaks(nanmean(resizedImg),'Npeaks',npeaks,'SortStr','descend'))];
+
+%             thet = [max(nanmean(meanMovieFrame')) max(nanmean(meanMovieFrame))];
 %             [H, theta, rho] = hough(meanMovieFrame,'Theta',[-90 0],'RhoResolution',0.01);
 %             vals = max(H);
             [int,pos] = max(thet) ;
@@ -483,16 +553,7 @@ function [rotImg, rotMask,movieAngle,maxCol] = image_rotation(channelImg, meanMo
             
 %             tic
                 
-            method = 'bilinear'; %bicubic bilinear
-            resSize = 1; % put to settings
-            sz = size(meanMovieFrame);
-            % resize images to bigger
-            
-            try % for big image, take the enter
-                resizedImg = meanMovieFrame(end/2-250:end/2+250,end/2-250:end/2+250);
-            catch
-                resizedImg = meanMovieFrame;
-            end
+
 %                 tic
             resizedImg = imresize(resizedImg,  [resSize*sz(1) resSize*sz(2)], method);
 %             toc
@@ -507,7 +568,6 @@ function [rotImg, rotMask,movieAngle,maxCol] = image_rotation(channelImg, meanMo
 %             maxCol = arrayfun(@(x)  max(nansum(imrotate(resizedImg, -(90+x), method))),pos); % 90?
 %             maxRow = arrayfun(@(x)  max(nansum(imrotate(resizedImg, -(x), method))),pos); % 90?
             tic
-            npeaks = sets.npeaks;
             maxCol = arrayfun(@(x) sum(findpeaks(nansum(imrotate(resizedImg, -(90+x), method)),'Npeaks',npeaks,'SortStr','descend')),pos);
 %             figure,plot(maxCol)
             toc
@@ -1376,6 +1436,7 @@ function [kymos, wideKymos,kymosDifferentwidth, kymosDifferentPos] = create_mole
     numSegsRight = floor(averagingWindowWidth/2);
     averagingWindowWidthMax = 5;
     
+    numExtra = 5;
 %     adddetail = 1;
     % if there is no setting about the details
 %     if ~isfield(settings,'adddetail')
@@ -1390,7 +1451,7 @@ function [kymos, wideKymos,kymosDifferentwidth, kymosDifferentPos] = create_mole
             rotImg{j}{idx}(rotImg{j}{idx}==0) = nan;
             for idy=1:length(posX) % different peak positions. Could be cellfun
                 % main part: take some segs left and some right
-                img = rotImg{j}{idx}(posY(idy,1):posY(idy,2),max(1,posX(idy)-numSegsLeft):min(end,posX(idy)+numSegsRight));% should also write out how many rows we took in case not all..
+                img = rotImg{j}{idx}(max(posY(idy,1)-numExtra,1):min(posY(idy,2)+numExtra,end),max(1,posX(idy)-numSegsLeft):min(end,posX(idy)+numSegsRight));% should also write out how many rows we took in case not all..
                 img(img==0)=nan;
                 kymos{j}{idy}(idx,:) =  nanmean(img,2); 
                         
@@ -1401,12 +1462,12 @@ function [kymos, wideKymos,kymosDifferentwidth, kymosDifferentPos] = create_mole
                     for k =1:averagingWindowWidthMax
                         numSegsLeftT = floor((k-1)/2);
                         numSegsRightT = floor(k/2);
-                        img = rotImg{j}{idx}(posY(idy,1):posY(idy,2),max(1,posX(idy)-numSegsLeftT):min(end,posX(idy)+numSegsRightT));
+                        img = rotImg{j}{idx}(max(posY(idy,1)-numExtra,1):min(posY(idy,2)+numExtra,end),max(1,posX(idy)-numSegsLeftT):min(end,posX(idy)+numSegsRightT));
                         kymosDifferentwidth{idy}{j}{k}(idx,:) =  nanmean(img,2); 
                     end
 
                     for k =-averagingWindowWidthMax:averagingWindowWidthMax
-                        img = rotImg{j}{idx}(posY(idy,1):posY(idy,2),max(1,posX(idy)+k):min(end,posX(idy)+k));
+                        img = rotImg{j}{idx}(max(posY(idy,1)-numExtra,1):min(posY(idy,2)+numExtra,end),max(1,posX(idy)+k):min(end,posX(idy)+k));
 
                         kymosDifferentPos{idy}{j}{k+averagingWindowWidthMax+1}(idx,:) =  nanmean(img,2); 
 
@@ -1998,35 +2059,47 @@ xlim([0 size(img,1)])
 end
 
 
-function [posXlambda,posYlambda,posMax] = find_short_molecules(meanRotatedDenoisedMovieFrame,sets )
+function [posXlambda,posYlambda,posMax,thedges] = find_short_molecules(meanRotatedDenoisedMovieFrame,sets )
+        % finds short molecules // originally from sdd_dots project
+        sets.varPx = 3;
+        varPx = sets.varPx;
+        
         optics.logSigma = sets.psfnm / sets.nmPerPixel;
-        n = ceil(6 * optics.logSigma);
+        n = ceil(6 * optics.logSigma); % estimate n
         n = n + 1 - mod(n, 2);
         filt = fspecial('log', n,  optics.logSigma);
         logim = imfilter(meanRotatedDenoisedMovieFrame, filt);
 
         thedges = imbinarize(logim, 0);
         
-        thedges = imclose(thedges, true(3));
+        thedges = imclose(thedges, true(ceil( optics.logSigma))); % made this dependent on logSigma
 %         se1 = strel('line',3,0)
 %         thedges = imdilate(thedges,se1);
 %         
 %         thedges(1:end,[ 1 end]) = 1; % things around the boundary should also be considered
         thedges([ 1 end],1:end) = 1;
-        
-        
+                
         % for each feature, cut pixels deviating from the central line
 
         [B, L] = bwboundaries(thedges, 'holes');
-
         [~, Gdir] = imgradient(logim);
-        
         % todo: score for each position based on imgradient
         
         stat = @(h) mean(h); % This should perhaps be given from the outside
         
-        longFeats = cellfun(@(x) size(x,1) >= sets.numPts,B);
+        % filter lengths based on min and max, sets.MaxNumPts should be at
+        % least 2 times the max allowed length (and a bit more since we
+        % need to allow local pixel variations)
+        
+        % number of unique y values has to be at least sets.numPts
+        longFeats = cellfun(@(x) length(unique(x(:,1))) >= sets.numPts,B);
+
+%         longFeats = cellfun(@(x) size(x,1) >= sets.numPts,B);
         B = B(longFeats);
+        
+        shortFeats = cellfun(@(x) length(unique(x(:,1))) <= sets.MaxNumPts,B);
+        B = B(shortFeats);
+
         
         % now hist of B will have two peaks
 %         closedImg = imclose(B{14},strel('disk',30));
@@ -2049,6 +2122,7 @@ function [posXlambda,posYlambda,posMax] = find_short_molecules(meanRotatedDenois
 %         end
 %         
 
+        % want to find 2 peaks, so mol has to be wide enough
         for k = 1:length(B)% Filter out any regions with artifacts in them
             [N,edges] = histcounts(B{k}(:,2));
             bcenters = (edges(2:end)+edges(1:end-1))/2;
@@ -2057,13 +2131,26 @@ function [posXlambda,posYlambda,posMax] = find_short_molecules(meanRotatedDenois
             posEdges = bcenters(Xpk-1);
 
             % allow a few pixs variation
-            pL = min(posEdges)-3;  pR = max(posEdges)+3;
+            pL = min(posEdges)-varPx;  pR = max(posEdges)+varPx; % varPx depends on nmpx
 
             tooWide = (B{k}(:,2) < pL)+(B{k}(:,2) > pR);
             B{k}(logical(tooWide),:) = [];
             meh(k) = edge_score(B{k}, logim, Gdir, 5, stat); %how many points along the gradient to take?
-         end
+        end
         
+        % calculate some edge scores for random locations
+        nmrand = 100;
+        randMeh = zeros(1, nmrand);
+        dim = size(meanRotatedDenoisedMovieFrame,[1 2]);
+        for k = 1:nmrand% Filter out any regions with artifacts in them
+            indices = randsample(dim(1)*dim(2),sets.numPts);
+            [I J] = ind2sub(dim,indices);
+            randMeh(k) = edge_score([I J], logim, Gdir, 5, stat); %how many points along the gradient to take?
+        end
+        
+%          [sortedData ] =sort(meh,'desc','MissingPlacement','last');
+         sets.minScoreLambda = mean(randMeh)+3*std(randMeh);
+%          sets.minScoreLambda = mean(sortedData(1:5))-3*std(sortedData(1:5)); % 
         %
         acc  = zeros(1, length(B));
         l = zeros(1, length(B));
@@ -2099,7 +2186,7 @@ function score = edge_score(B,im,Gdir,dist,stat)
       dir = Gdir(bound(point,1),bound(point,2)); % test to see if dirs were switched
       dx = cosd(dir); %magnus' way
       dy = -sind(dir); %magnus' way
-      xser = round((-dist:1:dist)*dx) + bound(point,2);
+      xser = round((-dist:1:dist)*dx) + bound(point,2); % dist depends a bit on nmpx!
       yser = round((-dist:1:dist)*dy) + bound(point,1);
       prof = zeros(1,2*dist+1);
       if min(min(yser),min(xser))>0 && max(xser) < size(im,2) && max(yser) < size(im,1)

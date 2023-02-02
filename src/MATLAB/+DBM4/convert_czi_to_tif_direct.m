@@ -76,7 +76,7 @@ for i=1:length(data)
     disp(strcat(['Converting movie ' num2str(i) ' from ' num2str(length(data)) ]))
     name =fullfile(data(i).folder,data(i).name);
     [fd,fm,fe] = fileparts(name);
-    nameNew = strrep(name,fe,'.tif');
+    nameNew = strrep(name,fe,'.ome.tif');
     nameNew2 = strrep(name,fe,'.ini');
     
     if exist(nameNew,'file')
