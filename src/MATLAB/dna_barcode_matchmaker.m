@@ -1054,17 +1054,17 @@ function genome_assembly_pipeline(src, event)
     % todo : this could be taken from settings
     
     userDir = uigetdir(pwd,'Select directory with movies to run through bargrouping pipeline');
-    
-    
-    d = dir(userDir);
+%     idFold = 1;
+% 
+%     dfolders(idFold).folder =userDir;
+%     d = dir(userDir);
+% 
+%     dfolders = d([d(:).isdir]);
+%     dfolders = dfolders(~ismember({dfolders(:).name},{'.','..'}));
+%     
+%     display(strcat([num2str(length(dfolders)) ' number of folders to run']));
 
-    dfolders = d([d(:).isdir]);
-    dfolders = dfolders(~ismember({dfolders(:).name},{'.','..'}));
-    
-    display(strcat([num2str(length(dfolders)) ' number of folders to run']));
-
-    idFold = 1;
-    files = dir(fullfile(dfolders(idFold).folder,dfolders(idFold).name,'*.tif'));
+    files = dir(fullfile(userDir,'*.tif'));
 %     files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping_New_E.coli_all\Mapping_New_E.coli\New data_Jan 2023\2022-12-19\czi files\*mol*.tif');
 
 
