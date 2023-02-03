@@ -39,32 +39,41 @@ function [spalignedKymo,spalignedBitmask,cutKymo,cutMaskF,f] = spalign(kymo,bitm
 %                figure;
 %  imshowpair(imresize(bitmask,[200 500]),imresize(kymo,[200 500]), 'ColorChannels','red-cyan'  )
 
+%     if 
+%     [pathsColIdxs ] = find_track_peaks_nra(alignedkymo,cutMaskF);
     
     %% STEP 2: find peaks
 %     https://github.com/BorgwardtLab/Topf
 %     skipPeakDet = 0;
     % TDA to make peaks more prominent
     if detPeaks
-        maxNumFeaturesSoughtK = 20;
-        minPeakDistance = 11;
-        gfiltSigma = 5;
+        W_trim = 5; % feature width (dep on nm/px)
+        maxNumFeaturesSoughtK = ceil(min(sum(cutMaskF,2)) / ((2 * W_trim) + 1));
+
+%         maxNumFeaturesSoughtK = 20;
+        minPeakDistance = (2 * W_trim) + 1;
+        gfiltSigma = 2;
         [vec,Ws,Ypk,Xpk,Wpk] = find_mat_peaks(alignedkymo, gfiltSigma,maxNumFeaturesSoughtK, minPeakDistance);
         try
             %% STEP 3: track peaks
 
-            distPar = 5;
+            distPar = 10;
             [sourcesLong,pathsColIdxs,longFeatures,sources] = track_peaks(alignedkymo,vec,Ws,distPar);
         catch
             pathsColIdxs = [];
         end
+        
+        leftF = [];
+        rightF = [];
+
     else
         pathsColIdxs = [];
+             % Two extra features
+        leftF =  arrayfun(@(frameNum) find(cutMaskF(frameNum, :), 1, 'first'), 1:size(cutMaskF,1));
+        rightF = arrayfun(@(frameNum) find(cutMaskF(frameNum, :), 1, 'last'), 1:size(cutMaskF,1));
+
     end
     
-       % Two extra features
-    leftF =  arrayfun(@(frameNum) find(cutMaskF(frameNum, :), 1, 'first'), 1:size(cutMaskF,1));
-    rightF = arrayfun(@(frameNum) find(cutMaskF(frameNum, :), 1, 'last'), 1:size(cutMaskF,1));
-
     %The paths are sorted.
     pathsColIdxs = sortrows(pathsColIdxs');
     pathsColIdxs = [leftF'  pathsColIdxs'  rightF'];
@@ -91,6 +100,13 @@ function [spalignedKymo,spalignedBitmask,cutKymo,cutMaskF,f] = spalign(kymo,bitm
 %         for s = 1:length(sources)
 %             plot( sources{s}(:, 2),sources{s}(:, 1),'|','linewidth', 2)
 %         end
+        
+%     figure
+%     imagesc(alignedkymo)
+%     hold on   
+%     for s = 1:length(sourcesLong)
+%     plot( sourcesLong{s}(:, 2),sourcesLong{s}(:, 1),'black|','linewidth', 1)
+%     end
 %     sourcesLong
 % img = alignedKymoF(:,st:stop);
 
@@ -121,9 +137,13 @@ spalignedKymo = apply_stretching(alignedkymo, stretchFactorsMat);
 %     alignedKymoS(s,:) = circshift(alignedKymoS(s,:),[0 meanFirst-pathsColIdxs(s,1)]);
 % end
 
+% mask: from first to last feature
+newMask = zeros(size(alignedkymo));
+for i=1:size(newMask,1)
+    newMask(i,pathsColIdxs(i,1):pathsColIdxs(i,end)) = 1;
+end
 
-
-spalignedBitmask = round(apply_stretching(double(cutMaskF), stretchFactorsMat)) > 0;
+spalignedBitmask = round(apply_stretching(double(newMask), stretchFactorsMat)) > 0;
 
 if nargout >=5
     f=figure('units','normalized','outerposition',[0 0 1 1])
@@ -226,19 +246,32 @@ end
 
     end
 
-    function [vec,Ws,Ypk,Xpk,Wpk] = find_mat_peaks(alignedkymo, gfiltSigma,maxNumFeaturesSoughtK, minPeakDistance)
+    function [vec,Ws,Ypk,Xpk,Wpk] = find_mat_peaks(alignedkymo, gfiltSigma, maxNumFeaturesSoughtK, minPeakDistance)
 
         % apply gaussian filt
-        filtImg = imgaussfilt(alignedkymo,gfiltSigma);
-        % figure,imagesc(filtImg)
+        smoothImg = imgaussfilt(alignedkymo,gfiltSigma);
+%         figure,imagesc(filtImg)
         % filtImg = alignedkymo;
+        
+%         squareSmoothingWindowLen_pixels = gfiltSigma;
+%         blurSigmaWidth_pixels = 2;
+%         import OptMap.KymoAlignment.apply_gaussian_blur;
+%         smoothImg = apply_gaussian_blur(alignedkymo, squareSmoothingWindowLen_pixels, blurSigmaWidth_pixels);
+%         %The laplacian of gaussian is obtained and normalized
+%         import OptMap.KymoAlignment.apply_laplacian_of_gaussian_filter;
+%         smoothImg = apply_laplacian_of_gaussian_filter(smoothImg, [2, 6], 2);
+%         smoothImg = smoothImg ./ max(abs(smoothImg(:)));
+%         
+%         smoothImg = abs(smoothImg);
+    
+    
 
 
-        vec =cell(1,size(filtImg,1));
-        Ws =cell(1,size(filtImg,1));
+        vec =cell(1,size(smoothImg,1));
+        Ws =cell(1,size(smoothImg,1));
 
-        for i=1:size(filtImg,1) % we loose last row
-            [Ypk,Xpk,Wpk] =findpeaks(filtImg(i,:),'SortStr','descend','NPeaks',maxNumFeaturesSoughtK,'MinPeakDistance',minPeakDistance); % FW for more accuracy?
+        for i=1:size(smoothImg,1) % we loose last row
+            [Ypk,Xpk,Wpk] = findpeaks(smoothImg(i,:),'SortStr','descend','NPeaks',maxNumFeaturesSoughtK,'MinPeakDistance',minPeakDistance); % FW for more accuracy?
             vec{i} = Xpk';
             Ws{i} = Ypk';
         end
@@ -294,7 +327,7 @@ end
 end
 
 
-function [pathsColIdxs ] = align_old(shiftAlignedKymo,shiftAlignedKymoMask)
+function [pathsColIdxs ] = find_track_peaks_nra(shiftAlignedKymo,shiftAlignedKymoMask)
     
     % The number of pixels around each feature on each side (not including
     % the pixel the feature is on) on which there may not be another
@@ -313,7 +346,7 @@ function [pathsColIdxs ] = align_old(shiftAlignedKymo,shiftAlignedKymoMask)
     % The edges of the region in which features are to be found are
     %  specified, unless already done in the call to the function.
     leftColIdx = 1 + featurelessSideWidth;
-    rightColIdx = size(unalignedKymo, 2) - featurelessSideWidth;
+    rightColIdx = size(shiftAlignedKymo, 2) - featurelessSideWidth;
 
 
     % The (maximum) number of features to look for "k"
@@ -340,16 +373,25 @@ function [pathsColIdxs ] = align_old(shiftAlignedKymo,shiftAlignedKymoMask)
         smoothImg(farBgMask) = NaN;
     end
     
-    alignmentSuccessTF = all(sum(~isnan(smoothImg) & (smoothImg ~= 0), 2));
-    stretchFactorsMat = ones(size(shiftAlignedKymo));
-    alignedKymo = shiftAlignedKymo;
-    alignedMask = shiftAlignedKymoMask;
+%     alignmentSuccessTF = all(sum(~isnan(smoothImg) & (smoothImg ~= 0), 2));
+%     stretchFactorsMat = ones(size(shiftAlignedKymo));
+%     alignedKymo = shiftAlignedKymo;
+%     alignedMask = shiftAlignedKymoMask;
     
     
 %     if alignmentSuccessTF
         %The k shortest paths through the (prealigned) kymograph are found
     import OptMap.KymoAlignment.find_k_features;
     pathsColIdxOffsets = find_k_features(smoothImg(:, leftColIdx:rightColIdx), maxFeatureMovementPx, typicalFeatureWidth, maxNumFeaturesSoughtK); 
+
+    
+        figure
+        imagesc(smoothImg)
+    hold on
+        for s = 1:length(pathsColIdxOffsets)
+            plot(pathsColIdxOffsets{s},1:length(pathsColIdxOffsets{s}),'linewidth', 1)
+        end
+
 
 %     alignmentSuccessTF = not(isempty(pathsColIdxOffsets));
     %         if alignmentSuccessTF

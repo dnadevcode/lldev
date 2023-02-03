@@ -522,16 +522,21 @@ function [rotImg, rotMask,movieAngle,maxCol] = image_rotation(channelImg, meanMo
             % 
             npeaks = sets.npeaks;
             
+            
             method = 'bilinear'; %bicubic bilinear
             resSize = 1; % put to settings
-            sz = size(meanMovieFrame);
-            % resize images to bigger
-            
+          
             try % for big image, take the enter
                 resizedImg = meanMovieFrame(end/2-250:end/2+250,end/2-250:end/2+250);
             catch
                 resizedImg = meanMovieFrame;
             end
+            
+            sz = size(resizedImg);
+            % resize images to bigger
+        
+            npeaks = max(npeaks,ceil(min(sz)/100));
+
 
             % check1: angle closer to 90 or to 0 // can get this from info
             % file?
