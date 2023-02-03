@@ -1142,6 +1142,7 @@ function genome_assembly_pipeline(src, event)
     barcodeGen =  gen_barcodes_from_kymo(kymoStructs, sets,sets.maxLen);
 
     %% Merge neighbor barcodes
+    import DBM4.Bargrouping.merge_neighbor_barcodes;
     [barGenMerged,posMulti,cnt_unique] = merge_neighbor_barcodes(barcodeGen);
 
 %     assignin('base','fileStructOut',fileStruct);
