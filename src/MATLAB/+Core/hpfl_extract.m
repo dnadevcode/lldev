@@ -536,12 +536,14 @@ function [rotImg, rotMask,movieAngle,maxCol] = image_rotation(channelImg, meanMo
             % resize images to bigger
         
             npeaks = max(npeaks,ceil(min(sz)/100));
+            mpkdist = 20;% minimum peak distance
 
 
             % check1: angle closer to 90 or to 0 // can get this from info
             % file?
 %                         maxCol = arrayfun(@(x) sum(findpeaks(nansum(imrotate(resizedImg, -(90+x), method)),'Npeaks',npeaks,'SortStr','descend')),pos);
-            thet = [sum(findpeaks(nanmean(resizedImg'),'Npeaks',npeaks,'SortStr','descend')) sum(findpeaks(nanmean(resizedImg),'Npeaks',npeaks,'SortStr','descend'))];
+            
+            thet = [sum(findpeaks(nanmean(resizedImg'),'Npeaks',npeaks,'SortStr','descend','MinPeakDistance',mpkdist)) sum(findpeaks(nanmean(resizedImg),'Npeaks',npeaks,'SortStr','descend','MinPeakDistance',mpkdist))];
 
 %             thet = [max(nanmean(meanMovieFrame')) max(nanmean(meanMovieFrame))];
 %             [H, theta, rho] = hough(meanMovieFrame,'Theta',[-90 0],'RhoResolution',0.01);
@@ -573,7 +575,7 @@ function [rotImg, rotMask,movieAngle,maxCol] = image_rotation(channelImg, meanMo
 %             maxCol = arrayfun(@(x)  max(nansum(imrotate(resizedImg, -(90+x), method))),pos); % 90?
 %             maxRow = arrayfun(@(x)  max(nansum(imrotate(resizedImg, -(x), method))),pos); % 90?
             tic
-            maxCol = arrayfun(@(x) sum(findpeaks(nansum(imrotate(resizedImg, -(90+x), method)),'Npeaks',npeaks,'SortStr','descend')),pos);
+            maxCol = arrayfun(@(x) sum(findpeaks(nansum(imrotate(resizedImg, -(90+x), method)),'Npeaks',npeaks,'SortStr','descend','MinPeakDistance',mpkdist)),pos);
 %             figure,plot(pos,maxCol)
             toc
 %             toc
