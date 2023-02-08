@@ -1,4 +1,4 @@
-function [spalignedKymo,spalignedBitmask,cutKymo,cutMaskF,f] = spalign(kymo,bitmask, minOverlap,maxShift, skipAlign, detPeaks)
+function [spalignedKymo,spalignedBitmask,cutKymo,cutMaskF,newMask,f] = spalign(kymo,bitmask, minOverlap,maxShift, skipAlign, detPeaks)
     % spalign  shifted peaks alignment
     %
     %       Args:
@@ -145,7 +145,7 @@ end
 
 spalignedBitmask = round(apply_stretching(double(newMask), stretchFactorsMat)) > 0;
 
-if nargout >=5
+if nargout >=6
     f=figure('units','normalized','outerposition',[0 0 1 1])
 
     tiledlayout(5,1)

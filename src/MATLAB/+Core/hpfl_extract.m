@@ -574,7 +574,7 @@ function [rotImg, rotMask,movieAngle,maxCol] = image_rotation(channelImg, meanMo
 %             maxRow = arrayfun(@(x)  max(nansum(imrotate(resizedImg, -(x), method))),pos); % 90?
             tic
             maxCol = arrayfun(@(x) sum(findpeaks(nansum(imrotate(resizedImg, -(90+x), method)),'Npeaks',npeaks,'SortStr','descend')),pos);
-%             figure,plot(maxCol)
+%             figure,plot(pos,maxCol)
             toc
 %             toc
             [a,b] = max(maxCol);

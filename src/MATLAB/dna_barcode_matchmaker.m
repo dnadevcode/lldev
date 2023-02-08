@@ -932,6 +932,8 @@ for idFold = 1:length(dfolders)
     % detect molecules
     dbmOSW.DBMSettingsstruct.movies.movieNames = filesC;
 
+        % dna_barcode_matchmaker(0,dbmOSW); % if we want to plot results in GUI
+
     % extract
     import Core.hpfl_extract;
     [dbmStruct.fileCells, dbmStruct.fileMoleculeCells,dbmStruct.kymoCells] = hpfl_extract(dbmOSW.DBMSettingsstruct);
@@ -947,7 +949,7 @@ for idFold = 1:length(dfolders)
     sets.minOverlap = 50;
     sets.maxShift = 20;
     sets.skipPreAlign = 1;
-    sets.detPeaks = 1;
+    sets.detPeaks = 0;
     import OptMap.KymoAlignment.SPAlign.spalign;
     kymoStructs = cell(1,length(filtKymo));
     for i=1:length(filtKymo)
@@ -1064,7 +1066,7 @@ function genome_assembly_pipeline(src, event)
 %     
 %     display(strcat([num2str(length(dfolders)) ' number of folders to run']));
 
-    files = dir(fullfile(userDir,'*.tif'));
+    files = dir(fullfile(userDir,'*mol*.tif'));
 %     files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping_New_E.coli_all\Mapping_New_E.coli\New data_Jan 2023\2022-12-19\czi files\*mol*.tif');
 
 
@@ -1146,10 +1148,40 @@ function genome_assembly_pipeline(src, event)
     [barGenMerged,posMulti,cnt_unique] = merge_neighbor_barcodes(barcodeGen);
 
 %     assignin('base','fileStructOut',fileStruct);
-    outputTarget = strcat(dfolders(idFold).folder,'_sessiondata');
+    outputTarget = strcat(userDir,'_sessiondata');
     mkdir(outputTarget);
 %     assignin('base','dbmStruct',dbmStruct);
-    save(fullfile(outputTarget,'session_data.mat'),'barcodeGen','barGenMerged','dbmStruct')
+    save(fullfile(outputTarget,'session_data.mat'),'barcodeGen','barGenMerged','kymoStructs')
+
+    files = cellfun(@(rawKymo, outputKymoFilepath)...
+    isfile(fullfile(outputTarget,outputKymoFilepath)),...
+    dbmStruct.kymoCells.enhanced, dbmStruct.kymoCells.rawKymoName);
+
+    if sum(files) > 0
+    cellfun(@(rawKymo, outputKymoFilepath)...
+    delete(fullfile(outputTarget,outputKymoFilepath)),...
+    dbmStruct.kymoCells.rawKymos, dbmStruct.kymoCells.rawKymoName);
+    end
+
+    % cellfun(@(rawKymo, outputKymoFilepath)...
+    % imwrite(uint16(round(double(rawKymo))), fullfile(outputTarget,outputKymoFilepath), 'tif','WriteMode','append'),...
+    % dbmStruct.kymoCells.rawKymos, dbmStruct.kymoCells.rawKymoName);
+    % 
+    cellfun(@(rawKymo, outputKymoFilepath)...
+    imwrite(uint16(round(double(rawKymo)./max(rawKymo(:))*2^16)), fullfile(outputTarget,outputKymoFilepath), 'tif','WriteMode','append'),...
+    dbmStruct.kymoCells.rawKymos, dbmStruct.kymoCells.rawKymoName);
+
+
+    sF = 0.95:0.01:1.05;
+    minOverlap = 300;
+    timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
+
+    % bars = barGenMerged(length(posSingle):end);
+    bars = barGenMerged(cellfun(@(x) sum(x.rawBitmask),barGenMerged)>300);
+    [oS] = calc_overlap_mp(bars,sF, minOverlap,timestamp);
+    
+    save(fullfile(outputTarget,'mp_data.mat'),'minOverlap','oS','sF')
+
 
 end
 
