@@ -139,8 +139,10 @@ spalignedKymo = apply_stretching(alignedkymo, stretchFactorsMat);
 
 % mask: from first to last feature
 newMask = zeros(size(alignedkymo));
-for i=1:size(newMask,1)
-    newMask(i,pathsColIdxs(i,1):pathsColIdxs(i,end)) = 1;
+if ~isempty(pathsColIdxs)
+    for i=1:size(newMask,1)
+        newMask(i,pathsColIdxs(i,1):pathsColIdxs(i,end)) = 1;
+    end
 end
 
 spalignedBitmask = round(apply_stretching(double(newMask), stretchFactorsMat)) > 0;

@@ -907,6 +907,7 @@ for idFold = 1:length(dfolders)
             nmPx =  1/infoFile{1}(1).XResolution*1000; % this could be instead taken from metadata file, where it's given in Scaling|Distance|Value
         end
     end
+    
 
     % dbm settings
     useGUI = 0;
@@ -955,8 +956,13 @@ for idFold = 1:length(dfolders)
     for i=1:length(filtKymo)
         [kymoStructs{i}.alignedKymo,kymoStructs{i}.alignedMask,~,~] = ...
         spalign(double(filtKymo{i}),filtBitmask{i},sets.minOverlap,sets.maxShift,sets.skipPreAlign, sets.detPeaks);
+        try
         kymoStructs{i}.leftEdgeIdxs = arrayfun(@(frameNum) find(kymoStructs{i}.alignedMask(frameNum, :), 1, 'first'), 1:size(kymoStructs{i}.alignedMask,1));
         kymoStructs{i}.rightEdgeIdxs = arrayfun(@(frameNum) find(kymoStructs{i}.alignedMask(frameNum, :), 1, 'last'), 1:size(kymoStructs{i}.alignedMask,1));
+        catch
+            kymoStructs{i}.leftEdgeIdxs = [];
+            kymoStructs{i}.rightEdgeIdxs = [];
+        end
         kymoStructs{i}.name = names{i};
     end
 
@@ -1066,7 +1072,7 @@ function genome_assembly_pipeline(src, event)
 %     
 %     display(strcat([num2str(length(dfolders)) ' number of folders to run']));
 
-    files = dir(fullfile(userDir,'*mol*.tif'));
+    files = dir(fullfile(userDir,'*.tif'));
 %     files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping_New_E.coli_all\Mapping_New_E.coli\New data_Jan 2023\2022-12-19\czi files\*mol*.tif');
 
 
