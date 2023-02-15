@@ -159,38 +159,79 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
 
     function show_home()
-
-        
-%         f= figure;
-%         axes(hHomeScreen);
+        % shows home tile
         numP = ceil(sqrt(length(dbmStruct.fileCells)));
         hHomeScreenTile = tiledlayout(hHomeScreen,ceil(length(dbmStruct.fileCells)/numP),numP,'TileSpacing','none','Padding','none');
-%                   set(gca,'XTick',[])
-%             set(gca,'YTick',[])
+         import DBM4.Figs.disp_rect_image; % new plot to display annotated image
+        % for each tile, plot rectangle with molecules
+        
         for jj=1:length(dbmStruct.fileCells)
             hAxis = nexttile(hHomeScreenTile);
-            hold on
-            set(gca,'color',[0 0 0])
+            % calc this directly before
+
+            imagesc(dbmStruct.fileCells{jj}.averagedImg', 'Parent', hAxis,[dbmStruct.fileCells{jj}.meanStd(1)-dbmStruct.fileCells{jj}.meanStd(2) dbmStruct.fileCells{jj}.meanStd(1)+5*dbmStruct.fileCells{jj}.meanStd(2)]);
+            hold(hAxis, 'on');
             set(hAxis,'XTick',[])
             set(hAxis,'YTick',[])
-
-%                        imagesc(dbmStruct.fileCells{jj}.averagedImg)
+%             set(hAxis,'ClippingStyle','rectangle');
+            colormap(hAxis, gray());
+            
+            % also plot barcodes that were removed for some reason
+            
+            % locations
             moleculeRectPositions = cell(1,length( dbmStruct.fileCells{jj}.locs));
             for ii=1:length(dbmStruct.fileCells{jj}.locs)
-%                 moleculeRectPositions{ii} = [ dbmStruct.fileCells{jj}.locs(ii)-1 dbmStruct.fileCells{jj}.regions(ii,1)  3 dbmStruct.fileCells{jj}.regions(ii,2)- dbmStruct.fileCells{jj}.regions(ii,1)];
-                moleculeRectPositions{ii} = [  dbmStruct.fileCells{jj}.regions(ii,1) dbmStruct.fileCells{jj}.locs(ii)-1  dbmStruct.fileCells{jj}.regions(ii,2)- dbmStruct.fileCells{jj}.regions(ii,1) 3];
-%                 moleculeRectPositions{ii} = [  dbmStruct.fileCells{jj}.regions(ii,1) dbmStruct.fileCells{jj}.locs(ii)-1  dbmStruct.fileCells{jj}.regions(ii,2)-dbmStruct.fileCells{jj}.regions(ii,1) 3];
-
+                moleculeRectPositions{ii} = [  dbmStruct.fileCells{jj}.regions(ii,1) dbmStruct.fileCells{jj}.locs(ii)-floor(sets.averagingWindowWidth/2)  dbmStruct.fileCells{jj}.regions(ii,2)- dbmStruct.fileCells{jj}.regions(ii,1) sets.averagingWindowWidth];
             end
-            import OldDBM.General.UI.disp_rect_annotated_image;
-            [fb,fe] = fileparts(dbmStruct.fileCells{jj}.fileName);
-            disp_rect_annotated_image(hAxis,dbmStruct.fileCells{jj}.averagedImg', fe, moleculeRectPositions);
-
+            
+        try
+            cellfun(@(moleculeRectPosition) ...
+            rectangle(...
+                'Position', moleculeRectPosition, ...
+                'LineWidth', 0.2, ...
+                'EdgeColor', 'r'), ...
+            moleculeRectPositions);
+            % todo: this should be index in the final kymograph set
+            arrayfun(@(x) ...
+            text(moleculeRectPositions{x}(1), moleculeRectPositions{x}(2)+10,strcat('ID = ',num2str(x)),'Color','white','FontSize',8,'Clipping','on'), ...
+            1:length(moleculeRectPositions));
+        catch
+        
         end
-        tsHCC.SelectedTab = hHomeScreen;
-%         select(hHomeScreen);
-        
-        
+        [fb,fe] = fileparts(dbmStruct.fileCells{jj}.fileName);
+        title(strrep(fe,'_','\_'),'Interpreter','latex','FontSize',8)
+            
+            
+    end
+        axtoolbar(hHomeScreenTile,{'zoomin','zoomout','restoreview'});
+%         tb.Toolbar.Visible = 'on';
+
+        ax = gca;
+        ax.Toolbar.Visible = 'on';
+%         set(ax,'XTick',[])
+%         set(ax,'YTick',[])
+
+   
+%         import OldDBM.General.UI.disp_rect_annotated_image;
+% 
+%         for jj=1:length(dbmStruct.fileCells)
+%             hAxis = nexttile(hHomeScreenTile);
+%             hold on
+%             set(gca,'color',[0 0 0])
+%             set(hAxis,'XTick',[])
+%             set(hAxis,'YTick',[])
+% 
+%             moleculeRectPositions = cell(1,length( dbmStruct.fileCells{jj}.locs));
+%             for ii=1:length(dbmStruct.fileCells{jj}.locs)
+%                 moleculeRectPositions{ii} = [  dbmStruct.fileCells{jj}.regions(ii,1) dbmStruct.fileCells{jj}.locs(ii)-floor(sets.averagingWindowWidth/2)  dbmStruct.fileCells{jj}.regions(ii,2)- dbmStruct.fileCells{jj}.regions(ii,1) sets.averagingWindowWidth];
+%             end
+%             
+%             [fb,fe] = fileparts(dbmStruct.fileCells{jj}.fileName);
+%             
+%             disp_rect_annotated_image(hAxis,dbmStruct.fileCells{jj}.averagedImg', fe, moleculeRectPositions);
+%         
+%         end
+        tsHCC.SelectedTab = hHomeScreen; 
     end
 
     % saving session data
@@ -589,10 +630,10 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         function [sets,tsHCC,textList,textListT,itemsList,...
                hHomeScreen, hPanelRawKymos,hPanelAlignedKymos,hPanelTimeAverages,hAdditional] = generate_gui()
       
-            hFig = figure('Name', 'DNA Barcode Matchmaker v0.6.6', ...% get from VERSION file
+            hFig = figure('Name', 'DNA Barcode Matchmaker v0.7.1', ...% get from VERSION file
                 'Units', 'normalized', ...
                 'OuterPosition', [0.05 0.1 0.8 0.8], ...
-                'NumberTitle', 'off',... 
+                'NumberTitle', 'off', ...     
                 'MenuBar', 'none',...
                 'ToolBar', 'none' ...
             );

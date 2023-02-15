@@ -275,13 +275,16 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         end
         posXUpd2 = num2cell(posXUpd(find(idxOut)));
         colCenterIdxs = vertcat(posXUpd2{:});
-    
+        
         fileStruct = struct();
         fileStruct.preCells = preCells;
         fileStruct.fileName = name;
         fileStruct.averagedImg = meanRotatedMovieFrame;
+        fileStruct.meanStd = [nanmean(meanRotatedMovieFrame(:)) nanstd(meanRotatedMovieFrame(:))];
         fileStruct.locs = colCenterIdxs;
         fileStruct.regions = rowEdgeIdxs;
+%         fileStruct.locsRejected = colCenterIdxsRejected; % rejected regions
+%         fileStruct.regionsRejected = rowEdgeIdxsRejected;
         fileStruct.angleCor = maxCol;
         fileMoleculeCells{idx} = moleculeStructs;
         fileCells{idx} = fileStruct;
@@ -1161,25 +1164,37 @@ function [posX,posMax] = find_mols_corr(rotImg,bgTrend,numPts,channelForDist,fir
         relevantRows = find(sum(rotImg{1}{firstIdx}  > meanVal+3*stdVal) > numPts);
         allrows = 1:size(rotImg{1}{firstIdx},2);
         allrows(relevantRows)=0;
+        
+        % these will be mostly noise rows
+        nonrelevantRowsFarAway = find(sum(rotImg{1}{firstIdx}  > meanVal+3*stdVal) < 20); % todo: what if everything has signal?
+        faraway = cell(1,2); % far away cells
+        faraway{1} =  rotImg{1}{firstIdx}(:,nonrelevantRowsFarAway);
+        faraway{2} = circshift(faraway{1},[0,1]);
+        faraway{1}(:,1:8)=nan;
+        faraway{1}(:,end-7:end)=nan;
 
         for ch=1:length(rotImg)
             rotImg{ch}{firstIdx}(:,find(allrows))=nan;%min(rotImg{2}{1}(:));
         end
         % Now find molecules..
+        
+        % first we find the far-away shift
+        [maxFirst, posFirst] = max(faraway{1});        
+        corrsFarAway = find_column_max(faraway{1},faraway{2},posFirst,numPts);
 
 
         tic
         % import AB.find_molecules;      %  1:settingsHPFL.numFrames
         [height, posX, peakMat, peaksToPlot, peakcc, peakint,corrM,posMax] =  ...
             find_molecules({rotImg{channelForDist}{firstIdx}},numPts,centralTend{channelForDist},...
-        farAwayShift, distbetweenChannels,timeframes)  ;
+        farAwayShift, distbetweenChannels,timeframes,corrsFarAway)  ;
         disp(strcat(['Channel detection done in ' num2str(toc) ' seconds']));
         %
 end
         
     
 function [height,peakpos,peakMat, peaksToPlot, peakcc,peakint,corrM,maxPos] = find_molecules(rotImg,numPts,meanSignal,...
-    farAwayShift, distbetweenChannels,timeframes)
+    farAwayShift, distbetweenChannels,timeframes,corrsFarAway)
     % find_molecule_channels
 
     % when computing the correlation, don't consider the whole column, but
@@ -1222,7 +1237,7 @@ function [height,peakpos,peakMat, peaksToPlot, peakcc,peakint,corrM,maxPos] = fi
     % intensities?
     [maxFirst, posFirst] = max(rotImg{1});
 
-    corrsFarAway = find_column_max(rotImg{1},circshift(rotImg{2},[0,farAwayShift]),posFirst,numPts);
+%     corrsFarAway = find_column_max(rotImg{1},circshift(rotImg{2},[0,farAwayShift]),posFirst,numPts);
 %     corrsFarAway2 = find_column_max(rotImg{1},circshift(rotImg{2},[0,farAwayShift+2]),posFirst,numPts);
 %     corrsFarAway3 = find_column_max(rotImg{1},circshift(rotImg{2},[0,farAwayShift+4]),posFirst,numPts);
 

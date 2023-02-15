@@ -37,28 +37,35 @@ files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDriv
 % files  =dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\lambda\20220610_32087-4-st1_e.coli_filter-2_lambda-1.tif');
 % files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\*.tif');
 % files=dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\lambda\*.tif');
-files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\zhara\Lambda_Zara\Lambda_Zara\*.tif');
-files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\zhara\czi\*.tif');
-files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\*.tif');
-files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\czi files\czi files\*.tif');
-files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping_New_E.coli_all\Mapping_New_E.coli\New data_Jan 2023\2022-12-19\czi files\*.tif');
-files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping_New_E.coli_all\Mapping_New_E.coli\New data_Jan 2023\2022-12-20\1st experiment\czi files\20221220_87-st7_filter-2_int-35_mol-6.tif');
-files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping_New_E.coli_all\Mapping_New_E.coli\New data_Jan 2023\2022-12-20\1st experiment\czi files\20221220_87-st7_filter-2_int-35_mol-60.tif');
-files = dir('C:\Users\Lenovo\postdoc\DATA\LUISDATAMOV\2022-03-18\*.tif');
+% files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\zhara\Lambda_Zara\Lambda_Zara\*.tif');
+% files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\zhara\czi\*.tif');
+% files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\*.tif');
+% files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\czi files\czi files\*.tif');
+% files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping_New_E.coli_all\Mapping_New_E.coli\New data_Jan 2023\2022-12-19\czi files\*.tif');
+% files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping_New_E.coli_all\Mapping_New_E.coli\New data_Jan 2023\2022-12-20\1st experiment\czi files\20221220_87-st7_filter-2_int-35_mol-6.tif');
+% files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping_New_E.coli_all\Mapping_New_E.coli\New data_Jan 2023\2022-12-20\1st experiment\czi files\20221220_87-st7_filter-2_int-35_mol-60.tif');
+% files = dir('C:\Users\Lenovo\postdoc\DATA\LUISDATAMOV\2022-03-18\*.tif');
+% files = dir('C:\Users\Lenovo\postdoc\DATA\LUISDATAMOV\2022-01-11\*.tif');
+
+% files = dir('C:\Users\Lenovo\postdoc\DATA\LUISDATAMOV\2022-01-11\Experiment-3875.tif');
+
 
 % files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\czi files\czi files\20221219_87-st7_filter-2_int-35_mol-58-2.tif')
 % files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\czi files\czi files\*.tif');
 
 % files = dir('C:\Users\Lenovo\git\test_2\*.tif');
+files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_pep\fold\*.tif');
+files = dir('D:\Radhika\03-01-2023\data\*.tif');
 
-filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:length(files),'un',false);
-% filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),11:20,'un',false);
+% filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:length(files),'un',false);
+filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:4,'un',false);
 
 dbmOSW.DBMSettingsstruct.genome_assembly_pipeline = 0;
 dbmOSW.DBMSettingsstruct.movies.movieNames = filesC;
 dbmOSW.DBMSettingsstruct.averagingWindowWidth = 3;
 % dbmOSW.DBMSettingsstruct.movies.movieNames = {filesC{1:3}};
 dbmOSW.DBMSettingsstruct.npeaks = 2;
+dbmOSW.DBMSettingsstruct.distbetweenChannels = 7;
 % fd =fopen(dbmOSW.DBMSettingsstruct.movies.movieFile);
 % filePh = fopen(dbmOSW.DBMSettingsstruct.movies.movieFile,'w');
 % fprintf(filePh,'%s\n',filesC{:});
