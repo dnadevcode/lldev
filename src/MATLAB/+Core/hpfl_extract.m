@@ -1179,9 +1179,13 @@ function [posX,posMax] = find_mols_corr(rotImg,bgTrend,numPts,channelForDist,fir
         % Now find molecules..
         
         % first we find the far-away shift
+        try
         [maxFirst, posFirst] = max(faraway{1});        
         corrsFarAway = find_column_max(faraway{1},faraway{2},posFirst,numPts);
-
+        catch
+            corrsFarAway = nan;
+        end
+            
 
         tic
         % import AB.find_molecules;      %  1:settingsHPFL.numFrames
