@@ -59,7 +59,7 @@ files = dir('/proj/snic2022-5-384/users/x_albdv/data/Yeast/mov/2022-03-18/*.tif'
 % files = dir('D:\Radhika\03-01-2023\data\*.tif');
 
 % filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:length(files),'un',false);
-filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:4,'un',false);
+filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:10,'un',false);
 
 dbmOSW.DBMSettingsstruct.genome_assembly_pipeline = 0;
 dbmOSW.DBMSettingsstruct.movies.movieNames = filesC;

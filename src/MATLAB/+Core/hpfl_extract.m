@@ -554,7 +554,7 @@ function [rotImg, rotMask,movieAngle,maxCol] = image_rotation(channelImg, meanMo
             sz = size(resizedImg);
             % resize images to bigger
         
-            npeaks = max(npeaks,ceil(min(sz)/100));
+            npeaks = max(npeaks,ceil(min(sz)/100)); 
             mpkdist = 20;% minimum peak distance
 
 
