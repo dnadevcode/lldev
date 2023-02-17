@@ -22,6 +22,9 @@ function [spalignedKymo,spalignedBitmask,cutKymo,cutMaskF,newMask,f] = spalign(k
         maxShift = 20;
     end
 
+    if isempty(bitmask)
+        bitmask = ones(size(kymo));
+    end
     %% STEP 1: shift align with minimum overlap (shouldn't be too small to
     % avoid erranoreously matching small regions)
     import OptMap.KymoAlignment.SPAlign.apply_stretching;
@@ -177,6 +180,9 @@ if nargout >=6
     nexttile
     imagesc(spalignedKymo)
     title('Aligned')
+    nexttile
+    imagesc(spalignedBitmask)
+
 end
 % almat = apply_stretching(mat, stretchFactorsMat);
 

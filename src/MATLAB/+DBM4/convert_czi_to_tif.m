@@ -27,11 +27,11 @@ function [newNames, newInfo ] = convert_czi_to_tif(data, multiChannels)
     if exist(catcheFold, 'file')
         st = catcheFold;
         se = seFold;
-        isnotrecognized = [];    
+        isnotrecognized = 0;    
     end
           
           
-    if ~isempty(isnotrecognized)
+    if isnotrecognized
         disp('Please download https://downloads.openmicroscopy.org/bio-formats/5.5.2/artifacts/bftools.zip unzip and add to path');
         newNames =[];
         newInfo = [];

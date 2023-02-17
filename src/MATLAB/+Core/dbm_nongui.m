@@ -34,6 +34,7 @@ dbmOSW.DBMSettingsstruct.auto_run = 1;
 files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDrive_1_11-17-2022\Movies\*.tif');
 files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDrive_1_11-17-2022\lambda\*.tif');
 files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDrive_2023-01-13\Multi tile TIFF files\series 1\1s1600ms-01_AcquisitionBlock2_pt2.15x1700y-8000.tif');
+files = dir('/proj/snic2022-5-384/users/x_albdv/data/Yeast/mov/2022-03-18/*.tif')
 % files  =dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\lambda\20220610_32087-4-st1_e.coli_filter-2_lambda-1.tif');
 % files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\*.tif');
 % files=dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\ECOLIMOV\lambda\*.tif');
@@ -54,11 +55,11 @@ files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_kymos_22-11-08\OneDriv
 % files = dir('C:\Users\Lenovo\postdoc\DATA\Chromosome\czi files\czi files\*.tif');
 
 % files = dir('C:\Users\Lenovo\git\test_2\*.tif');
-files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_pep\fold\*.tif');
-files = dir('D:\Radhika\03-01-2023\data\*.tif');
+% files = dir('C:\Users\Lenovo\postdoc\DATA\Mapping\Radhika_pep\fold\*.tif');
+% files = dir('D:\Radhika\03-01-2023\data\*.tif');
 
-filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:length(files),'un',false);
-% filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:4,'un',false);
+% filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:length(files),'un',false);
+filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:4,'un',false);
 
 dbmOSW.DBMSettingsstruct.genome_assembly_pipeline = 0;
 dbmOSW.DBMSettingsstruct.movies.movieNames = filesC;

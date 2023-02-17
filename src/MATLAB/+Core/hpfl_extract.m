@@ -68,6 +68,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             posYcoord =  fileCells{idx}.preCells.posYcoord;
             meanRotatedMovieFrame =  fileCells{idx}.preCells.meanRotatedMovieFrame;
             maxCol = fileCells{idx}.preCells.maxCol;
+            noiseKymos = fileCells{idx}.preCells.noiseKymos;
         else
             
         name = movieFilenames{idx};
@@ -235,10 +236,15 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     preCells.name = name;
     preCells.meanRotatedMovieFrame = meanRotatedMovieFrame;
     preCells.maxCol = maxCol;
+    preCells.noiseKymos = noiseKymos;
     
     % now final step is to extract "nice" kymographs
        
     [kymo, kymoW, kymoNames, Length,~, kymoOrig, idxOut] = extract_from_channels(kymos, wideKymos, posXUpd, posY, channelForDist, minLen, stdDifPos);
+    
+    if channels == 2 % in case of two channels
+        [~, ~, ~, ~,~, kymoOrigDots] = extract_from_channels(kymos, wideKymos, posXUpd, posY, 2, minLen, stdDifPos);
+    end
     disp(strcat(['Removed ' num2str(length(kymos{1})-length(kymo)) ' due to minLen & stdDifPos constraint']));
 
 	posY = posY(find(idxOut));
@@ -249,6 +255,10 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     for i=1:numMoleculesDetected
         moleculeStructs{i}.miniRotatedMovie = kymoW{i}{1};
         moleculeStructs{i}.kymograph = kymoOrig{i};
+        if channels == 2 % in case of two channels
+            moleculeStructs{i}.kymographDots = kymoOrigDots{i};
+        end
+
         moleculeStructs{i}.kymosMoleculeLeftEdgeIdxs = posY{i}.leftEdgeIdxs;
         moleculeStructs{i}.kymosMoleculeRightEdgeIdxs = posY{i}.rightEdgeIdxs;
         try
@@ -321,6 +331,8 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     % save kymos into single structure
     kymoCells = [];
     kymoCells.rawKymos = [];
+    kymoCells.rawKymosDots = [];
+
     kymoCells.rawBitmask = [];
     kymoCells.kymosMoleculeLeftEdgeIdxs = [];
     kymoCells.kymosMoleculeRightEdgeIdxs = [];
@@ -339,6 +351,10 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         for rawKymoNum = 1:numRawKymos
             [~, srcFilenameNoExt, ~] = fileparts(movieFilenames{rawMovieIdx});
             kymoCells.rawKymos{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymograph;
+            if channels == 2
+                kymoCells.rawKymosDots{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymographDots;
+            end
+
             kymoCells.rawBitmask{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.moleculeMasks;
             try
                 kymoCells.threshval{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.threshval;
@@ -1821,7 +1837,7 @@ end
 
 %%
 function [kymo, kymoW, kymoNames,Length,posXOut,kymoOrig,idxOut] = extract_from_channels(kymos,kymosWide, posX, posY,channel,numPts,stdDifPos)
-    
+    % extracts from channels
     %   Args:
     %   kymos,kymosDots,stdF,minArea,edge,meanBgs,stdBgs
     %
@@ -1839,13 +1855,12 @@ function [kymo, kymoW, kymoNames,Length,posXOut,kymoOrig,idxOut] = extract_from_
     idxOut=zeros(1,length(kymos{1}));
 
     if ~isempty(posY)
-
 %         kymo = cell(1,length(posY));
 %         kymoW =  cell(1,length(posY));
 %         kymoNames = cell(1,length(posY));
 %         Length = cell(1,length(posY));
         nonemptypos = find(cellfun(@(x) ~isempty(x),posY));
-        for i=nonemptypos
+        for i = nonemptypos
             if length(posY{i}.leftEdgeIdxs)==1
                 stdY = 0; stdX = 0;
             else
@@ -1853,26 +1868,20 @@ function [kymo, kymoW, kymoNames,Length,posXOut,kymoOrig,idxOut] = extract_from_
                 stdY = std(diff(posY{i}.rightEdgeIdxs));
             end
             if mean(posY{i}.rightEdgeIdxs-posY{i}.leftEdgeIdxs)>numPts && stdX < stdDifPos && stdY < stdDifPos% threshold num pixels
-%                 idx = 1;
+
                 kymo{idx} = nan(size(kymos{channel}{i}));
                 kymoOrig{idx} = kymos{channel}{i};
                 for j=1:length(posY{i}.rightEdgeIdxs)
                    kymo{idx}(j,posY{i}.leftEdgeIdxs(j):posY{i}.rightEdgeIdxs(j)) = zeros(1,length(posY{i}.leftEdgeIdxs(j):posY{i}.rightEdgeIdxs(j)));
                    kymo{idx}(j,posY{i}.leftEdgeIdxs(j):posY{i}.rightEdgeIdxs(j)) = kymos{channel}{i}(j,posY{i}.leftEdgeIdxs(j):posY{i}.rightEdgeIdxs(j));
                 end
-%                 kymo{i} = kymos(idx,posY{i}(idx,1):posY{i}(idx,2));   
-%                 kmW = cellfun(@(x) x(posY{i}(idx,1):posY{i}(idx,2),:),kymosWide,'un',false);
+
                 kymoW{idx} = kymosWide{channel}{i};
                 for j=1:length(kymoW{idx})
                     kymoW{idx}{j}(1:posY{i}.leftEdgeIdxs(j)-1,:)=nan;
                     kymoW{idx}{j}(posY{i}.rightEdgeIdxs(j)+1:end,:)=nan;
                 end
-%             else
-%                 kymo{i} = zeros(size(kymos));
-%                 kymo{i} = kymos(:,min(posY{i}(:,1)):max(posY{i}(:,2)));
-% %                 for idx=1:size(posY{i},1)
-% %                     kymo{i}(idx,posY{i}(idx,1):posY{i}(idx,2)) = kymos(idx,posY{i}(idx,1):posY{i}(idx,2));         
-%                 end
+
                 kymoNames{idx} = strcat(['kymo_posX_' num2str(posX) '_startY_' num2str(mean(posY{i}.leftEdgeIdxs)) '_endY_' num2str(mean(posY{i}.rightEdgeIdxs)) ]);
                 Length{idx} = mean(posY{i}.rightEdgeIdxs)-mean(posY{i}.leftEdgeIdxs)+1;
                 posXOut = [posXOut posX(i)];
