@@ -10,7 +10,8 @@ function [newNames, newInfo ] = convert_czi_to_tif(data, multiChannels)
     se = 'showinf';
     command = strcat([st ' -version']);
     [test,testmessage] = system(command);
-    isnotrecognized = ~isempty(strfind(testmessage,'not recognized'))||~isempty(strfind(testmessage,'not found'));
+
+    isrecognized = isempty(strfind(testmessage,'not recognized'))||isempty(strfind(testmessage,'not found'));
     
     
     mFilePath = mfilename('fullpath');
@@ -27,11 +28,11 @@ function [newNames, newInfo ] = convert_czi_to_tif(data, multiChannels)
     if exist(catcheFold, 'file')
         st = catcheFold;
         se = seFold;
-        isnotrecognized = 0;    
+        isrecognized = 1;    
     end
           
           
-    if isnotrecognized
+    if ~isrecognized
         disp('Please download https://downloads.openmicroscopy.org/bio-formats/5.5.2/artifacts/bftools.zip unzip and add to path');
         newNames =[];
         newInfo = [];
