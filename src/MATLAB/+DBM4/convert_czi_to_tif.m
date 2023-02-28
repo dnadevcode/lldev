@@ -103,46 +103,46 @@ for i=1:length(data)
         ch2 = imread(nameNew,2);
         imwrite(ch2,strcat(name,'_C=1.tif'));
     else
-        d = importdata(nameNew2);
-        posS = cellfun(@(x) ~isempty(strfind(x,'Information|Image|SizeS')),d);
-        posS = find(posS);
-        if ~isempty(posS)
-            sizeS = strsplit(d{posS},":");
-            sizeS = str2double(sizeS(end));
-        else
-            sizeS = 1;
-        end
-        
-%         posM = cellfun(@(x) ~isempty(strfind(x,'Information|Image|SizeM')),d);
-%         posM = find(posM);
-%         if ~isempty(posM)
-%             sizeM =  strsplit(d{posM},":");
-%             sizeM = str2double(sizeM(end));
+%         d = importdata(nameNew2);
+%         posS = cellfun(@(x) ~isempty(strfind(x,'Information|Image|SizeS')),d);
+%         posS = find(posS);
+%         if ~isempty(posS)
+%             sizeS = strsplit(d{posS},":");
+%             sizeS = str2double(sizeS(end));
 %         else
-%             sizeM = 1;
+%             sizeS = 1;
 %         end
-        
-        posT = cellfun(@(x) ~isempty(strfind(x,'Information|Image|SizeT')),d); % number timeframes
-        posT = find(posT);
-        if ~isempty(posT)
-            sizeT =  strsplit(d{posT},":");
-            sizeT = str2double(sizeT(end));
-        else
-            sizeT = 1;
-        end
-%         outputFile = regexprep(name, 'czi','');
-
-        for k=1:sizeS
-            strn=num2str(k);
-            % rename the original image file with series number
-            nameNew2 = strrep(name,'.czi',strcat(['_' strn '.tif']));
-            if exist(nameNew2, 'file')
-                delete(nameNew2);
-            end
-
-            for n = 1: sizeT 
-                imwrite( imread(nameNew,sizeT*(k-1)+n),nameNew2,'WriteMode','append');  
-            end
+%         
+% %         posM = cellfun(@(x) ~isempty(strfind(x,'Information|Image|SizeM')),d);
+% %         posM = find(posM);
+% %         if ~isempty(posM)
+% %             sizeM =  strsplit(d{posM},":");
+% %             sizeM = str2double(sizeM(end));
+% %         else
+% %             sizeM = 1;
+% %         end
+%         
+%         posT = cellfun(@(x) ~isempty(strfind(x,'Information|Image|SizeT')),d); % number timeframes
+%         posT = find(posT);
+%         if ~isempty(posT)
+%             sizeT =  strsplit(d{posT},":");
+%             sizeT = str2double(sizeT(end));
+%         else
+%             sizeT = 1;
+%         end
+% %         outputFile = regexprep(name, 'czi','');
+% 
+%         for k=1:sizeS
+%             strn=num2str(k);
+%             % rename the original image file with series number
+%             nameNew2 = strrep(name,'.czi',strcat(['_' strn '.tif']));
+%             if exist(nameNew2, 'file')
+%                 delete(nameNew2);
+%             end
+% 
+%             for n = 1: sizeT 
+%                 imwrite( imread(nameNew,sizeT*(k-1)+n),nameNew2,'WriteMode','append');  
+%             end
         end
 
 

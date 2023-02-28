@@ -1,10 +1,13 @@
-function [] = run_genome_assembly_pipeline(userDir)
+function [barcodeGen,barGenMerged,kymoStructs] = run_genome_assembly_pipeline(userDir, runMP)
 
+    if nargin < 2
+        runMP = 0;
+    end
     files = dir(fullfile(userDir,'*.tif'));
 
     useGUI = 0;
     
-    % todo: settigns should be taken directly from settings file and not
+    % todo: settings should be taken directly from settings file and not
     % initiated here. For easier end-use
 
     import OldDBM.General.SettingsWrapper;
@@ -19,19 +22,19 @@ function [] = run_genome_assembly_pipeline(userDir)
 
     dbmOSW.DBMSettingsstruct.movies.askForMovies = 0;
     
-    dbmOSW.DBMSettingsstruct.detectlambdas = 0;
-    dbmOSW.DBMSettingsstruct.initialAngle = 0;
-    dbmOSW.DBMSettingsstruct.maxLambdaLen = inf;
-    dbmOSW.DBMSettingsstruct.angleStep = 0.01;
-    dbmOSW.DBMSettingsstruct.numPts = 200;
+%     dbmOSW.DBMSettingsstruct.detectlambdas = 0;
+%     dbmOSW.DBMSettingsstruct.initialAngle = 0;
+%     dbmOSW.DBMSettingsstruct.maxLambdaLen = inf;
+%     dbmOSW.DBMSettingsstruct.angleStep = 0.01;
+%     dbmOSW.DBMSettingsstruct.numPts = 200;
     dbmOSW.DBMSettingsstruct.auto_run = 1;
-    dbmOSW.DBMSettingsstruct.npeaks = 1;
+%     dbmOSW.DBMSettingsstruct.npeaks = 1;
     
     %% align
-    sets.minOverlap = 300;
-    sets.maxShift = 20;
-    sets.skipPreAlign = 0;
-    sets.detPeaks = 1;
+    sets.minOverlap =  dbmOSW.DBMSettingsstruct.minOverlap;
+    sets.maxShift = dbmOSW.DBMSettingsstruct.maxShift;
+    sets.skipPreAlign = dbmOSW.DBMSettingsstruct.skipPreAlign;
+    sets.detPeaks = dbmOSW.DBMSettingsstruct.detPeaks;
     
     %% generate barcodes
     sets.maxLen=Inf;
@@ -64,12 +67,13 @@ function [] = run_genome_assembly_pipeline(userDir)
     %     i
         [kymoStructs{i}.alignedKymo,kymoStructs{i}.alignedMask,~,~] = ...
         spalign(double(kymoStructs{i}.unalignedKymo),kymoStructs{i}.unalignedBitmask,sets.minOverlap,sets.maxShift,sets.skipPreAlign, sets.detPeaks);
+        if (sum(kymoStructs{i}.alignedMask(:))==0)
+            kymoStructs{i}.alignedMask = kymoStructs{i}.unalignedBitmask; % there was a single feature
+        end
         kymoStructs{i}.leftEdgeIdxs = arrayfun(@(frameNum) find(kymoStructs{i}.alignedMask(frameNum, :), 1, 'first'), 1:size(kymoStructs{i}.alignedMask,1));
         kymoStructs{i}.rightEdgeIdxs = arrayfun(@(frameNum) find(kymoStructs{i}.alignedMask(frameNum, :), 1, 'last'), 1:size(kymoStructs{i}.alignedMask,1));
         kymoStructs{i}.name = names{i};
     end
-
-
 
     %     % sets.minLen
     import DBM4.gen_barcodes_from_kymo;
@@ -83,7 +87,9 @@ function [] = run_genome_assembly_pipeline(userDir)
     outputTarget = strcat(userDir,'_sessiondata');
     mkdir(outputTarget);
 %     assignin('base','dbmStruct',dbmStruct);
-    save(fullfile(outputTarget,'session_data.mat'),'barcodeGen','barGenMerged','kymoStructs')
+    timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
+
+    save(fullfile(outputTarget,['session_data',timestamp,'.mat']),'barcodeGen','barGenMerged','kymoStructs')
 
     files = cellfun(@(rawKymo, outputKymoFilepath)...
     isfile(fullfile(outputTarget,outputKymoFilepath)),...
@@ -102,19 +108,19 @@ function [] = run_genome_assembly_pipeline(userDir)
     cellfun(@(rawKymo, outputKymoFilepath)...
     imwrite(uint16(round(double(rawKymo)./max(rawKymo(:))*2^16)), fullfile(outputTarget,outputKymoFilepath), 'tif','WriteMode','append'),...
     dbmStruct.kymoCells.rawKymos, dbmStruct.kymoCells.rawKymoName);
-
-
-    sF = 0.95:0.01:1.05;
-    minOverlap = 300;
-    timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
-
-    % bars = barGenMerged(length(posSingle):end);
-    bars = barGenMerged(cellfun(@(x) sum(x.rawBitmask),barGenMerged)>300);
-    [oS] = calc_overlap_mp(bars,sF, minOverlap,timestamp);
     
-    save(fullfile(outputTarget,'mp_data.mat'),'minOverlap','oS','sF')
+    if runMP % if we already want to pre-calculate MP stuff here. Might need some modifications depending on data
+
+        sF = 0.95:0.01:1.05;
+        minOverlap = 300;
+    
+        % bars = barGenMerged(length(posSingle):end);
+        bars = barGenMerged(cellfun(@(x) sum(x.rawBitmask),barGenMerged)>300);
+        [oS] = calc_overlap_mp(bars,sF, minOverlap,timestamp);
+        
+        save(fullfile(outputTarget,'mp_data.mat'),'minOverlap','oS','sF')
+    end
 
 
-end
 end
 

@@ -46,20 +46,31 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 
     % detect columns with molecule
     farAwayShift = sets.farAwayShift; % how many rows to shift for max coefficient calculation
-    channelForDist = sets.channelForDist;
+    channelForDistSetting = sets.channelForDist;
    
+    if nargin >= 2
+        usePrecalc = 1;
+    else
+        usePrecalc = 0;
+    end
+
+    if max_f == 0 % 0 means all frames
+        max_f = inf;
+    end
     import DBM4.convert_czi_to_tif;
+
+%     channels = [];
 
     % 3) load image first frame for mol detection
     tic
     % settingsHPFL.numFrames = 1;
-    for idx = 1:length(movieFilenames)
-        if nargin >= 2
-            kymos=fileCells{idx}.preCells.kymos;
+    parfor idx = 1:length(movieFilenames)
+        if usePrecalc
+            kymos = fileCells{idx}.preCells.kymos;
             wideKymos = fileCells{idx}.preCells.wideKymos ;
             posXUpd =  fileCells{idx}.preCells.posXUpd;
             posY = fileCells{idx}.preCells.posY;
-            channelForDist =fileCells{idx}.preCells.channelForDist;
+            channelForDist = fileCells{idx}.preCells.channelForDist;
 %             minLen = fileCells{idx}.preCells.minLen;
 %             stdDifPos = fileCells{idx}.preCells.stdDifPos;
             name =  fileCells{idx}.preCells.name;
@@ -69,48 +80,48 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             noiseKymos = fileCells{idx}.preCells.noiseKymos;
         else
             
-        name = movieFilenames{idx};
-        fprintf('Importing data from: %s\n', name);
+            name = movieFilenames{idx};
+            fprintf('Importing data from: %s\n', name);
         
-        [beg,mid,ending] =  fileparts(name); % todo: move outside since can be multiple files
-        if isequal(ending,'.czi')
-            data(1).folder = beg;
-            data(1).name = strcat(mid,ending);
-            disp('Need to convert to czi, running convertion tool');
-            [newNames, newInfo ] = convert_czi_to_tif(data,0); % todo: convert fixed number of frames only/ newInfo contains info about file
-            name = newNames{1}; 
-        end
+            [beg,mid,ending] =  fileparts(name); % todo: move outside since can be multiple files
+            if isequal(ending,'.czi')
+                data = struct();
+                data(1).folder = beg;
+                data(1).name = strcat(mid,ending);
+                disp('Need to convert to czi, running convertion tool');
+                [newNames, newInfo ] = convert_czi_to_tif(data,0); % todo: convert fixed number of frames only/ newInfo contains info about file
+                name = newNames{1}; 
+            end
         
-        if max_f == 0
-            max_f = inf;
-        end
-            
-        % here could be a loop over multiple images.
-        
-        % load data - support multi-channel // take from the first time frame
-        [ channelImg, imageData ] = load_first_frame_iris(name,max_number_of_frames, max_f, channels);
-        firstIdx = imageData{1}.IntensityInfo.firstIdx;
-%         firstIdx = 1; % 
-        channels = imageData{1}.info.channels;
-%         visual_mean(channelImg{1}{1}) % visualize channel vs mean
+
+                    
+            % load data - support multi-channel // take from the first time frame
+            [ channelImg, imageData ] = load_first_frame_iris(name,max_number_of_frames, max_f, channels);
+            firstIdx = imageData{1}.IntensityInfo.firstIdx;
+%             channels = imageData{1}.info.channels;% this info already
+%             passed to load first frame
+    %         visual_mean(channelImg{1}{1}) % visualize channel vs mean
 %         figure,plot(imageData{1}.IntensityInfo.yData)
 
-        if length(channelImg) == 1 % if single channel
-            channelForDist = 1;
-            firstIdx = 1;
-        end
-        number_of_frames = length(channelImg{1}); % maximum number of frames
+            if length(channelImg) == 1 % if single channel
+                channelForDist = 1;
+                firstIdx = 1;
+            else
+                channelForDist = channelForDistSetting;
+            end
 
-        %
-        disp(strcat(['Image loaded in ' num2str(toc) ' seconds']));
-        
-        meanMovieFrame = mean(cat(3, channelImg{1}{:}), 3, 'omitnan');
-        [rotImg, rotMask, movieAngle,maxCol] = image_rotation(channelImg, meanMovieFrame, sets);
-        disp(strcat(['Rotation done in ' num2str(toc) ' seconds']));
-  
-        meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
+            number_of_frames = length(channelImg{1}); % maximum number of frames
 
-        sz = size(meanRotatedMovieFrame);
+            %
+%             disp(strcat(['Image loaded in ' num2str(toc) ' seconds']));
+            
+            meanMovieFrame = mean(cat(3, channelImg{1}{:}), 3, 'omitnan');
+            [rotImg, rotMask, movieAngle,maxCol] = image_rotation(channelImg, meanMovieFrame, sets);
+%             disp(strcat(['Rotation done in ' num2str(toc) ' seconds']));
+      
+            meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
+    
+            sz = size(meanRotatedMovieFrame);
         
 %         visual_mean(rotImg{1}{1}) % visualize channel vs mean
 
@@ -133,50 +144,50 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 
         % remove noise. this also calculates central and bg trend /instead
         % could remove based on bg images
-        rotImgOrig = rotImg;
-        %     [rotImg,centralTend,bgTrend,bgSub] = remove_noise(rotImg, rotMask);
-        [rotImg, centralTend, bgTrend, bgSub,background] = remove_noise_mean(rotImg, rotMask, firstIdx, remNonuniform);
-%         visual_mean(rotImg{1}{1}) % visualize channel vs mean
-
-       % now detect channels
-        for ch=1:length(rotImg)
-            rotImg{ch}{1}(isnan(rotImg{ch}{1}))=0;
-        end
-     
-        meanRotatedDenoisedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
-
-        if sets.detectlambdas         
-            %% find lambda molecules
-             [posY,posX, posYcoord, posMax,thedges,kymos,wideKymos,pxBg,bgmean,bgstd,posXUpd,bitmask,...
-        positions, mat,threshval,threshstd, badMol,bitWithGaps] = detect_lambda_positions(meanRotatedDenoisedMovieFrame,...
-        sets,rotImgOrig,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
-             noiseKymos = [];
-        else
-            % find columns which have long molecules
-            [posX, posMax, nonrelevantRowsFarAway] = find_mols_corr(rotImg, bgTrend, numPts, channelForDist, firstIdx, centralTend, farAwayShift, distbetweenChannels,timeframes );
-            
-            % background has to be within +-sets.parForNoise from the
-            % middle posX
-            if isempty(posX)
-                columns = round(sz(2)/2);
-            else
-                columns = max(1,posX(round(end/2))-sets.parForNoise): min(posX(round(end/2))+sets.parForNoise,sz(2));
+            rotImgOrig = rotImg;
+            %     [rotImg,centralTend,bgTrend,bgSub] = remove_noise(rotImg, rotMask);
+            [rotImg, centralTend, bgTrend, bgSub,background] = remove_noise_mean(rotImg, rotMask, firstIdx, remNonuniform);
+    %         visual_mean(rotImg{1}{1}) % visualize channel vs mean
+    
+           % now detect channels
+            for ch=1:length(rotImg)
+                rotImg{ch}{1}(isnan(rotImg{ch}{1}))=0;
             end
+     
+            meanRotatedDenoisedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
+
+            if sets.detectlambdas         
+                %% find lambda molecules
+                 [posY,posX, posYcoord, posMax,thedges,kymos,wideKymos,pxBg,bgmean,bgstd,posXUpd,bitmask,...
+            positions, mat,threshval,threshstd, badMol,bitWithGaps] = detect_lambda_positions(meanRotatedDenoisedMovieFrame,...
+            sets,rotImgOrig,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+                 noiseKymos = [];
+            else
+                % find columns which have long molecules
+                [posX, posMax, nonrelevantRowsFarAway] = find_mols_corr(rotImg, bgTrend, numPts, channelForDist, firstIdx, centralTend, farAwayShift, distbetweenChannels,timeframes );
             
-            [~,diffPeaks]  = min(nanmean(meanRotatedMovieFrame(:,columns)));
-            [noiseKymos] = create_channel_kymos_one(columns(diffPeaks),rotImgOrig,firstIdx,channels,movieAngle, name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+                % background has to be within +-sets.parForNoise from the
+                % middle posX
+                if isempty(posX)
+                    columns = round(sz(2)/2);
+                else
+                    columns = max(1,posX(round(end/2))-sets.parForNoise): min(posX(round(end/2))+sets.parForNoise,sz(2));
+                end
+                
+                [~,diffPeaks]  = min(nanmean(meanRotatedMovieFrame(:,columns)));
+                [noiseKymos] = create_channel_kymos_one(columns(diffPeaks),rotImgOrig,firstIdx,channels,movieAngle, name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
           
-
-            meanVal = 0;
-            stdVal = bgTrend{1}; % here could use bg kymos for this
-            % remove rows that don't have enough signal pixels // could use
-            numElts = find(sum(rotImg{1}{firstIdx}(:,posX)  > meanVal+3*stdVal) > numPts);
-            posXUpd = posX(numElts);
-
-            tic
-            % extract elements
-            [kymos, wideKymos, kmChanginW, kmChangingPos] = create_channel_kymos_one(posXUpd,rotImgOrig,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
-            disp(strcat(['Barcodes extracted in ' num2str(toc) ' seconds']));
+    
+                meanVal = 0;
+                stdVal = bgTrend{1}; % here could use bg kymos for this
+                % remove rows that don't have enough signal pixels // could use
+                numElts = find(sum(rotImg{1}{firstIdx}(:,posX)  > meanVal+3*stdVal) > numPts);
+                posXUpd = posX(numElts);
+    
+%                 tic
+                % extract elements
+                [kymos, wideKymos, kmChanginW, kmChangingPos] = create_channel_kymos_one(posXUpd,rotImgOrig,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+%                 disp(strcat(['Barcodes extracted in ' num2str(toc) ' seconds']));
 
 
             % means - max should be center
@@ -204,43 +215,40 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
                         % todo: check which is best for SNR/
 
     
-                % 
-            sz = size(meanRotatedDenoisedMovieFrame);
-            try
-                [posY] = find_positions_in_nanochannel(noiseKymos,kymos,[],sz,sets.SigmaLambdaDet,sets.filterS );
-                posYcoord = ones(length(posY),2);
-            catch
-                posY = [];
-                posYcoord =[];
+                    % 
+                sz = size(meanRotatedDenoisedMovieFrame);
+                try
+                    [posY] = find_positions_in_nanochannel(noiseKymos,kymos,[],sz,sets.SigmaLambdaDet,sets.filterS );
+                    posYcoord = ones(length(posY),2);
+                catch
+                    posY = [];
+                    posYcoord =[];
+                end
+    
+                % mean & std - used for SNR
+                threshval = nanmedian(noiseKymos{1}{channelForDist}(:));
+                threshstd = iqr(noiseKymos{1}{channelForDist}(:));
+
+
             end
-
-            % mean & std - used for SNR
-            threshval = nanmedian(noiseKymos{1}{channelForDist}(:));
-            threshstd = iqr(noiseKymos{1}{channelForDist}(:));
-
-
         end
-    end
     %% re-saving of these structures based on "nicity" i.e. by filtering could be re-done from here
-    preCells.kymos = kymos;
-    preCells.wideKymos = wideKymos;
-    preCells.posXUpd = posXUpd;
-    preCells.posY = posY;
-    preCells.posYcoord = posYcoord;
-    preCells.channelForDist = channelForDist;
-    preCells.minLen = minLen;
-    preCells.stdDifPos = stdDifPos;
-    preCells.name = name;
-    preCells.meanRotatedMovieFrame = meanRotatedMovieFrame;
-    preCells.maxCol = maxCol;
-    preCells.noiseKymos = noiseKymos;
+    fileCells{idx}.preCells.kymos = kymos;
+    fileCells{idx}.preCells.wideKymos = wideKymos;
+    fileCells{idx}.preCells.posXUpd = posXUpd;
+    fileCells{idx}.preCells.posY = posY;
+    fileCells{idx}.preCells.posYcoord = posYcoord;
+    fileCells{idx}.preCells.channelForDist = channelForDist;
+    fileCells{idx}.preCells.minLen = minLen;
+    fileCells{idx}.preCells.stdDifPos = stdDifPos;
+    fileCells{idx}.preCells.name = name;
+    fileCells{idx}.preCells.meanRotatedMovieFrame = meanRotatedMovieFrame;
+    fileCells{idx}.preCells.maxCol = maxCol;
+    fileCells{idx}.preCells.noiseKymos = noiseKymos;
     
     % now final step is to extract "nice" kymographs
-       
     [kymo, kymoW, kymoNames, Length,~, kymoOrig, idxOut] = extract_from_channels(kymos, wideKymos, posXUpd, posY, channelForDist, minLen, stdDifPos);
     
-
-
     if channels == 2 % in case of two channels
         [~, ~, ~, ~,~, kymoOrigDots] = extract_from_channels(kymos, wideKymos, posXUpd, posY, 2, minLen, stdDifPos);
     end
@@ -268,16 +276,11 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         try
              moleculeStructs{i}.threshval = threshval;
              moleculeStructs{i}.threshstd = threshstd;
-
              moleculeStructs{i}.snrValues = Core.barcodes_snr(moleculeStructs{i}.kymograph, moleculeStructs{i}.moleculeMasks,threshval,threshstd);
-
-%            moleculeStructs{i}.snrValues = snrValues;
         end
-
         % need to add some filters, i.e. is it too close to something?
         % close to the edge? etc
-         moleculeStructs{i}.passesFilters = 1;
-
+         moleculeStructs{i}.passesFilters = 1; % currently remove mol altogether
     end
         if ~isempty(posY)
             poss = cellfun(@(x) round([mean(x.leftEdgeIdxs) mean(x.rightEdgeIdxs)]),posY,'UniformOutput',false)';
@@ -291,47 +294,20 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         posXUpd2 = num2cell(posXUpd(find(idxOut)));
         colCenterIdxs = vertcat(posXUpd2{:});
         
-        fileStruct = struct();
-        fileStruct.preCells = preCells;
-        fileStruct.fileName = name;
-        fileStruct.averagedImg = meanRotatedMovieFrame;
-        fileStruct.meanStd = [nanmean(meanRotatedMovieFrame(:)) nanstd(meanRotatedMovieFrame(:))];
-        fileStruct.locs = colCenterIdxs;
-        fileStruct.regions = rowEdgeIdxs;
+        fileCells{idx}.fileName = name;
+        fileCells{idx}.averagedImg = meanRotatedMovieFrame;
+        fileCells{idx}.meanStd = [nanmean(meanRotatedMovieFrame(:)) nanstd(meanRotatedMovieFrame(:))];
+        fileCells{idx}.locs = colCenterIdxs;
+        fileCells{idx}.regions = rowEdgeIdxs;
 %         fileStruct.locsRejected = colCenterIdxsRejected; % rejected regions
 %         fileStruct.regionsRejected = rowEdgeIdxsRejected;
-        fileStruct.angleCor = maxCol;
+        fileCells{idx}.angleCor = maxCol;
         fileMoleculeCells{idx} = moleculeStructs;
         fileCells{idx} = fileStruct;
           
     end
-%     [nameS] = save_image(channelImg{2}{1}',channelImg{1}{1}',''); % save for i.e. analysis with optiscan
+    disp(strcat(['All molecules extracted in ' num2str(toc) ' seconds']));
 
-%     timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
-%     outputDirpath=strcat('kymographs',timestamp);
-%     mkdir(outputDirpath)
-%     
-%     numRawKymos = length(rawKymos);
-%     outputKymoFilepaths = cell(numRawKymos, 1);
-% 
-%     for rawMovieIdx=1:length(fileMoleculeCells)
-%         numRawKymos = length(fileMoleculeCells{rawMovieIdx});
-%         for rawKymoNum = 1:numRawKymos
-%             [~, srcFilenameNoExt, ~] = fileparts(movieFilenames{rawMovieIdx});
-%             outputKymoFilename = sprintf('%s_molecule_%d_kymograph.tif', srcFilenameNoExt, rawKymoNum);
-%             outputKymoFilepath = fullfile(outputDirpath, outputKymoFilename);
-%             fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymograph(isnan(fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymograph)) = 0;
-%             imwrite(uint16(fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymograph), outputKymoFilepath, 'tif');
-%             
-%             outputKymoFilename = sprintf('%s_molecule_%d_bitmask.tif', srcFilenameNoExt, rawKymoNum);
-%             outputKymoFilepath = fullfile(outputDirpath, outputKymoFilename);
-%             imwrite(uint16(fileMoleculeCells{rawMovieIdx}{rawKymoNum}.moleculeMasks), outputKymoFilepath, 'tif');
-% 
-% %         fileMoleculeCells{rawMovieIdx}
-%         end
-%         
-%         
-%     end
 
     % save kymos into single structure
     kymoCells = [];
@@ -374,7 +350,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             medInt = median(sampIm(:));
 %             maxInt = max(sampIm(:));
             try
-            J = imadjust(sampIm,[minInt 4*medInt]);
+                J = imadjust(sampIm,[minInt 4*medInt]);
             catch
                 J =  imadjust(sampIm,[0.1 0.9]);
             end

@@ -29,7 +29,7 @@ function [barcodeGenData] = gen_barcode_data(alignedKymo,leftEdgeIdxs, rightEdge
         rightEdgeIdx = round(nanmean(rightEdgeIdxs));
 
         if rightEdgeIdx <= leftEdgeIdx
-            disp('ah');
+            disp('bad barcode');
         end
         
         % Determine indices for rotated barcode with background cropped out
