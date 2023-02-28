@@ -135,8 +135,9 @@ function foundFeatures = find_k_features(prefilteredImg, maxMovementPx, typicalF
         for weightImgNum = 1:numWeightImgs
             
             if calculateNewPath(weightImgNum)
-            
-                [currFeaturePathLen, currFeaturePath, ~] = graphshortestpath(sparseMatrices{weightImgNum}, 1, M, 'method', 'acyclic');
+                [currFeaturePath, currFeaturePathLen, ~] = shortestpath(digraph(sparseMatrices{weightImgNum}), 1, M, 'method', 'acyclic');
+
+%                 [currFeaturePathLen, currFeaturePath, ~] = graphshortestpath(sparseMatrices{weightImgNum}, 1, M, 'method', 'acyclic');
                 if isempty(currFeaturePath)
                     featurePathLens(weightImgNum) = inf;
                     featurePaths(:, weightImgNum) = NaN;
