@@ -303,7 +303,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 %         fileStruct.regionsRejected = rowEdgeIdxsRejected;
         fileCells{idx}.angleCor = maxCol;
         fileMoleculeCells{idx} = moleculeStructs;
-        fileCells{idx} = fileStruct;
+%         fileCells{idx} = fileStruct;
           
     end
     disp(strcat(['All molecules extracted in ' num2str(toc) ' seconds']));
