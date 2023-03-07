@@ -434,7 +434,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         function [sets,tsHCC,textList,textListT,itemsList,...
                hHomeScreen, hPanelRawKymos,hPanelAlignedKymos,hPanelTimeAverages,hAdditional] = generate_gui()
       
-            hFig = figure('Name', 'DNA Barcode Matchmaker v0.7.2', ...% get from VERSION file
+            hFig = figure('Name', 'DNA Barcode Matchmaker v0.7.4', ...% get from VERSION file
                 'Units', 'normalized', ...
                 'OuterPosition', [0.05 0.1 0.8 0.8], ...
                 'NumberTitle', 'off', ...     
@@ -666,7 +666,7 @@ function detect_lambda_lengths_pipeline(src, event)
     % runs the detect_lambdas pipeline   
     userDir = uigetdir(pwd,'Select directory with movies to run through lambda pipeline');
     import DBM4.LambdaDet.run_lambda_lengths_pipeline;
-    run_lambda_lengths_pipeline(userDir);
+    run_lambda_lengths_pipeline(userDir,dbmOSW);
 end
 
 % genome assembly pipeline

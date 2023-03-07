@@ -72,7 +72,7 @@ function [dataStorage, nmbpHist] = compare_lambda_to_theory(barcodeGen,bgMean,cu
 
     %     bestBarStretch = bestBarStretch(bestLength
         % idx = 1;
-        % quick_plot({rezMaxM},barcodeGen,theoryStruct,idx,{bestBarStretch},{bestLength})
+%         quick_plot({rezMaxM},barcodeGen,theoryStruct,idx,{bestBarStretch},{bestLength})
         goodBarcodes =     (score<threshScore)+(overlap<=sum(lambdaMask))==2;
         [vals,pos] = hist(bestBarStretch(goodBarcodes),stretchFactors);
     %     [vals,pos] =hist(bestBarStretch,stretchFactors);
