@@ -1,6 +1,6 @@
 function [barGenMerged,posMulti,cnt_unique] = merge_neighbor_barcodes(barcodeGen)
 
-minOverlap = 300; 
+minOverlap = 300; % minimum overlap between barcodes
 % kymoStructs
 pxMask = 10;
 
@@ -9,14 +9,18 @@ pxMask = 10;
 barName = zeros(1,length(barcodeGen)+1);
 curBar = zeros(1,length(barcodeGen)+1);
 for i=1:length(barcodeGen)
-    name = strsplit(barcodeGen{i}.name,'mol-');
-    name1=strsplit(name{2},'_molecule');
-    nameFinal = strsplit(name1{1},'-');
-    barName(i+1) = str2num(nameFinal{1});
-    if length(nameFinal) >1 &&  barName(i+1)== barName(i) 
-        curBar(i+1) = curBar(i);
-    else
-        curBar(i+1) =i;
+    try
+        name = strsplit(barcodeGen{i}.name,'mol-');
+        name1=strsplit(name{2},'_molecule');
+        nameFinal = strsplit(name1{1},'-');
+        barName(i+1) = str2num(nameFinal{1});
+        if length(nameFinal) >1 &&  barName(i+1)== barName(i) 
+            curBar(i+1) = curBar(i);
+        else
+            curBar(i+1) =i;
+        end
+    catch
+        curBar(i+1) = i; % bad format, so keep same
     end
 end
 
