@@ -10,6 +10,8 @@ function [] = run_lambda_lengths_pipeline(userDir,dbmOSW)
         defaultSettingsFilepath = '';
         end
         dbmOSW = SettingsWrapper.import_dbm_settings_from_ini(defaultSettingsFilepath);
+    else
+         dbmOSW.DBMSettingsstruct = dbmOSW;
     end
     dbmOSW.DBMSettingsstruct.dbmtool = 'hpfl-odm';  % hardcode settigns for lambda detection
     dbmOSW.DBMSettingsstruct.askForDBMtoolSettings = 0;

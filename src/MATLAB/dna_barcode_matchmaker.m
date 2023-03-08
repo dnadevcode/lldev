@@ -666,7 +666,8 @@ function detect_lambda_lengths_pipeline(src, event)
     % runs the detect_lambdas pipeline   
     userDir = uigetdir(pwd,'Select directory with movies to run through lambda pipeline');
     import DBM4.LambdaDet.run_lambda_lengths_pipeline;
-    run_lambda_lengths_pipeline(userDir,dbmOSW);
+    
+    run_lambda_lengths_pipeline(userDir,sets);
 end
 
 % genome assembly pipeline
