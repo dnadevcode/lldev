@@ -118,7 +118,7 @@ function [barcodeGen,barGenMerged,kymoStructs] = run_genome_assembly_pipeline(us
 
     %% Merge neighbor barcodes
     import DBM4.Bargrouping.merge_neighbor_barcodes;
-    [barGenMerged,posMulti,cnt_unique] = merge_neighbor_barcodes(barcodeGen);
+    [barGenMerged,posMulti,cnt_unique] = merge_neighbor_barcodes(barcodeGen,sets.minOverlap);
 
 %     assignin('base','fileStructOut',fileStruct);
     outputTarget = strcat(userDir,'_sessiondata');

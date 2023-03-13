@@ -1,6 +1,6 @@
-function [barGenMerged,posMulti,cnt_unique] = merge_neighbor_barcodes(barcodeGen)
+function [barGenMerged,posMulti,cnt_unique] = merge_neighbor_barcodes(barcodeGen,minOverlap)
 
-minOverlap = 300; % minimum overlap between barcodes
+% minOverlap = 300; % minimum overlap between barcodes
 % kymoStructs
 pxMask = 10;
 
