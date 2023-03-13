@@ -14,15 +14,15 @@ function printName = lambda_det_print(targetFolder, info,barcodeGen, runNo)
   fprintf(fid, '\n Total number of kymos: %i \n', info.numKymos);
   fprintf(fid, '\n Total number of barcodes of suitable length: %i \n',length(barcodeGen));
 
-  lengths = cellfun(@(x) length(x.rawBarcode),barcodeGen)./info.nmpx*1000;
+  lengths = cellfun(@(x) length(x.rawBarcode),barcodeGen)*info.nmpx./1000;
   
-  fprintf(fid, '\n Total length of barcodes: %.1f micrometer \n', sum(cellfun(@(x) length(x.rawBarcode),barcodeGen)/info.nmpx*1000));
-  fprintf(fid, '\n Average length of barcodes: %.1f micrometer \n', mean(cellfun(@(x) length(x.rawBarcode),barcodeGen)/info.nmpx*1000));
- 
+    fprintf(fid, '\n Total length of barcodes: %.1f micrometer \n', sum(cellfun(@(x) length(x.rawBarcode),barcodeGen)*info.nmpx/1000));
+    fprintf(fid, '\n Average length of barcodes: %.1f micrometer \n', mean(cellfun(@(x) length(x.rawBarcode),barcodeGen)*info.nmpx/1000));
+    
     fprintf(fid, '----------------------------------------------------------------------- \n');
     fprintf(fid, '----------------------------------------------------------------------- \n');
-
-  fprintf(fid, 'Analysis settings:\n');
+    
+    fprintf(fid, 'Analysis settings:\n');
     fprintf(fid, '\n XResolution for experiment: %.1f micrometer \n', 1000/info.nmpx);
 
     
