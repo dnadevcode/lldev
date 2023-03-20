@@ -172,13 +172,16 @@ for idFold = 1:length(dfolders)
     molLengths = lambdaLen(end)./dataStorage{end}.bestBarStretch;
     %% 
     idxses = find(dataStorage{end}.score<threshScore);
-    outFac=dataStorage{end}.bestBarStretch(idxses)
+    outFac=dataStorage{end}.bestBarStretch(idxses);
     % can run a few loops to converge on a specific value
     
     info.goodMols = idxses;
     info.stretchFac = outFac;
     info.score = dataStorage{end}.score(idxses);
-    
+    info.threshScore = threshScore;
+    info.lambdaLen = lambdaLen;
+    info.bestnmbpStd = dataStorage{end}.bestStrStd;
+
     %% plot:     
     bestBarStretch = dataStorage{end}.bestBarStretch;
     rezMaxM = dataStorage{end}.rezMaxM;
