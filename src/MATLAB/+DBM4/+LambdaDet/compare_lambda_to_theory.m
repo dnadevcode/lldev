@@ -1,4 +1,4 @@
-function [dataStorage, nmbpHist] = compare_lambda_to_theory(barcodeGen,bgMean,curSetsNMBP, NN, stretchFactors, nmPx,nmPsf, BP, threshScore , atPref)
+function [dataStorage, nmbpHist, lambdaLen] = compare_lambda_to_theory(barcodeGen,bgMean,curSetsNMBP, NN, stretchFactors, nmPx,nmPsf, BP, threshScore , atPref)
     
     %   Args:
     %       barcodeGen - barcodes to analyze
@@ -9,6 +9,10 @@ function [dataStorage, nmbpHist] = compare_lambda_to_theory(barcodeGen,bgMean,cu
     %       nmPx - nanometers per pixel
     %       BP - basepairs at the side of lambda theory
     %       threshScore - threshscore for good comparison
+
+    %   Returns:
+    %       lambdaLen
+   
     import DBM4.LambdaDet.gcweighted; % quick way to compare weighted GC
 
     if nargin < 3
@@ -33,6 +37,7 @@ function [dataStorage, nmbpHist] = compare_lambda_to_theory(barcodeGen,bgMean,cu
     x = gcweighted(ts',4,atPref);
 
     dataStorage = cell(1,NN);
+    lambdaLen = zeros(1,NN);
 
     for i=1:NN
         sets.nmbp = curSetsNMBP;
@@ -63,6 +68,8 @@ function [dataStorage, nmbpHist] = compare_lambda_to_theory(barcodeGen,bgMean,cu
 
         %%
         lambdaScaled = lambdaShape/max(lambdaShape);
+        lambdaLen(i) =  48502*sets.nmbp/1000;
+
 
         % run comparison
         import DBM4.quick_cc;
@@ -83,6 +90,7 @@ function [dataStorage, nmbpHist] = compare_lambda_to_theory(barcodeGen,bgMean,cu
 
     %     bestStrFac = pos(b);
         bestStrFac = mean(bestBarStretch(goodBarcodes));
+        bestStrStd = std(bestBarStretch(goodBarcodes));
 
         curSetsNMBP = curSetsNMBP/bestStrFac;
         nmbpHist(i) = curSetsNMBP;
@@ -94,6 +102,7 @@ function [dataStorage, nmbpHist] = compare_lambda_to_theory(barcodeGen,bgMean,cu
         dataStorage{i}.bestBarStretch = bestBarStretch;
         dataStorage{i}.score = score;
         dataStorage{i}.bestStrFac = bestStrFac;
+        dataStorage{i}.bestStrStd = bestStrStd;
         dataStorage{i}.lambdaScaled = lambdaScaled;
         dataStorage{i}.lambdaMask = lambdaMask;
 

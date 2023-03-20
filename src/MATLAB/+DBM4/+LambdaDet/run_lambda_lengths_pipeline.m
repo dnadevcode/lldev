@@ -44,7 +44,7 @@ function [] = run_lambda_lengths_pipeline(userDir,dbmOSW)
     NN = 10; % how many times to recalculate
     stretchFactors = 0.8:0.01:1.2; % how much rescale to allow
     nmPsf = 300;
-    threshScore = 0.1; % thresh for which bars to keep
+    threshScore = 0.1; % thresh for which bars to keep / only if autothreshLambda is off
     atPref = 16; % calc from a separate file
     
 
@@ -148,14 +148,28 @@ for idFold = 1:length(dfolders)
     %     % sets.minLen
     [barcodeGen,acceptedBars] =  gen_barcodes_from_kymo(kymoStructs, sets,sets.maxLen);
 
+    % background mean and standard deviation
     bgMean = cell2mat(dbmStruct.kymoCells.threshval(acceptedBars));
     bgStd = cell2mat(dbmStruct.kymoCells.threshstd(acceptedBars));
  
     
+    % Compare to theory  random/ put to function
+    if dbmOSW.DBMSettingsstruct.autothreshLambda
+        allPoints = cell2mat(cellfun(@(x,y) x.rawBarcode(x.rawBitmask)-y,barcodeGen,dbmStruct.kymoCells.threshval(acceptedBars),'un',false));
+        randPermutationData = arrayfun(@(x) randperm(length(allPoints),round(sets.maxLen)),1:100,'un',false);
+        bars = cellfun(@(x) allPoints(x),randPermutationData,'un',false);
+        for i=1:length(bars)
+            barRand{i}.rawBarcode = bars{i};
+            barRand{i}.rawBitmask = ones(1,length( barRand{i}.rawBarcode ));
+        end
+        [dataStorageRand,nmbpHistRand,lambdaLenRand] = compare_lambda_to_theory(barRand,zeros(1,length(barRand)),curSetsNMBP, 1, stretchFactors, nmPx,nmPsf, BP, threshScore,atPref);
+        threshScore = mean(dataStorageRand{1}.score)-5*std(dataStorageRand{1}.score);
+    end
 
+    % find nm/nb    
+    [dataStorage, nmbpHist, lambdaLen] = compare_lambda_to_theory(barcodeGen,bgMean,curSetsNMBP, NN, stretchFactors, nmPx,nmPsf, BP, threshScore,atPref);
         
-    [dataStorage,nmbpHist] = compare_lambda_to_theory(barcodeGen,bgMean,curSetsNMBP, NN, stretchFactors, nmPx,nmPsf, BP, threshScore,atPref);
-        
+    molLengths = lambdaLen(end)./dataStorage{end}.bestBarStretch;
     %% 
     idxses = find(dataStorage{end}.score<threshScore);
     outFac=dataStorage{end}.bestBarStretch(idxses)
@@ -183,12 +197,13 @@ for idFold = 1:length(dfolders)
     
     info.snrind = estSNR(idxses);
     
+
     info.snr = nanmean(estSNR);
     info.nmbp = nmbpHist(end)
     targetFolder = strcat(['output_' info.foldName]);
     mkdir(targetFolder);
     % info.snrind(idxses)
-    printName = lambda_det_print(targetFolder, info,barcodeGen, idFold);
+    printName = lambda_det_print(targetFolder, info, barcodeGen, idFold,molLengths);
     
     % save kymos
     % mkdir(targetFolder,num2str(idFold));

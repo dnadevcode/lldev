@@ -53,8 +53,11 @@ function [alignedKymo, stretchFactorsMat, shiftAlignedKymo, alignedMask, shiftAl
     if not(skipPrealignTF)
         import OptMap.KymoAlignment.NRAlign.pre_nralign_shift_align;
         [shiftAlignedKymo, shiftingVect] = pre_nralign_shift_align(shiftAlignedKymo);
+        try
         import OptMap.KymoAlignment.NRAlign.shift_rows;
         shiftAlignedKymoMask = shift_rows(shiftAlignedKymoMask, shiftingVect);
+        catch
+        end
     else
         shiftingVect = zeros(size(shiftAlignedKymo, 1));
     end
