@@ -91,7 +91,7 @@ function [dataStorage, nmbpHist, lambdaLen] = compare_lambda_to_theory(barcodeGe
     %     bestStrFac = pos(b);
         bestStrFac = mean(bestBarStretch(goodBarcodes));
         bestStrStd = std(bestBarStretch(goodBarcodes));
-
+        
         curSetsNMBP = curSetsNMBP/bestStrFac;
         nmbpHist(i) = curSetsNMBP;
         
@@ -106,8 +106,13 @@ function [dataStorage, nmbpHist, lambdaLen] = compare_lambda_to_theory(barcodeGe
         dataStorage{i}.lambdaScaled = lambdaScaled;
         dataStorage{i}.lambdaMask = lambdaMask;
 
-    end
+        if isnan(bestStrFac)
+            warning('No lambda molecules detected.. Try changing some settings')
+            nmbpHist = [];
+            return
+        end
 
+    end
 
 end
 

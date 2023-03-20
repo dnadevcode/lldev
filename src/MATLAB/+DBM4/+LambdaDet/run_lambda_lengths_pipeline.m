@@ -158,17 +158,19 @@ for idFold = 1:length(dfolders)
         allPoints = cell2mat(cellfun(@(x,y) x.rawBarcode(x.rawBitmask)-y,barcodeGen,dbmStruct.kymoCells.threshval(acceptedBars),'un',false));
         randPermutationData = arrayfun(@(x) randperm(length(allPoints),round(sets.maxLen)),1:100,'un',false);
         bars = cellfun(@(x) allPoints(x),randPermutationData,'un',false);
+        barRand = cell(1,length(bars));
         for i=1:length(bars)
             barRand{i}.rawBarcode = bars{i};
             barRand{i}.rawBitmask = ones(1,length( barRand{i}.rawBarcode ));
         end
         [dataStorageRand,nmbpHistRand,lambdaLenRand] = compare_lambda_to_theory(barRand,zeros(1,length(barRand)),curSetsNMBP, 1, stretchFactors, nmPx,nmPsf, BP, threshScore,atPref);
-        threshScore = mean(dataStorageRand{1}.score)-5*std(dataStorageRand{1}.score);
+        threshScore = median(dataStorageRand{1}.score)-iqr(dataStorageRand{1}.score);
     end
 
     % find nm/nb    
     [dataStorage, nmbpHist, lambdaLen] = compare_lambda_to_theory(barcodeGen,bgMean,curSetsNMBP, NN, stretchFactors, nmPx,nmPsf, BP, threshScore,atPref);
-        
+    
+    if ~isempty(nmbpHist)
     molLengths = lambdaLen(end)./dataStorage{end}.bestBarStretch;
     %% 
     idxses = find(dataStorage{end}.score<threshScore);
@@ -217,7 +219,7 @@ for idFold = 1:length(dfolders)
         dbmStruct.kymoCells.enhanced(acceptedBars(idxses)), dbmStruct.kymoCells.rawKymoName(acceptedBars(idxses)));
     
         if sum(files) > 0
-            cellfun(@(rawKymo, outputKymoFilepath)...
+            [~,~]cellfun(@(rawKymo, outputKymoFilepath)...
             delete(fullfile(targetFolder,outputKymoFilepath)),...
             dbmStruct.kymoCells.rawKymos, dbmStruct.kymoCells.rawKymoName);
         end
@@ -228,25 +230,26 @@ for idFold = 1:length(dfolders)
 
 
     %% Plot comparison?
-
-% plot
-for idx = idxses;
-curBar = imresize(barcodeGen{idx}.rawBarcode,'Scale' ,[1 bestBarStretch(idx)]) ;
-
-if rezMaxM{idx}.or==2
-    curBar = fliplr(curBar);
-end
-
-curBar = curBar - bgMean(idx);
-curBar = curBar/max(curBar);
-
-f = figure('visible','off');
-plot( [lambdaScaled])
-hold on
-plot(rezMaxM{idx}.pos:rezMaxM{idx}.pos+length(curBar)-1,curBar)
-saveas(f,fullfile(targetFolder,['bar_comparison_' num2str(idx) '.png']));
-
-end
+        
+        % plot
+        for idx = idxses;
+        curBar = imresize(barcodeGen{idx}.rawBarcode,'Scale' ,[1 bestBarStretch(idx)]) ;
+        
+        if rezMaxM{idx}.or==2
+            curBar = fliplr(curBar);
+        end
+        
+        curBar = curBar - bgMean(idx);
+        curBar = curBar/max(curBar);
+        
+        f = figure('visible','off');
+        plot( [lambdaScaled])
+        hold on
+        plot(rezMaxM{idx}.pos:rezMaxM{idx}.pos+length(curBar)-1,curBar)
+        saveas(f,fullfile(targetFolder,['bar_comparison_' num2str(idx) '.png']));
+        
+        end
+    end
 
 end
 

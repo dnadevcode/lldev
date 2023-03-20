@@ -118,6 +118,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             meanMovieFrame = mean(cat(3, channelImg{1}{:}), 3, 'omitnan');
             [rotImg, rotMask, movieAngle,maxCol] = image_rotation(channelImg, meanMovieFrame, sets);
 %             disp(strcat(['Rotation done in ' num2str(toc) ' seconds']));
+            channelImg = [];
       
             meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
     
@@ -162,6 +163,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             positions, mat,threshval,threshstd, badMol,bitWithGaps] = detect_lambda_positions(meanRotatedDenoisedMovieFrame,...
             sets,rotImgOrig,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
                  noiseKymos = [];
+
             else
                 % find columns which have long molecules
                 [posX, posMax, nonrelevantRowsFarAway] = find_mols_corr(rotImg, bgTrend, numPts, channelForDist, firstIdx, centralTend, farAwayShift, distbetweenChannels,timeframes );
@@ -419,7 +421,7 @@ function [posY,posX, posYcoord, posMax,thedges,kymos,wideKymos,pxBg,bgmean,bgstd
 %             
 %             figure,tiledlayout(8,8,'TileSpacing','none','Padding','none')
 %             for i=1:length(kymos{1})
-%                 K = medfilt2(kymos{1}{i},[5 15],'symmetric') > bgmean+1*bgstd;
+%                 K = medfilt2(kymos{1}{i},[5 15],'symmetric') > bgmean+3*bgstd;
 % %                 mat{i} = K;
 %                 [labeledImage, numBlobs] = bwlabel(K);
 %                 nexttile 
@@ -427,6 +429,7 @@ function [posY,posX, posYcoord, posMax,thedges,kymos,wideKymos,pxBg,bgmean,bgstd
 %                 title(num2str(i));
 %             end
 
+             disp(strcat(['Detected ' num2str(length(kymos{1})) ' molecules']));
 
 
             % an approach to edge detection // for images including
@@ -435,13 +438,20 @@ function [posY,posX, posYcoord, posMax,thedges,kymos,wideKymos,pxBg,bgmean,bgstd
             import OptMap.MoleculeDetection.EdgeDetection.median_filt; % todo: change to median_filt_alt
             [bitmask, positions, mat,threshval,threshstd, badMol,bitWithGaps] = median_filt(kymos{1}, [5 15],sets.SigmaLambdaDet,bgmean,bgstd);
             
+%             figure,tiledlayout(8,8,'TileSpacing','none','Padding','none')
+%             for i=1:length(kymos{1})
+%                 nexttile 
+%                 imshowpair(imresize(bitmask{i},[200 500]),imresize(kymos{1}{i},[200 500]), 'ColorChannels','red-cyan'  )
+%                 title(num2str(i));
+%             end
+
             posXUpd = posX(find(~badMol));
             posYcoord = posYcoord(find(~badMol),:);
             
             kymos{1} = kymos{1}(find(~badMol));
             bitmask = bitmask(find(~badMol));
             
-            disp(strcat(['Removed ' num2str(sum(badMol)) ' molecules due to bad edges']));
+            disp(strcat(['Removed ' num2str(sum(badMol)) ' molecules due to bad/fragmented edges']));
 
             posY = cell(1,length(bitmask));
             for i=1:length(bitmask)
