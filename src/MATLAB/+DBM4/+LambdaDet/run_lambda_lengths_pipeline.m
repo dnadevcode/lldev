@@ -155,6 +155,7 @@ for idFold = 1:length(dfolders)
     
     % Compare to theory  random/ put to function
     if dbmOSW.DBMSettingsstruct.autothreshLambda
+        try
         allPoints = cell2mat(cellfun(@(x,y) x.rawBarcode(x.rawBitmask)-y,barcodeGen,dbmStruct.kymoCells.threshval(acceptedBars),'un',false));
         randPermutationData = arrayfun(@(x) randperm(length(allPoints),round(sets.maxLen)),1:100,'un',false);
         bars = cellfun(@(x) allPoints(x),randPermutationData,'un',false);
@@ -165,6 +166,9 @@ for idFold = 1:length(dfolders)
         end
         [dataStorageRand,nmbpHistRand,lambdaLenRand] = compare_lambda_to_theory(barRand,zeros(1,length(barRand)),curSetsNMBP, 1, stretchFactors, nmPx,nmPsf, BP, threshScore,atPref);
         threshScore = median(dataStorageRand{1}.score)-iqr(dataStorageRand{1}.score);
+        catch
+            warning('Failed in detecting autothresh for lambda');
+        end
     end
 
     % find nm/nb    
@@ -205,7 +209,7 @@ for idFold = 1:length(dfolders)
 
     info.snr = nanmean(estSNR);
     info.nmbp = nmbpHist(end)
-    targetFolder = strcat(['output_' info.foldName]);
+    targetFolder = fullfile(dfolders(idFold).folder, strcat(['analysis_' info.foldName]));
     mkdir(targetFolder);
     % info.snrind(idxses)
     printName = lambda_det_print(targetFolder, info, barcodeGen, idFold,molLengths);
@@ -219,7 +223,7 @@ for idFold = 1:length(dfolders)
         dbmStruct.kymoCells.enhanced(acceptedBars(idxses)), dbmStruct.kymoCells.rawKymoName(acceptedBars(idxses)));
     
         if sum(files) > 0
-            [~,~]cellfun(@(rawKymo, outputKymoFilepath)...
+            [~,~]= cellfun(@(rawKymo, outputKymoFilepath)...
             delete(fullfile(targetFolder,outputKymoFilepath)),...
             dbmStruct.kymoCells.rawKymos, dbmStruct.kymoCells.rawKymoName);
         end

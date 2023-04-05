@@ -58,6 +58,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         max_f = inf;
     end
     import DBM4.convert_czi_to_tif;
+    import DBM4.load_czi;
 
 %     channels = [];
 
@@ -79,25 +80,16 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             maxCol = fileCells{idx}.preCells.maxCol;
             noiseKymos = fileCells{idx}.preCells.noiseKymos;
         else
-            
             name = movieFilenames{idx};
             fprintf('Importing data from: %s\n', name);
-        
-            [beg,mid,ending] =  fileparts(name); % todo: move outside since can be multiple files
-            if isequal(ending,'.czi')
-                data = struct();
-                data(1).folder = beg;
-                data(1).name = strcat(mid,ending);
-                disp('Need to convert to czi, running convertion tool');
-                [newNames, newInfo ] = convert_czi_to_tif(data,0); % todo: convert fixed number of frames only/ newInfo contains info about file
-                name = newNames{1}; 
-            end
-        
-
-                    
+                          
             % load data - support multi-channel // take from the first time frame
-            [ channelImg, imageData ] = load_first_frame_iris(name,max_number_of_frames, max_f, channels);
+            [ channelImg, imageData ] = load_first_frame(name,max_number_of_frames, max_f, channels);
+            try
             firstIdx = imageData{1}.IntensityInfo.firstIdx;
+            catch
+            firstIdx = 1;
+            end
 %             channels = imageData{1}.info.channels;% this info already
 %             passed to load first frame
     %         visual_mean(channelImg{1}{1}) % visualize channel vs mean
@@ -642,23 +634,10 @@ function [rotImg, rotMask, movieAngle, maxCol] = image_rotation(channelImg, mean
 end
     
 % function to load the first frame
-function [channelImg, imageData] = load_first_frame_iris(moleculeImgPath, max_number_of_frames,numFrames,channels)
+function [channelImg, imageData] = load_first_frame(moleculeImgPath, max_number_of_frames,numFrames,channels)
     % for irys data
 
-%     try
-%         % info about movie
-%         %                 tic % if there's info in image description, extract it here
-%         obj  = Tiff(moleculeImgPath);
-%         data = strsplit(getTag(obj,'ImageDescription'),'\n');
-%         chInfo =data(contains(data,'channels'));
-%         frInfo =data(contains(data,'frames'));
-%         eval(chInfo{1});
-%         eval(frInfo{1});
-%         firstFrame = 0;
-% %         channels = 1; % default is 2
-% %         numFrames = min(numFrames,frames);
-% 
-%     catch
+        
 
     if nargin < 3
         numFrames = inf;
@@ -673,6 +652,15 @@ function [channelImg, imageData] = load_first_frame_iris(moleculeImgPath, max_nu
         firstFrame = 1;
     end
     
+
+    [beg,mid,ending] =  fileparts(moleculeImgPath); % todo: move outside since can be multiple files
+    if isequal(ending,'.czi') % load all frames
+        import DBM4.load_czi;
+        [channelImg,imageData] = load_czi(moleculeImgPath, max_number_of_frames, channels);
+    else
+    
+
+
     data = imfinfo(moleculeImgPath);
     frames = length(data);
 %     channels = 1; % default is 2
@@ -685,6 +673,9 @@ function [channelImg, imageData] = load_first_frame_iris(moleculeImgPath, max_nu
         maxFr = frames;
     end
     
+
+
+
     % this saves multiplechannels, single field of view
     i=1;
     imageData{i}.frameMeans = arrayfun(@(x)  mean(imread(moleculeImgPath,x),[1 2]),i:channels:maxFr,'UniformOutput',true);
@@ -716,7 +707,7 @@ function [channelImg, imageData] = load_first_frame_iris(moleculeImgPath, max_nu
     imageData{1}.info.all = data;
     imageData{1}.info.channels = channels;
 
-
+    end
 end
 
 

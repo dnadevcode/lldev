@@ -107,7 +107,7 @@ function [dataStorage, nmbpHist, lambdaLen] = compare_lambda_to_theory(barcodeGe
         dataStorage{i}.lambdaMask = lambdaMask;
 
         if isnan(bestStrFac)
-            warning('No lambda molecules detected.. Try changing some settings')
+%             warning('No lambda molecules detected.. Try changing some settings')
             nmbpHist = [];
             return
         end

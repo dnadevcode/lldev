@@ -1,8 +1,22 @@
-function [barGenMerged,posMulti,cnt_unique] = merge_neighbor_barcodes(barcodeGen,minOverlap)
-
+function [barGenMerged, posMulti, cnt_unique] = merge_neighbor_barcodes(barcodeGen, minOverlap, sF, minMergeScore)
+%   Merge neighbour barcodes
+%
+%   Args:
+%       barcodeGen - cell structure with barcodes
+%       minOverlap - minimum overlap length
+%       minMergeScore - min score to merge barcodes
+%       sF - how much rescalling to allow for neighbouring barcodes
+%   Returns:
+%       barGenMerged - cell structure with merged barcodes
+%       posMulti - start positions of multi-frame barcodes
+%       cnt_unique - counts for each barcode
+    if nargin < 3 % todo: implement using this score
+        sF = 1; % no re-scaling
+        minMergeScore = 0.6; % minimum score for merging overlapping featues
+    end
 % minOverlap = 300; % minimum overlap between barcodes
 % kymoStructs
-pxMask = 10;
+% pxMask = 10;
 
 % put this in merge_barcodes function
 % merge barcodes that come from the same molecule: fomrat mol-X-N mol-X-N
@@ -25,7 +39,6 @@ for i=1:length(barcodeGen)
 end
 
 %% merge
-sF = 1;
 % minOverlap = 300;
 tic
 oSneighbor = [];
@@ -34,26 +47,7 @@ uniqueBars = unique(curBar(2:end));
 
 posMulti = find(cnt_unique>=2);
 
-
 timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
-
-% import Core.calc_overlap_pcc_sort_m;
-
-
-bgfov = cell(1,length(posMulti));
-oSneighbor = cell(1,length(posMulti));
-for i=1:length(posMulti)
-    uE = unique_a(posMulti(i));
-    cE = cnt_unique(posMulti(i));
-    % from the same movie, keep only the longer molecule. / maybe this
-    % information should be kept already in the kymoStructs, so we don't
-    % need to call it back here
-    
-    bgfov{i}.bars = barcodeGen(uE:uE+cE-1);
-    % use MP overlap
-    [oSneighbor{i}] = calc_overlap_mp(bgfov{i}.bars,sF, minOverlap,timestamp);
-%     [oSneighbor{i}] = calc_overlap_pcc_sort_m(bgfov{i}.bars, sF,minOverlap);
-end
 
 %% Todo: deal with multi-mols from the same sample
 
@@ -69,69 +63,64 @@ for j=1:length(posSingle)
 end
 % 
 
+% import Core.calc_overlap_pcc_sort_m;
+
+
+for i=1:length(posMulti)
+
+    % from the same movie, keep only the longer molecule. / maybe this
+    % information should be kept already in the kymoStructs, so we don't
+    % need to call it back here
+    
+    % use MP overlap
+%     [oSneighbor{i}] = calc_overlap_pcc_sort_m(bgfov{i}.bars, sF,minOverlap);
+end
+
+
+bgfov = cell(1,length(posMulti));
+oSneighbor = cell(1,length(posMulti));
+
+import DBM4.Bargrouping.merge_two;
+import DBM4.Bargrouping.merge_final;
+
 % average the multi-frame barcodes
 for i=1:length(posMulti)
-    numAvgBars = size(oSneighbor{i},2);
-    
-    % todo: number is lower if there are multi ones in the same, so check
-    % if there is mol 1/2
+    uE = unique_a(posMulti(i));
+    cE = cnt_unique(posMulti(i));
+
+    numAvgBars = cE-1;
     shift = zeros(2,numAvgBars-1); % could copy something similar to this/but simplified that is bargrouping code..
     twoBars = cell(1,numAvgBars-1);
-    curSc = [];
-    for j=1:numAvgBars-1
-        pB = oSneighbor{i}(j,j+1).pA;
-        pA = oSneighbor{i}(j,j+1).pB;
-        lenA = length(bgfov{i}.bars{j}.rawBarcode);
-        lenB = length(bgfov{i}.bars{j+1}.rawBarcode);
+    curSc = zeros(1,numAvgBars-1);
+        curScOverlap = zeros(1,numAvgBars-1);
 
-        stIdx = min(pA,pB);
-        pA  = pA-stIdx+1;
-        pB = pB-stIdx+1;
-        stopIdx =max(pA+lenA-1,pB+lenB-1);
-
-        % 
-        twoBars{j} = nan(2,stopIdx-stIdx+1);
-
-        tmpBar = bgfov{i}.bars{j}.rawBarcode;
-        tmpBar2 = bgfov{i}.bars{j+1}.rawBarcode;
-        tmpBar(~bgfov{i}.bars{j}.rawBitmask) = nan;
-        tmpBar2(~ bgfov{i}.bars{j+1}.rawBitmask) = nan;
-        twoBars{j}(1,pA:pA+lenA-1)= tmpBar;
-        twoBars{j}(2,pB:pB+lenB-1)= tmpBar2;
-
-        shift(:,j) = [pA;pB];
-        curSc = [curSc oSneighbor{i}(j,j+1).score];
-
-    end
-    
-    pAFinal = shift(1,1);
-    
-    pBFinal = [];
-    pBFinal(1) = shift(2,1);
-    for j=2:numAvgBars-1
-        pBFinal(j) = -shift(1,j)+ pBFinal(j-1)+shift(2,j);
-    end
-
-    lenbar = zeros(numAvgBars,1);
-   for j=1:numAvgBars
-        lenbar(j) = length(bgfov{i}.bars{j}.rawBarcode);
-   end
-   
-   allSt = [pAFinal pBFinal];
-   allSt = allSt-min(allSt)+1;
-   
-   stopIdx =max([allSt+lenbar'-1]);
-
-   finalBar = nan(numAvgBars,stopIdx);
-%     pMin = min(shift(:,1));
+    curFlip = 0;
+    curSF = 1; % in case length re-scaling is being used
     for j=1:numAvgBars
-        tmpBar = bgfov{i}.bars{j}.rawBarcode;
-        tmpBar(~bgfov{i}.bars{j}.rawBitmask) = nan;
-        finalBar(j,allSt(j):allSt(j)+lenbar(j)-1)= tmpBar;
+        bars = barcodeGen(uE+j-1:uE+j); % two neighbour barcodes
+        [oSneighbor{i}{j}] = calc_overlap_mp(bars,sF, minOverlap,timestamp); % overlap for two neighbour barcodes
+        % merge two
+        [twoBars{j},shift(:,j),curSc(j),curScOverlap(j), curFlip,curSF ] = merge_two(oSneighbor{i}{j},bars);
+        if curFlip == 1; % flip for next comparison
+            barcodeGen{uE+j}.rawBarcode = fliplr(barcodeGen{uE+j}.rawBarcode);
+            barcodeGen{uE+j}.rawBitmask = fliplr(barcodeGen{uE+j}.rawBitmask);
+        end
+            lBar = length(barcodeGen{uE+j}.rawBarcode);
+            
+            barcodeGen{uE+j}.rawBarcode = imresize(barcodeGen{uE+j}.rawBarcode,[1,lBar*curSF] );
+            barcodeGen{uE+j}.rawBitmask = imresize(barcodeGen{uE+j}.rawBitmask,[1,lBar*curSF] );
+%         % Visualize
+        barStruct = cell2struct([cellfun(@(x) double(x.rawBarcode),bars,'un',false);...
+        cellfun(@(x) x.rawBitmask,bars,'un',false)]',{'rawBarcode','rawBitmask'},2);
+        import Core.plot_match_simple;
+        [f] = plot_match_simple(barStruct, oSneighbor{i}{j},2,1);
     end
-     barGenMerged{length(posSingle)+i}.rawBarcode = nanmean(finalBar);
-     barGenMerged{length(posSingle)+i}.rawBitmask = ~isnan(barGenMerged{length(posSingle)+i}.rawBarcode);
-	barGenMerged{length(posSingle)+i}.rawBarcode(isnan( barGenMerged{length(posSingle)+i}.rawBarcode)) = min( barGenMerged{length(posSingle)+i}.rawBarcode);
+    
+    finalBar = merge_final(barcodeGen(uE:uE+cE-1),shift,cE);
+
+    barGenMerged{length(posSingle)+i}.rawBarcode = nanmean(finalBar);
+    barGenMerged{length(posSingle)+i}.rawBitmask = ~isnan(barGenMerged{length(posSingle)+i}.rawBarcode);
+    barGenMerged{length(posSingle)+i}.rawBarcode(isnan( barGenMerged{length(posSingle)+i}.rawBarcode)) = min( barGenMerged{length(posSingle)+i}.rawBarcode);
 
     barGenMerged{length(posSingle)+i}.alignedBars = finalBar;
     
@@ -141,6 +130,7 @@ for i=1:length(posMulti)
 
     barGenMerged{length(posSingle)+i}.idx = uE:uE+cE-1;
     barGenMerged{length(posSingle)+i}.score = curSc;
+    barGenMerged{length(posSingle)+i}.scoreFull = curScOverlap;
 
 %          barGenMerged{length(posSingle)+i}.data =  kymoStructs{posSingle(j)};
 
@@ -167,7 +157,7 @@ end
 % import Core.plot_match_simple;
 % [f] = plot_match_simple(barStruct, oSneighbor{i},ii,ii+1);
 % 
-% % [f] = plot_match_simple(barStruct, oSneighbor{i},3,5);
+% [f] = plot_match_simple(barStruct, oSneighbor{i},3,5);
 % 
 % cellfun(@(x) length(x.rawBarcode),barGenMerged)
 %     
