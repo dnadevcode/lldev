@@ -231,6 +231,7 @@ for idFold = 1:length(dfolders)
     cellfun(@(rawKymo, outputKymoFilepath)...
     imwrite(uint16(round(double(rawKymo)./max(rawKymo(:))*2^16)), fullfile(targetFolder,outputKymoFilepath), 'tif','WriteMode','append'),...
     dbmStruct.kymoCells.rawKymos(acceptedBars(idxses)), dbmStruct.kymoCells.rawKymoName(acceptedBars(idxses)));
+    disp(['Data saved at ',targetFolder ])
 
 
     %% Plot comparison?
