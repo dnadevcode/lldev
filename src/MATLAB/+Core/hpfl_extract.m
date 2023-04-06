@@ -7,43 +7,38 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 
     % Args:
     %       sets 
+    %       fileCells - precalculated data
     
     % Returns:
-    %   kymo - kymographs
-    %   kymoW - wide kymographs
-    %   noiseKymos - noise kymographs
-    
-    % pre-load file
-%     sets = preload_movie_folder_names(sets);
-   
+    %   fileCells
+    %   fileMoleculeCells
+    %   kymoCells - kymocells
+       
     movieFilenames = sets.movies.movieNames;
-%     movieFilenames = fullfile(sets.movies.kymofilefold , sets.movies.filenames);
     numFiles = numel(movieFilenames);
 
-   % Go through each of the files.
+    % Go through each of the files.
     if nargin < 2
         fileCells = cell(numFiles, 1);
     end
     
     fileMoleculeCells = cell(numFiles, 1);
+    params = cell(numFiles, 1); % temp storage of params for each parfor iteration
+
     fileStruct = struct();
 
-    % params: should be in settings file
+    % params taken from settings and simplified calling so we don't need to
+    % access fields of sets every time
     numPts = sets.numPts; % minimum length of barcode
     averagingWindowWidth = sets.averagingWindowWidth; % averaging window width
     distbetweenChannels = sets.distbetweenChannels; % estimated distance between channels
-    parForNoise = sets.parForNoise;
     remNonuniform = sets.denoise;
-
-    numFrames = sets.numFrames; % numframes for angle detection
     minLen = sets.minLen;
     stdDifPos = sets.stdDifPos;
     channels = sets.channels;
     max_f = sets.max_f;
-    
     max_number_of_frames = sets.max_number_of_frames;
     timeframes = sets.timeframes; % number of time-frames to use to detect positions of nanochannels
-
     % detect columns with molecule
     farAwayShift = sets.farAwayShift; % how many rows to shift for max coefficient calculation
     channelForDistSetting = sets.channelForDist;
@@ -67,32 +62,22 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     % settingsHPFL.numFrames = 1;
     parfor idx = 1:length(movieFilenames)
         if usePrecalc
-            kymos = fileCells{idx}.preCells.kymos;
-            wideKymos = fileCells{idx}.preCells.wideKymos ;
-            posXUpd =  fileCells{idx}.preCells.posXUpd;
-            posY = fileCells{idx}.preCells.posY;
-            channelForDist = fileCells{idx}.preCells.channelForDist;
-%             minLen = fileCells{idx}.preCells.minLen;
-%             stdDifPos = fileCells{idx}.preCells.stdDifPos;
-            name =  fileCells{idx}.preCells.name;
-            posYcoord =  fileCells{idx}.preCells.posYcoord;
-            meanRotatedMovieFrame =  fileCells{idx}.preCells.meanRotatedMovieFrame;
-            maxCol = fileCells{idx}.preCells.maxCol;
-            noiseKymos = fileCells{idx}.preCells.noiseKymos;
+            params{idx} = fileCells{idx}.preCells;
         else
-            name = movieFilenames{idx};
-            fprintf('Importing data from: %s\n', name);
+            params{idx}.name = movieFilenames{idx};
+            fprintf('Importing data from: %s\n', params{idx}.name);
                           
             % load data - support multi-channel // take from the first time frame
-            [ channelImg, imageData ] = load_first_frame(name,max_number_of_frames, max_f, channels);
+            [ channelImg, imageData ] = load_first_frame(params{idx}.name,max_number_of_frames, max_f, channels);
             try
-            firstIdx = imageData{1}.IntensityInfo.firstIdx;
+                firstIdx = imageData{1}.IntensityInfo.firstIdx;
             catch
-            firstIdx = 1;
+                firstIdx = 1;
             end
+            
 %             channels = imageData{1}.info.channels;% this info already
 %             passed to load first frame
-    %         visual_mean(channelImg{1}{1}) % visualize channel vs mean
+%             visual_mean(channelImg{1}{1}) % visualize channel vs mean
 %         figure,plot(imageData{1}.IntensityInfo.yData)
 
             if length(channelImg) == 1 % if single channel
@@ -107,14 +92,14 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             %
 %             disp(strcat(['Image loaded in ' num2str(toc) ' seconds']));
             
-            meanMovieFrame = mean(cat(3, channelImg{1}{:}), 3, 'omitnan');
-            [rotImg, rotMask, movieAngle,maxCol] = image_rotation(channelImg, meanMovieFrame, sets);
+           params{idx}.meanMovieFrame = mean(cat(3, channelImg{1}{:}), 3, 'omitnan');
+            [rotImg, rotMask, params{idx}.movieAngle,params{idx}.maxCol] = image_rotation(channelImg, params{idx}.meanMovieFrame, sets);
 %             disp(strcat(['Rotation done in ' num2str(toc) ' seconds']));
             channelImg = [];
       
-            meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
+            params{idx}.meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
     
-            sz = size(meanRotatedMovieFrame);
+            sz = size(params{idx}.meanRotatedMovieFrame);
         
 %         visual_mean(rotImg{1}{1}) % visualize channel vs mean
 
@@ -147,40 +132,45 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
                 rotImg{ch}{1}(isnan(rotImg{ch}{1}))=0;
             end
      
-            meanRotatedDenoisedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
+            params{idx}.meanRotatedDenoisedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
 
             if sets.detectlambdas         
                 %% find lambda molecules
-                 [posY,posX, posYcoord, posMax,thedges,kymos,wideKymos,pxBg,bgmean,bgstd,posXUpd,bitmask,...
-            positions, mat,threshval,threshstd, badMol,bitWithGaps] = detect_lambda_positions(meanRotatedDenoisedMovieFrame,...
-            sets,rotImgOrig,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+                 [params{idx}.posY,params{idx}.posX, params{idx}.posYcoord, params{idx}.posMax,thedges,params{idx}.kymos,params{idx}.wideKymos,pxBg,bgmean,bgstd,params{idx}.posXUpd,bitmask,...
+            positions, mat,params{idx}.threshval,params{idx}.threshstd, badMol,bitWithGaps] = detect_lambda_positions(params{idx}.meanRotatedDenoisedMovieFrame,...
+            sets,rotImgOrig,firstIdx,channels,params{idx}.movieAngle,params{idx}.name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
                  noiseKymos = [];
 
             else
                 % find columns which have long molecules
-                [posX, posMax, nonrelevantRowsFarAway] = find_mols_corr(rotImg, bgTrend, numPts, channelForDist, firstIdx, centralTend, farAwayShift, distbetweenChannels,timeframes );
+                [params{idx}.posX, params{idx}.posMax,params{idx}. nonrelevantRowsFarAway] = find_mols_corr(rotImg, bgTrend, numPts, channelForDist, firstIdx, centralTend, farAwayShift, distbetweenChannels,timeframes );
             
-                % background has to be within +-sets.parForNoise from the
-                % middle posX
-                if isempty(posX)
-                    columns = round(sz(2)/2);
-                else
-                    columns = max(1,posX(round(end/2))-sets.parForNoise): min(posX(round(end/2))+sets.parForNoise,sz(2));
-                end
-                
-                [~,diffPeaks]  = min(nanmean(meanRotatedMovieFrame(:,columns)));
-                [noiseKymos] = create_channel_kymos_one(columns(diffPeaks),rotImgOrig,firstIdx,channels,movieAngle, name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
-          
-    
+                % update positions which has at least numPts pts above 3
+                % times bgTrend
                 meanVal = 0;
                 stdVal = bgTrend{1}; % here could use bg kymos for this
                 % remove rows that don't have enough signal pixels // could use
-                numElts = find(sum(rotImg{1}{firstIdx}(:,posX)  > meanVal+3*stdVal) > numPts);
-                posXUpd = posX(numElts);
+                numElts = find(sum(rotImg{1}{firstIdx}(:,params{idx}.posX)  > meanVal+3*stdVal) > numPts);
+                params{idx}.posXUpd = params{idx}.posX(numElts);
+
+                % extract single bg kymo: background has to be within +-sets.parForNoise from the
+                % middle posX
+                if isempty(params{idx}.posX)
+                    columns = round(sz(2)/2);
+                else
+                    columns = max(1,params{idx}.posX(round(end/2))-sets.parForNoise): min(params{idx}.posX(round(end/2))+sets.parForNoise,sz(2));
+                end
+                
+                [~,diffPeaks]  = min(nanmean(params{idx}.meanRotatedMovieFrame(:,columns)));
+                [params{idx}.noiseKymos] = create_channel_kymos_one(columns(diffPeaks),rotImgOrig,firstIdx,channels,params{idx}.movieAngle, params{idx}.name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+          
+    
+
     
 %                 tic
                 % extract elements
-                [kymos, wideKymos, kmChanginW, kmChangingPos] = create_channel_kymos_one(posXUpd,rotImgOrig,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+                [params{idx}.kymos, params{idx}.wideKymos, params{idx}.kmChanginW, params{idx}.kmChangingPos] = ...
+                    create_channel_kymos_one(params{idx}.posXUpd,rotImgOrig,firstIdx,channels,params{idx}.movieAngle,params{idx}.name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
 %                 disp(strcat(['Barcodes extracted in ' num2str(toc) ' seconds']));
 
 
@@ -210,92 +200,87 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 
     
                     % 
-                sz = size(meanRotatedDenoisedMovieFrame);
+                sz = size(params{idx}.meanRotatedDenoisedMovieFrame);
                 try
-                    [posY] = find_positions_in_nanochannel(noiseKymos,kymos,[],sz,sets.SigmaLambdaDet,sets.filterS );
-                    posYcoord = ones(length(posY),2);
+                    [params{idx}.posY] = find_positions_in_nanochannel(params{idx}.noiseKymos,params{idx}.kymos,[],sz,sets.SigmaLambdaDet,sets.filterS );
+                    params{idx}.posYcoord = ones(length(params{idx}.posY),2);
                 catch
-                    posY = [];
-                    posYcoord =[];
+                    params{idx}.posY = [];
+                    params{idx}.posYcoord =[];
                 end
     
                 % mean & std - used for SNR
-                threshval = nanmedian(noiseKymos{1}{channelForDist}(:));
-                threshstd = iqr(noiseKymos{1}{channelForDist}(:));
-
+                params{idx}.threshval = nanmedian(params{idx}.noiseKymos{1}{channelForDist}(:));
+                params{idx}.threshstd = iqr(params{idx}.noiseKymos{1}{channelForDist}(:));
 
             end
+
         end
     %% re-saving of these structures based on "nicity" i.e. by filtering could be re-done from here
-    fileCells{idx}.preCells.kymos = kymos;
-    fileCells{idx}.preCells.wideKymos = wideKymos;
-    fileCells{idx}.preCells.posXUpd = posXUpd;
-    fileCells{idx}.preCells.posY = posY;
-    fileCells{idx}.preCells.posYcoord = posYcoord;
-    fileCells{idx}.preCells.channelForDist = channelForDist;
-    fileCells{idx}.preCells.minLen = minLen;
-    fileCells{idx}.preCells.stdDifPos = stdDifPos;
-    fileCells{idx}.preCells.name = name;
-    fileCells{idx}.preCells.meanRotatedMovieFrame = meanRotatedMovieFrame;
-    fileCells{idx}.preCells.maxCol = maxCol;
-    fileCells{idx}.preCells.noiseKymos = noiseKymos;
+    fileCells{idx}.preCells = params{idx};
     
     % now final step is to extract "nice" kymographs
-    [kymo, kymoW, kymoNames, Length,~, kymoOrig, idxOut] = extract_from_channels(kymos, wideKymos, posXUpd, posY, channelForDist, minLen, stdDifPos);
+    [params{idx}.kymo, params{idx}.kymoW, params{idx}.kymoNames, params{idx}.Length,~, params{idx}.kymoOrig, params{idx}.idxOut] =...
+        extract_from_channels(params{idx}.kymos, params{idx}.wideKymos, params{idx}.posXUpd, params{idx}.posY, channelForDist, minLen, stdDifPos);
     
     if channels == 2 % in case of two channels
-        [~, ~, ~, ~,~, kymoOrigDots] = extract_from_channels(kymos, wideKymos, posXUpd, posY, 2, minLen, stdDifPos);
+        [~, ~, ~, ~,~, params{idx}.kymoOrigDots] = extract_from_channels(params{idx}.kymos, params{idx}.wideKymos, params{idx}.posXUpd, params{idx}.posY, 2, minLen, stdDifPos);
+    else
+        params{idx}.kymoOrigDots = [];
     end
-    disp(strcat(['Removed ' num2str(length(kymos{1})-length(kymo)) ' due to minLen & stdDifPos constraint']));
+    numRemovedKymos = length(params{idx}.kymos{1})-length(params{idx}.kymo);
+    if numRemovedKymos > 0
+        disp(strcat(['Removed ' num2str(numRemovedKymos) ' due to minLen & stdDifPos constraint']));
+    end
 
-	posY = posY(find(idxOut));
-    posYcoord = posYcoord((find(idxOut)),:);
-    numMoleculesDetected=length(kymo);
+	params{idx}.posY = params{idx}.posY(find(params{idx}.idxOut));
+    params{idx}.posYcoord = params{idx}.posYcoord((find(params{idx}.idxOut)),:);
+    numMoleculesDetected=length(params{idx}.kymo);
     moleculeStructs = cell(1,numMoleculesDetected);
 
     for i=1:numMoleculesDetected
-        moleculeStructs{i}.miniRotatedMovie = kymoW{i}{1};
-        moleculeStructs{i}.kymograph = kymoOrig{i};
+        moleculeStructs{i}.miniRotatedMovie = params{idx}.kymoW{i}{1};
+        moleculeStructs{i}.kymograph = params{idx}.kymoOrig{i};
         if channels == 2 % in case of two channels
-            moleculeStructs{i}.kymographDots = kymoOrigDots{i};
+            moleculeStructs{i}.kymographDots = params{idx}.kymoOrigDots{i};
         end
 
-        moleculeStructs{i}.kymosMoleculeLeftEdgeIdxs = posY{i}.leftEdgeIdxs;
-        moleculeStructs{i}.kymosMoleculeRightEdgeIdxs = posY{i}.rightEdgeIdxs;
+        moleculeStructs{i}.kymosMoleculeLeftEdgeIdxs = params{idx}.posY{i}.leftEdgeIdxs;
+        moleculeStructs{i}.kymosMoleculeRightEdgeIdxs = params{idx}.posY{i}.rightEdgeIdxs;
 
-        moleculeStructs{i}.moleculeMasks = ~isnan(kymo{i});
+        moleculeStructs{i}.moleculeMasks = ~isnan(params{idx}.kymo{i});
         moleculeStructs{i}.rawKymoFileIdxs = i;
         moleculeStructs{i}.rawKymoFileMoleculeIdxs = i;
 
         try
-             moleculeStructs{i}.threshval = threshval;
-             moleculeStructs{i}.threshstd = threshstd;
-             moleculeStructs{i}.snrValues = Core.barcodes_snr(moleculeStructs{i}.kymograph, moleculeStructs{i}.moleculeMasks,threshval,threshstd);
+             moleculeStructs{i}.threshval = params{idx}.threshval;
+             moleculeStructs{i}.threshstd = params{idx}.threshstd;
+             moleculeStructs{i}.snrValues = Core.barcodes_snr(moleculeStructs{i}.kymograph, moleculeStructs{i}.moleculeMasks,params{idx}.threshval,params{idx}.threshstd);
         end
         % need to add some filters, i.e. is it too close to something?
         % close to the edge? etc
          moleculeStructs{i}.passesFilters = 1; % currently remove mol altogether
     end
-        if ~isempty(posY)
-            poss = cellfun(@(x) round([mean(x.leftEdgeIdxs) mean(x.rightEdgeIdxs)]),posY,'UniformOutput',false)';
+        if ~isempty(params{idx}.posY)
+            poss = cellfun(@(x) round([mean(x.leftEdgeIdxs) mean(x.rightEdgeIdxs)]),params{idx}.posY,'UniformOutput',false)';
         else
             poss = {};
         end
         rowEdgeIdxs = vertcat(poss{:});
         try
-           rowEdgeIdxs = rowEdgeIdxs+ posYcoord(:,1)-1;
+           rowEdgeIdxs = rowEdgeIdxs+ params{idx}.posYcoord(:,1)-1;
         end
-        posXUpd2 = num2cell(posXUpd(find(idxOut)));
-        colCenterIdxs = vertcat(posXUpd2{:});
+        params{idx}.posXUpd2 = num2cell(params{idx}.posXUpd(find(params{idx}.idxOut)));
+        colCenterIdxs = vertcat(params{idx}.posXUpd2{:});
         
-        fileCells{idx}.fileName = name;
-        fileCells{idx}.averagedImg = meanRotatedMovieFrame;
-        fileCells{idx}.meanStd = [nanmean(meanRotatedMovieFrame(:)) nanstd(meanRotatedMovieFrame(:))];
+        fileCells{idx}.fileName = params{idx}.name;
+        fileCells{idx}.averagedImg = params{idx}.meanRotatedMovieFrame;
+        fileCells{idx}.meanStd = [nanmean(params{idx}.meanRotatedMovieFrame(:)) nanstd(params{idx}.meanRotatedMovieFrame(:))];
         fileCells{idx}.locs = colCenterIdxs;
         fileCells{idx}.regions = rowEdgeIdxs;
 %         fileStruct.locsRejected = colCenterIdxsRejected; % rejected regions
 %         fileStruct.regionsRejected = rowEdgeIdxsRejected;
-        fileCells{idx}.angleCor = maxCol;
+        fileCells{idx}.angleCor = params{idx}.maxCol;
         fileMoleculeCells{idx} = moleculeStructs;
 %         fileCells{idx} = fileStruct;
           
@@ -626,7 +611,7 @@ function [rotImg, rotMask, movieAngle, maxCol] = image_rotation(channelImg, mean
         end
         
         
-        tic
+%         tic
         [rotImg, rotMask] = rotate_images(channelImg, movieAngle,resSizeAll);
     
 

@@ -1,4 +1,4 @@
-function [spalignedKymo,spalignedBitmask,cutKymo,cutMaskF,newMask,f] = spalign(kymo,bitmask, minOverlap,maxShift, skipAlign, detPeaks,W_trim,gfiltSigma,distPar)
+function [spalignedKymo,spalignedBitmask,cutKymo,cutMaskF,newMask,f] = peralign(kymo,bitmask, minOverlap,maxShift, skipAlign, detPeaks,W_trim,gfiltSigma,distPar)
     % spalign  shifted & peaks based alignment
     %
     %       Args:
@@ -15,6 +15,10 @@ function [spalignedKymo,spalignedBitmask,cutKymo,cutMaskF,newMask,f] = spalign(k
     %           spalignedBitmask - bitmask aligned using spalign
     %
     %
+
+    % Requires TOPF package
+    %     https://github.com/BorgwardtLab/Topf
+
     
     % aligns features in a kymograph
     if nargin < 3
@@ -26,10 +30,6 @@ function [spalignedKymo,spalignedBitmask,cutKymo,cutMaskF,newMask,f] = spalign(k
         W_trim = 5; % feature width (dep on nm/px), determines how many features we will look for
         gfiltSigma = 2; % gaussian filter for when looking for features
         distPar = 10; % max distance between neighbor features
-    end
-
-    if nargin < 10
-        oldmethod = 0;
     end
 
     if isempty(bitmask)
@@ -46,38 +46,35 @@ function [spalignedKymo,spalignedBitmask,cutKymo,cutMaskF,newMask,f] = spalign(k
         cutMaskF = bitmask;
     end
     
-        alignedkymo = double(cutKymo);
-        alignedkymo(~cutMaskF) = nan;
+    alignedkymo = double(cutKymo);
+    alignedkymo(~cutMaskF) = nan;
     
 %                figure;
 %  imshowpair(imresize(bitmask,[200 500]),imresize(kymo,[200 500]), 'ColorChannels','red-cyan'  )
 
+    % step 2: find peaks
 %     if 
     %% STEP 2: find peaks
 
+%     output = double(rez)
+    % TDA to make peaks more prominent
     if detPeaks
-        if oldmethod
-            try
-            [pathsColIdxs ] = find_track_peaks_nra(alignedkymo,cutMaskF,W_trim,distPar,10,gfiltSigma,10);
-            catch
-            pathsColIdxs = [];
-            end
-        else
+
 
             maxNumFeaturesSoughtK = ceil(min(sum(cutMaskF,2)) / ((2 * W_trim) + 1));
             [sourcesLong,pathsColIdxs] = find_features(alignedkymo, gfiltSigma,maxNumFeaturesSoughtK, W_trim,distPar);
 %             
-%             figure
-%             imagesc(alignedkymo)
-%             hold on
-%             for s = 1:size(pathsColIdxs,2)
-%                 plot(pathsColIdxs(:,s),1:length(pathsColIdxs(:,s)),'linewidth', 1)
-%             end
+            figure
+            imagesc(alignedkymo)
+            hold on
+            for s = 1:size(pathsColIdxs,2)
+                plot(pathsColIdxs(:,s),1:length(pathsColIdxs(:,s)),'linewidth', 2)
+            end
 
 
             leftF = [];
             rightF = [];
-        end
+        
 
     else
         pathsColIdxs = [];
@@ -204,9 +201,28 @@ end
 
 
 function [sourcesLong,pathsColIdxs] = find_features(alignedkymo, gfiltSigma,maxNumFeaturesSoughtK, W_trim, distPar)
+%     skipPeakDet = 0;
+%     pyenv('Version','python.exe');
+%     pe = pyenv;
+%     A1converted = py.numpy.array([[1:length(alignedkymo(1,~isnan(alignedkymo(1,:))))]' alignedkymo(1,~isnan(alignedkymo(1,:)))']);
+%     writematrix([[1:length(alignedkymo(1,~isnan(alignedkymo(1,:))))]' alignedkymo(1,~isnan(alignedkymo(1,:)))'],'example.txt',"Delimiter","\t")
+%     [rez] = pyrunfile("topf_fun.py","peaks");
+%     [rez] = pyrunfile("topf_fun2.py","peaks",A=A1converted);
 
-        minPeakDistance = (2 * W_trim) + 1;
-[vec,Ws,Ypk,Xpk,Wpk] = find_mat_peaks(alignedkymo, gfiltSigma,maxNumFeaturesSoughtK, minPeakDistance);
+    peakFiltThresh = 4;
+    for i=1:size(alignedkymo,1)
+        smoothImg = imgaussfilt(alignedkymo(i,:),gfiltSigma);
+
+        nonnanVals = smoothImg(~isnan(smoothImg));
+        bitVec=find( ~isnan(smoothImg)==1,1,'first');
+
+        A1converted = py.numpy.array([bitVec-1+[1:length(nonnanVals)]' nonnanVals']);
+        [rez] = double(pyrunfile("topf_fun2.py","peaks",A=A1converted,B=peakFiltThresh));
+        Ws{i}= find(rez(:,2))';
+        vec{i} = rez( Ws{i},1);
+    end
+%         minPeakDistance = (2 * W_trim) + 1;
+% [vec,Ws,Ypk,Xpk,Wpk] = find_mat_peaks(alignedkymo, gfiltSigma,maxNumFeaturesSoughtK, minPeakDistance);
 try
     %% STEP 3: track peaks
 

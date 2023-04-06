@@ -110,10 +110,10 @@ for i=1:length(posMulti)
             barcodeGen{uE+j}.rawBarcode = imresize(barcodeGen{uE+j}.rawBarcode,[1,lBar*curSF] );
             barcodeGen{uE+j}.rawBitmask = imresize(barcodeGen{uE+j}.rawBitmask,[1,lBar*curSF] );
 %         % Visualize
-        barStruct = cell2struct([cellfun(@(x) double(x.rawBarcode),bars,'un',false);...
-        cellfun(@(x) x.rawBitmask,bars,'un',false)]',{'rawBarcode','rawBitmask'},2);
-        import Core.plot_match_simple;
-        [f] = plot_match_simple(barStruct, oSneighbor{i}{j},2,1);
+%         barStruct = cell2struct([cellfun(@(x) double(x.rawBarcode),bars,'un',false);...
+%         cellfun(@(x) x.rawBitmask,bars,'un',false)]',{'rawBarcode','rawBitmask'},2);
+%         import Core.plot_match_simple;
+%         [f] = plot_match_simple(barStruct, oSneighbor{i}{j},2,1);
     end
     
     finalBar = merge_final(barcodeGen(uE:uE+cE-1),shift,cE);
@@ -121,7 +121,7 @@ for i=1:length(posMulti)
     barGenMerged{length(posSingle)+i}.rawBarcode = nanmean(finalBar);
     barGenMerged{length(posSingle)+i}.rawBitmask = ~isnan(barGenMerged{length(posSingle)+i}.rawBarcode);
     barGenMerged{length(posSingle)+i}.rawBarcode(isnan( barGenMerged{length(posSingle)+i}.rawBarcode)) = min( barGenMerged{length(posSingle)+i}.rawBarcode);
-
+    barGenMerged{length(posSingle)+i}.overlapStruct = oSneighbor{i};
     barGenMerged{length(posSingle)+i}.alignedBars = finalBar;
     
     % just save info about original barcodes from bargen

@@ -343,6 +343,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         for jj=1:numK
             hAxis = nexttile(hPanelAlignedKymosTile);
             hold on
+            hAxis.YDir = 'reverse'; % show kymo's flowing down
+
             set(gca,'color',[0 0 0]);
             set(hAxis,'XTick',[]);
             set(hAxis,'YTick',[]);
