@@ -28,7 +28,7 @@ function [kymoStructs, badMasks] = align_kymos(kymoStructs, sets, names)
 %         end
 
         try % some alignment method
-        [kymoStructs{i}.alignedKymo,kymoStructs{i}.alignedMask,~,~,newMask,f] = ...
+        [kymoStructs{i}.alignedKymo,kymoStructs{i}.alignedMask,~,~,newMask] = ...
         spalign(double(kymoStructs{i}.unalignedKymo),kymoStructs{i}.unalignedBitmask,sets.minOverlap,sets.maxShift,sets.skipPreAlign, sets.detPeaks);
         if (sum(kymoStructs{i}.alignedMask(:))==0)
             kymoStructs{i}.alignedMask = kymoStructs{i}.unalignedBitmask; % there was a single feature
