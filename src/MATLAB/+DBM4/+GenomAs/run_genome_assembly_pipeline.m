@@ -102,10 +102,13 @@ function [barcodeGen,barGenMerged,kymoStructs] = run_genome_assembly_pipeline(us
     [barGenMerged, posMulti, cnt_unique] = merge_neighbor_barcodes(barcodeGen,sets.minOverlap,1);
     disp('Done stitching neighbor barcodes');
 
-    mergId = 8;
-    mergPair = 1;
-    import Core.plot_match_simple;
-    [f] = plot_match_simple(barcodeGen(barGenMerged{mergId}.idx(mergPair:mergPair+1)), barGenMerged{mergId}.overlapStruct{mergPair},2,1);
+%     mergId = 12;
+%     mergPair = 1;
+%     import Core.plot_match_simple;
+%     [f] = plot_match_simple(barcodeGen(barGenMerged{mergId}.idx(mergPair:mergPair+1)), barGenMerged{mergId}.overlapStruct{mergPair},2,1);
+
+[barGenMergedt, posMultit, cnt_uniquet] = merge_neighbor_barcodes(barcodeGen(barGenMerged{mergId}.idx(mergPair:mergPair+1)),sets.minOverlap,0.8:0.01:1.1);
+
 
 %     assignin('base','fileStructOut',fileStruct);
     outputTarget = fullfile(userDir,'_sessiondata');

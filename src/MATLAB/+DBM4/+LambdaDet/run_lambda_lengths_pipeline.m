@@ -231,6 +231,11 @@ for idFold = 1:length(dfolders)
     cellfun(@(rawKymo, outputKymoFilepath)...
     imwrite(uint16(round(double(rawKymo)./max(rawKymo(:))*2^16)), fullfile(targetFolder,outputKymoFilepath), 'tif','WriteMode','append'),...
     dbmStruct.kymoCells.rawKymos(acceptedBars(idxses)), dbmStruct.kymoCells.rawKymoName(acceptedBars(idxses)));
+    
+    timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
+    save(fullfile(targetFolder,['lambda_session_data',timestamp,'.mat']),'barcodeGen','kymoStructs','dataStorage')
+
+
     disp(['Data saved at ',targetFolder ])
 
 
