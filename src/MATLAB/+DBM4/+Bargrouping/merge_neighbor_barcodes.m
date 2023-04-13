@@ -114,6 +114,8 @@ for i=1:length(posMulti)
 %         cellfun(@(x) x.rawBitmask,bars,'un',false)]',{'rawBarcode','rawBitmask'},2);
 %         import Core.plot_match_simple;
 %         [f] = plot_match_simple(barStruct, oSneighbor{i}{j},2,1);
+        barGenMerged{length(posSingle)+i}.pairBars{j} = bars;
+
     end
     
     finalBar = merge_final(barcodeGen(uE:uE+cE-1),shift,cE);

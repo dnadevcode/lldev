@@ -81,10 +81,10 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 %         figure,plot(imageData{1}.IntensityInfo.yData)
 
             if length(channelImg) == 1 % if single channel
-                channelForDist = 1;
+                params{idx}.channelForDist = 1;
                 firstIdx = 1;
             else
-                channelForDist = channelForDistSetting;
+                params{idx}.channelForDist = channelForDistSetting;
             end
 
             number_of_frames = length(channelImg{1}); % maximum number of frames
@@ -125,7 +125,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             rotImgOrig = rotImg;
             %     [rotImg,centralTend,bgTrend,bgSub] = remove_noise(rotImg, rotMask);
             [rotImg, centralTend, bgTrend, bgSub,background] = remove_noise_mean(rotImg, rotMask, firstIdx, remNonuniform);
-    %         visual_mean(rotImg{1}{1}) % visualize channel vs mean
+%             visual_mean(rotImg{1}{1}) % visualize channel vs mean
     
            % now detect channels
             for ch=1:length(rotImg)
@@ -143,7 +143,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 
             else
                 % find columns which have long molecules
-                [params{idx}.posX, params{idx}.posMax,params{idx}. nonrelevantRowsFarAway] = find_mols_corr(rotImg, bgTrend, numPts, channelForDist, firstIdx, centralTend, farAwayShift, distbetweenChannels,timeframes );
+                [params{idx}.posX, params{idx}.posMax,params{idx}. nonrelevantRowsFarAway] = find_mols_corr(rotImg, bgTrend, numPts, params{idx}.channelForDist, firstIdx, centralTend, farAwayShift, distbetweenChannels,timeframes );
             
                 % update positions which has at least numPts pts above 3
                 % times bgTrend
@@ -210,8 +210,8 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
                 end
     
                 % mean & std - used for SNR
-                params{idx}.threshval = nanmedian(params{idx}.noiseKymos{1}{channelForDist}(:));
-                params{idx}.threshstd = iqr(params{idx}.noiseKymos{1}{channelForDist}(:));
+                params{idx}.threshval = nanmedian(params{idx}.noiseKymos{1}{params{idx}.channelForDist}(:));
+                params{idx}.threshstd = iqr(params{idx}.noiseKymos{1}{params{idx}.channelForDist}(:));
 
             end
 
@@ -221,7 +221,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     
     % now final step is to extract "nice" kymographs
     [params{idx}.kymo, params{idx}.kymoW, params{idx}.kymoNames, params{idx}.Length,~, params{idx}.kymoOrig, params{idx}.idxOut] =...
-        extract_from_channels(params{idx}.kymos, params{idx}.wideKymos, params{idx}.posXUpd, params{idx}.posY, channelForDist, minLen, stdDifPos);
+        extract_from_channels(params{idx}.kymos, params{idx}.wideKymos, params{idx}.posXUpd, params{idx}.posY, params{idx}.channelForDist, minLen, stdDifPos);
     
     if channels == 2 % in case of two channels
         [~, ~, ~, ~,~, params{idx}.kymoOrigDots] = extract_from_channels(params{idx}.kymos, params{idx}.wideKymos, params{idx}.posXUpd, params{idx}.posY, 2, minLen, stdDifPos);

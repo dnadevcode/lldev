@@ -44,8 +44,8 @@ function [] = run_lambda_lengths_pipeline(userDir,dbmOSW)
     NN = 10; % how many times to recalculate
     stretchFactors = 0.8:0.01:1.2; % how much rescale to allow
     nmPsf = 300;
-    threshScore = 0.1; % thresh for which bars to keep / only if autothreshLambda is off
-    atPref = 16; % calc from a separate file
+    threshScore =  dbmOSW.DBMSettingsstruct.threshScore; % thresh for which bars to keep / only if autothreshLambda is off
+    atPref = dbmOSW.DBMSettingsstruct.atPref; % calc from a separate file
     
 
 
@@ -65,6 +65,7 @@ function [] = run_lambda_lengths_pipeline(userDir,dbmOSW)
     import OptMap.KymoAlignment.SPAlign.spalign;
     import DBM4.LambdaDet.compare_lambda_to_theory;
     import DBM4.LambdaDet.lambda_det_print;
+    import DBM4.LambdaDet.lambda_rand;
     import Core.barcodes_snr;
 
    
@@ -156,16 +157,9 @@ for idFold = 1:length(dfolders)
     % Compare to theory  random/ put to function
     if dbmOSW.DBMSettingsstruct.autothreshLambda
         try
-        allPoints = cell2mat(cellfun(@(x,y) x.rawBarcode(x.rawBitmask)-y,barcodeGen,dbmStruct.kymoCells.threshval(acceptedBars),'un',false));
-        randPermutationData = arrayfun(@(x) randperm(length(allPoints),round(sets.maxLen)),1:100,'un',false);
-        bars = cellfun(@(x) allPoints(x),randPermutationData,'un',false);
-        barRand = cell(1,length(bars));
-        for i=1:length(bars)
-            barRand{i}.rawBarcode = bars{i};
-            barRand{i}.rawBitmask = ones(1,length( barRand{i}.rawBarcode ));
-        end
+        [barRand] = lambda_rand(dbmStruct,barcodeGen, dbmStruct.kymoCells.threshval(acceptedBars), dbmOSW.DBMSettingsstruct.numrandlambda);
         [dataStorageRand,nmbpHistRand,lambdaLenRand] = compare_lambda_to_theory(barRand,zeros(1,length(barRand)),curSetsNMBP, 1, stretchFactors, nmPx,nmPsf, BP, threshScore,atPref);
-        threshScore = median(dataStorageRand{1}.score)-iqr(dataStorageRand{1}.score);
+        threshScore = median(dataStorageRand{1}.score)-3*std(dataStorageRand{1}.score);
         catch
             warning('Failed in detecting autothresh for lambda');
         end
@@ -209,7 +203,7 @@ for idFold = 1:length(dfolders)
 
     info.snr = nanmean(estSNR);
     info.nmbp = nmbpHist(end)
-    targetFolder = fullfile(dfolders(idFold).folder, strcat(['analysis_' info.foldName]));
+    targetFolder = fullfile(dfolders(idFold).folder, info.foldName, strcat(['analysis_' info.foldName]));
     mkdir(targetFolder);
     % info.snrind(idxses)
     printName = lambda_det_print(targetFolder, info, barcodeGen, idFold,molLengths);
@@ -223,7 +217,7 @@ for idFold = 1:length(dfolders)
         dbmStruct.kymoCells.enhanced(acceptedBars(idxses)), dbmStruct.kymoCells.rawKymoName(acceptedBars(idxses)));
     
         if sum(files) > 0
-            [~,~]= cellfun(@(rawKymo, outputKymoFilepath)...
+            cellfun(@(rawKymo, outputKymoFilepath)...
             delete(fullfile(targetFolder,outputKymoFilepath)),...
             dbmStruct.kymoCells.rawKymos, dbmStruct.kymoCells.rawKymoName);
         end
