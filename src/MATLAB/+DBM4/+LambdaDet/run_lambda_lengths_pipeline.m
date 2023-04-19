@@ -173,8 +173,8 @@ for idFold = 1:length(dfolders)
     
     targetFolder = fullfile(dfolders(idFold).folder, info.foldName, strcat(['analysis_' info.foldName]));
 
-    info = [];
-    
+%     info = [];
+
     if ~isempty(nmbpHist)
     molLengths = lambdaLen(end)./dataStorage{end}.bestBarStretch;
     %% 
