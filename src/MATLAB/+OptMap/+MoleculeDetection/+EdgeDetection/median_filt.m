@@ -1,4 +1,4 @@
-function [bitmask, posY,mat,threshval,threshstd,badMol,bitWithGaps] = median_filt(km, filterM,bgSigma,threshval,threshstd)
+function [bitmask, posY,mat,threshval,threshstd,badMol,bitWithGaps] = median_filt(km, filterM,bgSigma,threshval,threshstd, N,Nzero)
 
 % use median filter to detect edges
 %   Args:
@@ -15,6 +15,14 @@ function [bitmask, posY,mat,threshval,threshstd,badMol,bitWithGaps] = median_fil
 
     if nargin < 2
         filterM = [5 15];
+    end
+
+    if nargin < 6
+        N = 50;
+    end
+
+    if nargin < 7
+        Nzero = 0;
     end
     
     if nargin < 4
@@ -74,7 +82,7 @@ function [bitmask, posY,mat,threshval,threshstd,badMol,bitWithGaps] = median_fil
         sortedVals = sort([props.Area],'desc');
 
 
-        if numZeroRows==0 &&(numBlobs == 1 || (length(sortedVals)>1 && sortedVals(2) < 50))
+        if numZeroRows==0 &&(numBlobs == 1 || (length(sortedVals)>1 && sortedVals(2) < N))
 
             % if there are two regions, could split into two molecules.
             [maxArea, largestIndex] = max([props.Area]);
@@ -92,7 +100,7 @@ function [bitmask, posY,mat,threshval,threshstd,badMol,bitWithGaps] = median_fil
 
             numZeroPx = sum(arrayfun(@(x) sum(labK(x, posY{i}.leftEdgeIdxs(x): posY{i}.rightEdgeIdxs(x))==0) ,  1:length(posY{i}.leftEdgeIdxs)));
             
-            if numZeroPx > 0 % remove barcodes which are fragmented
+            if numZeroPx > Nzero % remove barcodes which are fragmented
                 posY{i} = [];
                 badMol(i)=1;
             else

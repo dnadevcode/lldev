@@ -127,6 +127,9 @@ for idFold = 1:length(dfolders)
 
     kymoStructs = cell(1,length(filtKymo));
     for i=1:length(filtKymo)
+        kymoStructs{i}.unalignedKymo = filtKymo{i};
+        kymoStructs{i}.unalignedBitmask = filtBitmask{i};
+
         [kymoStructs{i}.alignedKymo,kymoStructs{i}.alignedMask,~,~] = ...
         spalign(double(filtKymo{i}),filtBitmask{i},sets.minOverlap,sets.maxShift,sets.skipPreAlign, sets.detPeaks);
         try
@@ -226,11 +229,10 @@ for idFold = 1:length(dfolders)
     imwrite(uint16(round(double(rawKymo)./max(rawKymo(:))*2^16)), fullfile(targetFolder,outputKymoFilepath), 'tif','WriteMode','append'),...
     dbmStruct.kymoCells.rawKymos(acceptedBars(idxses)), dbmStruct.kymoCells.rawKymoName(acceptedBars(idxses)));
     
-    timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
-    save(fullfile(targetFolder,['lambda_session_data',timestamp,'.mat']),'barcodeGen','kymoStructs','dataStorage')
+%     timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
+%     save(fullfile(targetFolder,['lambda_session_data',timestamp,'.mat']),'barcodeGen','kymoStructs','dataStorage')
 
 
-    disp(['Data saved at ',targetFolder ])
 
 
     %% Plot comparison?
@@ -253,7 +255,14 @@ for idFold = 1:length(dfolders)
         saveas(f,fullfile(targetFolder,['bar_comparison_' num2str(idx) '.png']));
         
         end
+        
     end
+    
+    % always save session data
+    timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
+    save(fullfile(targetFolder,['lambda_session_data',timestamp,'.mat']),'barcodeGen','kymoStructs','dataStorage')
+    disp(['Data saved at ',targetFolder ])
+
 
 end
 

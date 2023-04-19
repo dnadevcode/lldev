@@ -485,6 +485,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             mSubPipelines = cellfun(@(x) uimenu(mSub{6},'Text',x),cellsPipelines,'un',false);
             mSubPipelines{1}.MenuSelectedFcn = @genome_assembly_pipeline;
             mSubPipelines{2}.MenuSelectedFcn = @detect_lambda_lengths_pipeline;
+            mSubPipelines{3}.MenuSelectedFcn = @scattering_microscopy_pipeline;
 
 %             set( mSubPipelines{1}, 'Enable', 'on');
 %             set( mSubPipelines{2}, 'Enable', 'on');
@@ -672,12 +673,22 @@ function detect_lambda_lengths_pipeline(src, event)
     run_lambda_lengths_pipeline(userDir,sets);
 end
 
+
+
 % genome assembly pipeline
 function genome_assembly_pipeline(src, event)
     userDir = uigetdir(pwd,'Select directory with movies to run through bargrouping pipeline');
     import DBM4.GenomAs.run_genome_assembly_pipeline;
     run_genome_assembly_pipeline(userDir);
 
+end
+
+function scattering_microscopy_pipeline(src, event)
+    % runs the detect_lambdas pipeline   
+    userDir = uigetfile(pwd,'Select .mat files to run through scattering microscopy pipeline','MultiSelect','on');
+    import DBM4.Scattering.scattering_microscopy_pipeline;
+    
+    scattering_microscopy_pipeline(userDir,sets);
 end
 
 
