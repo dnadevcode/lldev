@@ -843,13 +843,25 @@ function [resizedImgRot,rotMask] = rotate_images(channelImg,movieAngle,resSize)
 %     rotimUpd = imresize(rotim,[max(sz) min(sz)]);% get proper size..
     
     method = 'bilinear'; %bicubic
-    % resize images to bigger
-%     tic
-    resizedImg = cellfun(@(y) cellfun(@(z) ...
-            imresize(double(z),  [resSize*sz(1) resSize*sz(2)], method), y, 'un',false),channelImg,'un',false);
-    % rotate image
+
+    if resSize > 1
+        % resize images to bigger
+    %     tic
+        channelImg = cellfun(@(y) cellfun(@(z) ...
+                imresize(double(z),  [resSize*sz(1) resSize*sz(2)], method), y, 'un',false),channelImg,'un',false);
+        % rotate image
+    end
+    
+    % memory efficient rotation
+    for ii=1:length(channelImg)
+        for jj=1:length(channelImg{ii})
+            channelImg{ii}{jj} =  imrotate(double(channelImg{ii}{jj}), -(90+movieAngle), method);
+        end
+    end
+
+    % previously
     rotImg = cellfun(@(y) cellfun(@(z) ...
-        imrotate(double(z), -(90+movieAngle), method), y, 'un',false),resizedImg,'un',false);
+        imrotate(double(z), -(90+movieAngle), method), y, 'un',false),channelImg,'un',false);
 % 
     sz2 = size(rotImg{1}{1});
     % resize back to smaller.

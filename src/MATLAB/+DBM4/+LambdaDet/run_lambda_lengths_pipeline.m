@@ -171,6 +171,8 @@ for idFold = 1:length(dfolders)
     % find nm/nb    
     [dataStorage, nmbpHist, lambdaLen] = compare_lambda_to_theory(barcodeGen,bgMean,curSetsNMBP, NN, stretchFactors, nmPx,nmPsf, BP, threshScore,atPref);
     
+    targetFolder = fullfile(dfolders(idFold).folder, info.foldName, strcat(['analysis_' info.foldName]));
+
     if ~isempty(nmbpHist)
     molLengths = lambdaLen(end)./dataStorage{end}.bestBarStretch;
     %% 
@@ -206,7 +208,6 @@ for idFold = 1:length(dfolders)
 
     info.snr = nanmean(estSNR);
     info.nmbp = nmbpHist(end)
-    targetFolder = fullfile(dfolders(idFold).folder, info.foldName, strcat(['analysis_' info.foldName]));
     mkdir(targetFolder);
     % info.snrind(idxses)
     printName = lambda_det_print(targetFolder, info, barcodeGen, idFold,molLengths);
@@ -258,9 +259,10 @@ for idFold = 1:length(dfolders)
         
     end
     
-    % always save session data
+    % always save session data as DBM loadable. kymoStructs possibly saved
+    % twice (also in dbmStruct)
     timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
-    save(fullfile(targetFolder,['lambda_session_data',timestamp,'.mat']),'barcodeGen','kymoStructs','dataStorage')
+    save(fullfile(targetFolder,['lambda_session_data',timestamp,'.mat']),'dbmStruct','dbmOSW','barcodeGen','kymoStructs','dataStorage')
     disp(['Data saved at ',targetFolder ])
 
 
