@@ -173,6 +173,8 @@ for idFold = 1:length(dfolders)
     
     targetFolder = fullfile(dfolders(idFold).folder, info.foldName, strcat(['analysis_' info.foldName]));
 
+    info = [];
+    
     if ~isempty(nmbpHist)
     molLengths = lambdaLen(end)./dataStorage{end}.bestBarStretch;
     %% 
@@ -259,10 +261,12 @@ for idFold = 1:length(dfolders)
         
     end
     
+    DBMSettingsstruct = dbmOSW.DBMSettingsstruct;
+    DBMMainstruct = dbmStruct;
     % always save session data as DBM loadable. kymoStructs possibly saved
     % twice (also in dbmStruct)
     timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
-    save(fullfile(targetFolder,['lambda_session_data',timestamp,'.mat']),'dbmStruct','dbmOSW','barcodeGen','kymoStructs','dataStorage')
+    save(fullfile(targetFolder,['lambda_session_data',timestamp,'.mat']),'DBMMainstruct','DBMSettingsstruct','barcodeGen','kymoStructs','dataStorage','info')
     disp(['Data saved at ',targetFolder ])
 
 

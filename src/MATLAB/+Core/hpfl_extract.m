@@ -831,7 +831,7 @@ function [allAngles,CC] = estimate_angle(img, maxMinorAxis,tubeSize)
 end
 
 % function to rotate images
-function [resizedImgRot,rotMask] = rotate_images(channelImg,movieAngle,resSize)
+function [channelImg,rotMask] = rotate_images(channelImg,movieAngle,resSize)
 
     if nargin < 3
         resSize = 5;
@@ -859,14 +859,17 @@ function [resizedImgRot,rotMask] = rotate_images(channelImg,movieAngle,resSize)
         end
     end
 
-    % previously
-    rotImg = cellfun(@(y) cellfun(@(z) ...
-        imrotate(double(z), -(90+movieAngle), method), y, 'un',false),channelImg,'un',false);
+%     % previously
+%     rotImg = cellfun(@(y) cellfun(@(z) ...
+%         imrotate(double(z), -(90+movieAngle), method), y, 'un',false),channelImg,'un',false);
 % 
-    sz2 = size(rotImg{1}{1});
-    % resize back to smaller.
-    resizedImgRot = cellfun(@(y) cellfun(@(z) ...
-        imresize(double(z),  [round(sz2(1)/resSize) round(sz2(2)/resSize)], method), y, 'un',false),rotImg,'un',false);
+        sz2 = size(channelImg{1}{1});
+
+    if resSize > 1
+        % resize back to smaller.
+        channelImg = cellfun(@(y) cellfun(@(z) ...
+            imresize(double(z),  [round(sz2(1)/resSize) round(sz2(2)/resSize)], method), y, 'un',false),channelImg,'un',false);
+    end
 % 
 %     toc
     % test: can see how much bilinear operation 3 times reduces the quality
@@ -890,10 +893,10 @@ function [resizedImgRot,rotMask] = rotate_images(channelImg,movieAngle,resSize)
             nonzeronum = sum(rotMask==0);
             maxsum = 0.99*max(nonzeronum); 
             % make sure that values interpolated with outside are nan's
-            for i=1:length(resizedImgRot)
-                for k=1:length(resizedImgRot{i})
-                    resizedImgRot{i}{k}(rotMask) = nan;
-                    resizedImgRot{i}{k}(:,nonzeronum<maxsum) = nan; % remove columns with few pixels to get rid of edge effects
+            for i=1:length(channelImg)
+                for k=1:length(channelImg{i})
+                    channelImg{i}{k}(rotMask) = nan;
+                    channelImg{i}{k}(:,nonzeronum<maxsum) = nan; % remove columns with few pixels to get rid of edge effects
                 end
             end
         end
