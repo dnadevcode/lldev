@@ -65,8 +65,21 @@ function [bitmask, posY,mat,threshval,threshstd,badMol,bitWithGaps] = median_fil
     bitmask = cell(1,length(km));
     bitWithGaps = cell(1,length(km));
     posY = cell(1,length(km));
+
     for i=1:length(km)
+        
         K = medfilt2(km{i},filterM,'symmetric') > threshval+bgSigma*threshstd;
+        
+        % potential speed up : run medfilt2 for discretized image, x5 times
+        % speed up
+%         tic
+%         discThresh = gray2ind((threshval+bgSigma*threshstd - min(km{i}))/(max(km{i})-min(km{i})),2^8);
+%         tempKm = gray2ind((km{i}-min(km{i}))./(max(km{i})-min(km{i})),2^8);
+%         K = medfilt2(tempKm,filterM,'symmetric') > discThresh;
+%         toc
+
+      
+
     %     K = medfilt2(km{i},filterM,'symmetric') > meanD+bgSigma*varD; % should give correct also for unmedian filtered. Sigma bigger though?
 
 %         figure;    imshowpair(imresize(K,[200 500]),imresize(km{i},[200 500]), 'ColorChannels','red-cyan'  )
@@ -74,6 +87,8 @@ function [bitmask, posY,mat,threshval,threshstd,badMol,bitWithGaps] = median_fil
 
     %     figure,imagesc(km{i})
         mat{i} = K;
+
+        if nargout >= 3
         [labeledImage, numBlobs] = bwlabel(K);
         numZeroRows = sum(0==sum(labeledImage,2));
 %         numZeroCols = sum(0==sum(labeledImage,1));
@@ -116,8 +131,10 @@ function [bitmask, posY,mat,threshval,threshstd,badMol,bitWithGaps] = median_fil
             posY{i} = [];
             badMol(i)=1;
         end
-    end
+        end
 
+    end
+    
 % ix = 2;
 % kymo = km{ix};
 

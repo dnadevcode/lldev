@@ -11,7 +11,7 @@ function [kymoStatsTable] = run_kymo_analysis(kymoCells,skipEdgeDetection)
         skipEdgeDetection = false;
     end
     
-    rawKymos = kymoCells.rawKymos;
+    rawKymos = kymoCells.rawKymos; % should be aligned raw kymos
     rawKymoFileIdxs = kymoCells.rawKymoFileIdxs;
     rawKymoFileMoleculeIdxs = kymoCells.rawKymoFileMoleculeIdxs;
 

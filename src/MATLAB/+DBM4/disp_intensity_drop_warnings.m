@@ -19,6 +19,10 @@ function [] = disp_intensity_drop_warnings(rawKymoName,rawKymoFileIdxs, rawKymoF
         warningFileMoleculeIdxs = rawKymoFileMoleculeIdxs(isLargeDrop);
         warningSrcFilenames = rawKymoName(warningFileIdxs);
         warningEndOverStartIntensityRatios = endOverStartIntensityRatio(isLargeDrop);
+%         if ~isrow(warningEndOverStartIntensityRatios) % fix: check if this is a row
+            warningEndOverStartIntensityRatios = warningEndOverStartIntensityRatios';
+%         end
+
         warningTable = table( ...
             warningSrcFilenames, ...
             warningFileIdxs, ...

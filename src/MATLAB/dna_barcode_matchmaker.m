@@ -134,8 +134,11 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         for jj=1:length(dbmStruct.fileCells)
             hAxis = nexttile(hHomeScreenTile);
             % calc this directly before
-
-            imagesc(dbmStruct.fileCells{jj}.averagedImg', 'Parent', hAxis,[dbmStruct.fileCells{jj}.meanStd(1)-dbmStruct.fileCells{jj}.meanStd(2) dbmStruct.fileCells{jj}.meanStd(1)+5*dbmStruct.fileCells{jj}.meanStd(2)]);
+            if isfield(dbmStruct.fileCells{jj},'meanStd')
+                imagesc(dbmStruct.fileCells{jj}.averagedImg', 'Parent', hAxis,[dbmStruct.fileCells{jj}.meanStd(1)-dbmStruct.fileCells{jj}.meanStd(2) dbmStruct.fileCells{jj}.meanStd(1)+5*dbmStruct.fileCells{jj}.meanStd(2)]);
+            else
+                imagesc(dbmStruct.fileCells{jj}.averagedImg', 'Parent', hAxis);
+            end
             hold(hAxis, 'on');
             set(hAxis,'XTick',[])
             set(hAxis,'YTick',[])
@@ -621,7 +624,11 @@ function [] = run_calculate_lengths(skipDoubleTanhAdjustmentTF, shouldSaveTF, se
     import DBM4.run_kymo_analysis;
     kymoStatsTable = run_kymo_analysis(dbmStruct.kymoCells,skipEdgeDetection);
     % % 
-    defaultStatsOutputDirpath =   sets.dirs.stats;
+    try
+        defaultStatsOutputDirpath =   sets.dirs.stats;
+    catch
+        defaultStatsOutputDirpath = pwd;
+    end
     % %     
     if shouldSaveTF
         % %     % add timestamp

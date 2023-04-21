@@ -162,7 +162,7 @@ for idFold = 1:length(dfolders)
         try
         [barRand] = lambda_rand(dbmStruct,barcodeGen, dbmStruct.kymoCells.threshval(acceptedBars), dbmOSW.DBMSettingsstruct.numrandlambda);
         [dataStorageRand,nmbpHistRand,lambdaLenRand] = compare_lambda_to_theory(barRand,zeros(1,length(barRand)),curSetsNMBP, 1, stretchFactors, nmPx,nmPsf, BP, threshScore,atPref);
-        threshScore = median(dataStorageRand{1}.score)-3*std(dataStorageRand{1}.score);
+        threshScore = nanmedian(dataStorageRand{1}.score)-3*nanstd(dataStorageRand{1}.score);
         catch
             warning('Failed in detecting autothresh for lambda');
         end
@@ -172,6 +172,7 @@ for idFold = 1:length(dfolders)
     [dataStorage, nmbpHist, lambdaLen] = compare_lambda_to_theory(barcodeGen,bgMean,curSetsNMBP, NN, stretchFactors, nmPx,nmPsf, BP, threshScore,atPref);
     
     targetFolder = fullfile(dfolders(idFold).folder, info.foldName, strcat(['analysis_' info.foldName]));
+    [~,~] = mkdir(targetFolder);
 
 %     info = [];
 
@@ -210,12 +211,11 @@ for idFold = 1:length(dfolders)
 
     info.snr = nanmean(estSNR);
     info.nmbp = nmbpHist(end)
-    mkdir(targetFolder);
+%     mkdir(targetFolder);
     % info.snrind(idxses)
     printName = lambda_det_print(targetFolder, info, barcodeGen, idFold,molLengths);
     
     % save kymos
-    % mkdir(targetFolder,num2str(idFold));
     
     % targetFolder = fullfile(targetFolder,num2str(idFold));
         files = cellfun(@(rawKymo, outputKymoFilepath)...
