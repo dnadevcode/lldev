@@ -65,7 +65,9 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         sets.numPts  = str2double(textList{10}.String);
         sets.minLen  = str2double(textList{11}.String);
         sets.SigmaLambdaDet  = str2double(textList{12}.String);
-        sets.minAngle  = str2double(textList{13}.String);
+        
+        sets.initialAngle  = str2double(textList{13}.String);
+        sets.minAngle  = str2double(textList{14}.String);
 
 
         sets.moleculeAngleValidation = itemsList{1}.Value;
@@ -456,7 +458,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
             cellsExport = {'Save Session Data','Raw kymographs','Aligned Kymographs','Time Averages'};
             cellsKymographs = {'Display Raw kymographs','Display Aligned Kymographs','Plot Time Averages','Display lambdas','Filter molecules'};
-            cellsStatistics = {'Calculate molecule lengths and intensities','Calculate Raw Kymos Center of Mass'};
+            cellsStatistics = {'Calculate molecule lengths and intensities','Calculate Raw Kymos Center of Mass','Plot length vs intensity'};
             cellsPipelines = {'Genome assembly','Lambda lengths'};
 
             mSubImport = cellfun(@(x) uimenu(mSub{1},'Text',x),cellsImport,'un',false);
@@ -484,6 +486,10 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
             mSubStatistics{1}.MenuSelectedFcn = @calculate_lengths;
             mSubStatistics{2}.MenuSelectedFcn = @calculate_com;
+            set(  mSubStatistics{2}, 'Enable', 'off');
+
+            mSubStatistics{3}.MenuSelectedFcn = @calculate_length_intensity_plot;
+
 
             mSubPipelines = cellfun(@(x) uimenu(mSub{6},'Text',x),cellsPipelines,'un',false);
             mSubPipelines{1}.MenuSelectedFcn = @genome_assembly_pipeline;
@@ -510,6 +516,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             hAdditional.hAdd= uitab(tsHCC, 'title',strcat('Additional'));
             tshAdd = uitabgroup('Parent',hAdditional.hAdd);
             hAdditional.length = uitab(tshAdd, 'title',strcat('Mol lengths'));
+            hAdditional.lengthPlot = uitab(tshAdd, 'title',strcat('length vs int'));
+
         % set(hHomeScreen,'Visible','off')
             sets =  dbmOSW.DBMSettingsstruct;
 
@@ -525,10 +533,10 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
             % parameters with initial values
            textItems =  {'averagingWindowWidth (px)','nmPerPixel (nm/px)','rowSidePadding (unused)','parForNoise (how far noise channels are)','distbetweenChannels','numFrames',...
-               'Max number frames (0-all)','timeframes (unused)','stdDifPos (variation in edge position)','numPts (for detecting)','minLen (post-processing)','sigma (1-4, strickness of edge det.)','+-minAngle (degrees)'};
+               'Max number frames (0-all)','timeframes (unused)','stdDifPos (variation in edge position)','numPts (for detecting)','minLen (post-processing)','sigma (1-4, strickness of edge det.)','angle', '+-minAngle (degrees)'};
            values =  {num2str(sets.averagingWindowWidth),num2str(sets.nmPerPixel),num2str(sets.rowSidePadding),num2str(sets.parForNoise),...
                num2str(sets.distbetweenChannels),num2str(sets.numFrames),...
-               num2str(sets.max_number_of_frames),num2str(sets.timeframes),num2str(sets.stdDifPos), num2str(sets.numPts),num2str(sets.minLen),num2str(sets.SigmaLambdaDet),num2str(sets.minAngle)};
+               num2str(sets.max_number_of_frames),num2str(sets.timeframes),num2str(sets.stdDifPos), num2str(sets.numPts),num2str(sets.minLen),num2str(sets.SigmaLambdaDet),num2str(sets.initialAngle), num2str(sets.minAngle)};
 
             for i=1:length(textItems) % these will be in two columns
                 positionsText{i} =   [0.2-0.2*mod(i,2) .88-0.1*ceil(i/2) 0.2 0.03];
@@ -573,45 +581,49 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
                 disp('Method not implemented')
                 return;
         end
-        %         import OldDBM.Kymo.UI.run_calc_plot_save_kymo_analysis;
-%         import DBM4.run_calc_plot_save_kymo_analysis;
-        run_calculate_lengths(skipDoubleTanhAdjustmentTF, shouldSaveTF,sets,skipEdgeDetection);
-        
-        % plot
-        numP = ceil(sqrt(length(dbmStruct.kymoCells.rawKymos)));
-        hPanelRawKymosTile = tiledlayout(hAdditional.length,numP,numP,'TileSpacing','none','Padding','none');
 
-
-        for jj=1:length(dbmStruct.kymoCells.rawKymos)
-            hAxis = nexttile(hPanelRawKymosTile);
-            hAxis.YDir = 'reverse'; % show kymo's flowing down
-
-            hold on
-            set(gca,'color',[0 0 0]);
-            set(hAxis,'XTick',[]);
-            set(hAxis,'YTick',[]);
-            [fb,fe] = fileparts(dbmStruct.kymoCells.rawKymoName{jj});
-
-            % Show the raw kymographs with labeled edges and header text on
-            %  their alloted axis handles
-       
-    
-            import OldDBM.General.UI.disp_img_with_header;
-            disp_img_with_header(hAxis, dbmStruct.kymoCells.rawKymos{jj}, fe);
-            import DBM4.plot_kymo_edges;
-
-                 plot_kymo_edges(hAxis,...
-            dbmStruct.kymoCells.kymosMoleculeLeftEdgeIdxs{jj}', ...
-            dbmStruct.kymoCells.kymosMoleculeRightEdgeIdxs{jj}');
-    
-        
-%             disp_rect_annotated_image(, fe, {});
-
+        %         import DBM4.run_calc_plot_save_kymo_analysis;
+        if ~isfield(dbmStruct.kymoCells,'kymoStatsTable')
+            [dbmStruct.kymoCells.kymoStatsTable] = run_calculate_lengths(skipDoubleTanhAdjustmentTF, shouldSaveTF,sets,skipEdgeDetection);
         end
-        tsHCC.SelectedTab = hAdditional.hAdd;
+
+        % plot
+        if shouldSaveTF % only plot if saving..
+            numP = ceil(sqrt(length(dbmStruct.kymoCells.rawKymos)));
+            hPanelRawKymosTile = tiledlayout(hAdditional.length,numP,numP,'TileSpacing','none','Padding','none');
+    
+    
+            for jj=1:length(dbmStruct.kymoCells.rawKymos)
+                hAxis = nexttile(hPanelRawKymosTile);
+                hAxis.YDir = 'reverse'; % show kymo's flowing down
+    
+                hold on
+                set(gca,'color',[0 0 0]);
+                set(hAxis,'XTick',[]);
+                set(hAxis,'YTick',[]);
+                [fb,fe] = fileparts(dbmStruct.kymoCells.rawKymoName{jj});
+    
+                % Show the raw kymographs with labeled edges and header text on
+                %  their alloted axis handles
+           
+        
+                import OldDBM.General.UI.disp_img_with_header;
+                disp_img_with_header(hAxis, dbmStruct.kymoCells.rawKymos{jj}, fe);
+                import DBM4.plot_kymo_edges;
+    
+                     plot_kymo_edges(hAxis,...
+                dbmStruct.kymoCells.kymosMoleculeLeftEdgeIdxs{jj}', ...
+                dbmStruct.kymoCells.kymosMoleculeRightEdgeIdxs{jj}');
+        
+            
+    %             disp_rect_annotated_image(, fe, {});
+    
+            end
+            tsHCC.SelectedTab = hAdditional.hAdd;
+        end
     end
 
-function [] = run_calculate_lengths(skipDoubleTanhAdjustmentTF, shouldSaveTF, sets, skipEdgeDetection)
+function [kymoStatsTable] = run_calculate_lengths(skipDoubleTanhAdjustmentTF, shouldSaveTF, sets, skipEdgeDetection)
     %
     %   Args:
     %       tsDBM, dbmODW, skipDoubleTanhAdjustmentTF, shouldSavePngTF
@@ -670,6 +682,23 @@ function [] = run_calculate_lengths(skipDoubleTanhAdjustmentTF, shouldSaveTF, se
         end
     end
 end
+
+
+function calculate_length_intensity_plot(src, event)
+    % Plots length vs intensity and marks potential lambda molecules based on
+    % pre-selected window
+    if ~isfield(dbmStruct.kymoCells,'kymoStatsTable')
+        calculate_lengths();
+    end
+    
+%     axes(hAdditional.lengthPlot)
+    import DBM4.Figs.length_vs_intensity;
+    length_vs_intensity(dbmStruct.kymoCells.kymoStatsTable,hAdditional.lengthPlot);
+
+     tsHCC.SelectedTab = hAdditional.hAdd;
+end
+
+
 
 % lambda pipeline
 function detect_lambda_lengths_pipeline(src, event)
