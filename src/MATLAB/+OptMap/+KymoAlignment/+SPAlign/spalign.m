@@ -66,6 +66,12 @@ function [spalignedKymo,spalignedBitmask,cutKymo,cutMaskF,newMask,f] = spalign(k
 
             maxNumFeaturesSoughtK = ceil(min(sum(cutMaskF,2)) / ((2 * W_trim) + 1));
             [sourcesLong,pathsColIdxs] = find_features(alignedkymo, gfiltSigma,maxNumFeaturesSoughtK, W_trim,distPar);
+
+            % new: minima as well
+            [sourcesLong2,pathsColIdxs2] = find_features(-alignedkymo, gfiltSigma,maxNumFeaturesSoughtK, W_trim,distPar);
+            pathsColIdxs = [pathsColIdxs pathsColIdxs2 ];
+            sourcesLong = [ sourcesLong sourcesLong2];
+
 %             
 %             figure
 %             imagesc(alignedkymo)

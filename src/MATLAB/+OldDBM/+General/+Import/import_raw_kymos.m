@@ -50,13 +50,23 @@ function [rawKymos, rawKymoFilepaths,rawBitmasks,enhanced] = import_raw_kymos(de
         rawKymoFilepath = rawKymoFilepaths{fileNum};
 
         fprintf('    %s\n', rawKymoFilename);
-        rawKymo = double(imread(rawKymoFilepath)); % change how stuff is loaded for new dbm: second tf is image, third tf is bitmask
-        rawKymos{fileNum} = rawKymo;
-        try
-            rawBitmasks{fileNum} = double(imread(strrep(rawKymoFilepath,'kymograph.tif','bitmask.tif')));
-            enhanced{fileNum} = double(imread(strrep(rawKymoFilepath,'kymograph.tif','enhanced.tif')));
 
-        catch
+        if length(imfinfo(rawKymoFilepath)) == 3
+            rawKymos{fileNum} = double(imread(rawKymoFilepath,2)); % change how stuff is loaded for new dbm: second tf is image, third tf is bitmask
+            rawBitmasks{fileNum} = logical(imread(rawKymoFilepath,3)); % change how stuff is loaded for new dbm: second tf is image, third tf is bitmask
+            enhanced{fileNum} = double(imread(rawKymoFilepath,1)); % change how stuff is loaded for new dbm: second tf is image, third tf is bitmask
+        else
+
+            rawKymo = double(imread(rawKymoFilepath)); % change how stuff is loaded for new dbm: second tf is image, third tf is bitmask
+            rawKymos{fileNum} = rawKymo;
+    
+            try
+                rawBitmasks{fileNum} = double(imread(strrep(rawKymoFilepath,'kymograph.tif','bitmask.tif')));
+                enhanced{fileNum} = double(imread(strrep(rawKymoFilepath,'kymograph.tif','enhanced.tif')));
+    
+            catch
+    
+            end
         end
     end
 

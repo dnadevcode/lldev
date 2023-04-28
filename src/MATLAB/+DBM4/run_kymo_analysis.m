@@ -1,4 +1,4 @@
-function [kymoStatsTable] = run_kymo_analysis(kymoCells,skipEdgeDetection)
+function [kymoStatsTable,moleculeMasks] = run_kymo_analysis(kymoCells,sets)
     % RUN_KYMO_ANALYSIS - calculates the lengths of the molecules using
     %	the method chosen by the user
     %
@@ -8,32 +8,24 @@ function [kymoStatsTable] = run_kymo_analysis(kymoCells,skipEdgeDetection)
     %
 
     if nargin < 2
-        skipEdgeDetection = false;
+        sets.skipEdgeDetection = false;
     end
     
     rawKymos = kymoCells.rawKymos; % should be aligned raw kymos
     rawKymoFileIdxs = kymoCells.rawKymoFileIdxs;
     rawKymoFileMoleculeIdxs = kymoCells.rawKymoFileMoleculeIdxs;
-
-    kymosMoleculeLeftEdgeIdxs = cell(1,length(rawKymos));
-    kymosMoleculeRightEdgeIdxs = cell(1,length(rawKymos));
-    moleculeMasks = cell(1,length(rawKymos));
-
-    if skipEdgeDetection
+    
+    import DBM4.run_raw_kymos_edge_detection;
+    if sets.skipEdgeDetection
        kymosMoleculeLeftEdgeIdxs = kymoCells.kymosMoleculeLeftEdgeIdxs;
        kymosMoleculeRightEdgeIdxs = kymoCells.kymosMoleculeRightEdgeIdxs;
        moleculeMasks = kymoCells.rawBitmask';
     else
-%         import OldDBM.Kymo.Core.run_raw_kymos_edge_detection;
-% 
-%         [ ...
-%             kymosMoleculeLeftEdgeIdxs, ...
-%             kymosMoleculeRightEdgeIdxs, ...
-%             moleculeMasks, ...
-%             rawKymos, ...
-%             rawKymoFileIdxs, ...
-%             rawKymoFileMoleculeIdxs ...
-%             ] = run_raw_kymos_edge_detection(dbmODW, skipDoubleTanhAdjustment);
+        [ ...
+            kymosMoleculeLeftEdgeIdxs, ...
+            kymosMoleculeRightEdgeIdxs, ...
+            moleculeMasks, ....
+            ] = run_raw_kymos_edge_detection(rawKymos, sets);
     end
     numMolecules = length(rawKymoFileMoleculeIdxs);
 
@@ -41,7 +33,6 @@ function [kymoStatsTable] = run_kymo_analysis(kymoCells,skipEdgeDetection)
         disp('There were no raw kymos to find molecule edges in');
         return;
     end
-
 
     kymoStatsStructs = cell(numMolecules, 1);
     import OldDBM.Kymo.Core.calc_kymo_stats;
@@ -57,7 +48,7 @@ function [kymoStatsTable] = run_kymo_analysis(kymoCells,skipEdgeDetection)
         kymoStatsStruct = calc_kymo_stats(rawKymo, moleculeMask, moleculeLeftEdgeIdxs', moleculeRightEdgeIdxs');
 
         % meanMainMoleculePixelIntensity = mean(rawKymo(mainKymoMoleculeMask));
-        meanNonMainMoleculePixelIntensity = mean(rawKymo(~moleculeMask));
+        meanNonMainMoleculePixelIntensity = nanmean(rawKymo(~moleculeMask));
         kymoStatsStruct.meanNonMainMoleculePixelIntensity = meanNonMainMoleculePixelIntensity;
 
         kymoStatsStruct.srcFilename = srcFilename;
