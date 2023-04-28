@@ -150,6 +150,3 @@ for i=1:length(data)
 
 end
 
-
-end
-
