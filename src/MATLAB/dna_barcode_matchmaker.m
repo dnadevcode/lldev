@@ -173,9 +173,16 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
     % saving session data
     function save_session_data(src,event)
-        import OldDBM.General.Export.export_dbm_session_struct_mat;
+%         import OldDBM.General.Export.export_dbm_session_struct_mat;
+        import DBM4.Export.export_dbm_session_struct_mat;
+
+        try 
+            [defaultOutputDirpath,~] = fileparts(dbmOSW.DBMSettingsstruct.movies.movieNames{1});
+            defaultOutputDirpath = fullfile(defaultOutputDirpath,'session');
+        catch
+            defaultOutputDirpath = dbmOSW.get_default_export_dirpath('session');
+        end
         %             if nargin < 2
-        defaultOutputDirpath = dbmOSW.get_default_export_dirpath('session');
         %             end
         dbmODW.DBMMainstruct = dbmStruct;
         dbmOSW.DBMSettingsstruct = sets;
@@ -189,9 +196,15 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             sets.choose_output_folder = 1;
         end
 
-        if sets.choose_output_folder
-            defaultOutputDirpath = dbmOSW.get_default_export_dirpath('raw_kymo');
-            outputDirpath = uigetdir(defaultOutputDirpath, 'Select Directory to Save Raw Kymo Files');
+        if sets.choose_output_folder==1
+            try
+                [defaultOutputDirpath,~] = fileparts(dbmOSW.DBMSettingsstruct.movies.movieNames{1});
+                outputDirpath = fullfile(defaultOutputDirpath,'raw_kymo');
+                [~,~] = mkdir(outputDirpath);
+            catch
+                defaultOutputDirpath = dbmOSW.get_default_export_dirpath('raw_kymo');
+                outputDirpath = uigetdir(defaultOutputDirpath, 'Select Directory to Save Raw Kymo Files');
+            end
         else
             outputDirpath = sets.outputDirpath;
         end
@@ -227,9 +240,15 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
     function [] = export_aligned_kymos(src, event)
         import OldDBM.General.Export.export_aligned_kymos;
 
-        defaultOutputDirpath = dbmOSW.get_default_export_dirpath('aligned_kymo');
-        outputDirpath = uigetdir(defaultOutputDirpath, 'Select Directory to Save Aligned Kymo Files');
-        
+        try
+            [defaultOutputDirpath,~] = fileparts(dbmOSW.DBMSettingsstruct.movies.movieNames{1});
+            outputDirpath = fullfile(defaultOutputDirpath,'aligned_kymo');
+            [~,~] = mkdir(outputDirpath);
+        catch
+            defaultOutputDirpath = dbmOSW.get_default_export_dirpath('aligned_kymo');
+            outputDirpath = uigetdir(defaultOutputDirpath, 'Select Directory to Save Aligned Kymo Files');
+        end
+    
         if  ~isfield(dbmStruct.kymoCells,'alignedKymos') % have to calculate aligned kymographs
             display_aligned_kymographs;
         end
@@ -245,8 +264,19 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
     end
     
     function [] = export_time_averages_kymos(src, event)
-        defaultOutputDirpath = dbmOSW.get_default_export_dirpath('aligned_kymo_time_avg');
-        outputDirpath = uigetdir(defaultOutputDirpath, 'Select Directory to Save Barcode .mat files');
+
+        try
+            [defaultOutputDirpath,~] = fileparts(dbmOSW.DBMSettingsstruct.movies.movieNames{1});
+            outputDirpath = fullfile(defaultOutputDirpath,'aligned_kymo_time_avg');
+            [~,~] = mkdir(outputDirpath);
+        catch
+            defaultOutputDirpath = dbmOSW.get_default_export_dirpath('aligned_kymo_time_avg');
+            outputDirpath = uigetdir(defaultOutputDirpath, 'Select Directory to Save Barcode .mat files');
+        end
+       
+        if  ~isfield(dbmStruct.kymoCells,'barcodes') % have to calculate aligned kymographs
+            display_time_averages;
+        end
 
         cellfun(@(rawBarcode, outputKymoFilepath)...
         save( fullfile(outputDirpath,strrep(outputKymoFilepath,'.tif','.mat')), 'rawBarcode'),...
@@ -298,7 +328,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 %         sets = dbmODW.DBMSettingsstruct;
 %         dbmStruct = dbmODW.DBMMainstruct;
 
-        show_home(); 
+%         show_home(); 
     end
 
 
@@ -470,7 +500,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             cellsExport = {'Save Session Data','Raw kymographs','Aligned Kymographs','Time Averages'};
             cellsKymographs = {'Display Raw kymographs','Display Aligned Kymographs','Plot Time Averages','Display lambdas','Filter molecules'};
             cellsStatistics = {'Calculate molecule lengths and intensities','Calculate Raw Kymos Center of Mass','Plot length vs intensity'};
-            cellsPipelines = {'Genome assembly','Lambda lengths'};
+            cellsPipelines = {'Genome assembly','Lambda lengths','Lambda recalc'};
 
             mSubImport = cellfun(@(x) uimenu(mSub{1},'Text',x),cellsImport,'un',false);
             mSubExport = cellfun(@(x) uimenu(mSub{2},'Text',x),cellsExport,'un',false);
@@ -505,10 +535,13 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             mSubPipelines = cellfun(@(x) uimenu(mSub{6},'Text',x),cellsPipelines,'un',false);
             mSubPipelines{1}.MenuSelectedFcn = @genome_assembly_pipeline;
             mSubPipelines{2}.MenuSelectedFcn = @detect_lambda_lengths_pipeline;
-            mSubPipelines{3}.MenuSelectedFcn = @scattering_microscopy_pipeline;
+            mSubPipelines{3}.MenuSelectedFcn = @detect_lambda_lengths_recalc;
+%             set( mSubPipelines{3}, 'Enable', 'off');
+
+%             mSubPipelines{3}.MenuSelectedFcn = @scattering_microscopy_pipeline;
+
 
 %             set( mSubPipelines{1}, 'Enable', 'on');
-%             set( mSubPipelines{2}, 'Enable', 'on');
 
             
 %             mSubPipelines = cellfun(@(x) uimenu(mSub{4},'Text',x),cellsStatistics,'un',false);
@@ -727,6 +760,13 @@ function detect_lambda_lengths_pipeline(src, event)
 end
 
 
+function detect_lambda_lengths_recalc(src, event)
+    % runs the detect_lambdas pipeline   
+%     userDir = uigetdir(pwd,'Select directory with movies to run through lambda pipeline');
+    import DBM4.LambdaDet.run_lambda_lengths_pipeline_recalc;
+    
+    run_lambda_lengths_pipeline_recalc(sets,dbmStruct);
+end
 
 % genome assembly pipeline
 function genome_assembly_pipeline(src, event)

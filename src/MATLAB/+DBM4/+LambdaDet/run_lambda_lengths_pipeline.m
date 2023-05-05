@@ -31,7 +31,7 @@ function [] = run_lambda_lengths_pipeline(userDir,dbmOSW)
 
 
     % nmPx = 254; % extract from .ini file
-    lambdaLen = 48502 ;
+    lambdaLenSeq = 48502 ;
 %     nmbp = 0.22; % initial nm/bp
 
     nmbpLim = [0.15 0.3];
@@ -64,9 +64,7 @@ function [] = run_lambda_lengths_pipeline(userDir,dbmOSW)
     import Core.hpfl_extract;
     import OptMap.KymoAlignment.SPAlign.spalign;
     import DBM4.LambdaDet.compare_lambda_to_theory;
-    import DBM4.LambdaDet.lambda_det_print;
     import DBM4.LambdaDet.lambda_rand;
-    import Core.barcodes_snr;
 
    
     % loop over folders
@@ -147,8 +145,8 @@ for idFold = 1:length(dfolders)
 
 %     lambdaPx = lambdaLen/bppx;
     %     % generate barcodes
-    sets.maxLen = lambdaLen/(nmPx/nmbpLim(2)); % estimate for max length
-    sets.minLen = lambdaLen/(nmPx/nmbpLim(1)); % estimate for min length
+    sets.maxLen = lambdaLenSeq/(nmPx/nmbpLim(2)); % estimate for max length
+    sets.minLen = lambdaLenSeq/(nmPx/nmbpLim(1)); % estimate for min length
     %     % sets.minLen
     [barcodeGen,acceptedBars] =  gen_barcodes_from_kymo(kymoStructs, sets,sets.maxLen);
 
@@ -161,7 +159,7 @@ for idFold = 1:length(dfolders)
     if dbmOSW.DBMSettingsstruct.autothreshLambda
         try
         [barRand] = lambda_rand(dbmStruct,barcodeGen, dbmStruct.kymoCells.threshval(acceptedBars), dbmOSW.DBMSettingsstruct.numrandlambda);
-        [dataStorageRand,nmbpHistRand,lambdaLenRand] = compare_lambda_to_theory(barRand,zeros(1,length(barRand)),curSetsNMBP, 1, stretchFactors, nmPx,nmPsf, BP, threshScore,atPref);
+        [dataStorageRand, nmbpHistRand, lambdaLenRand] = compare_lambda_to_theory(barRand,zeros(1,length(barRand)),curSetsNMBP, 1, stretchFactors, nmPx,nmPsf, BP, threshScore,atPref);
         threshScore = nanmedian(dataStorageRand{1}.score)-3*nanstd(dataStorageRand{1}.score);
         catch
             warning('Failed in detecting autothresh for lambda');
@@ -175,98 +173,32 @@ for idFold = 1:length(dfolders)
     [~,~] = mkdir(targetFolder);
 
 %     info = [];
-
-    if ~isempty(nmbpHist)
-    molLengths = lambdaLen(end)./dataStorage{end}.bestBarStretch;
-    %% 
-    idxses = find(dataStorage{end}.score<threshScore);
-    outFac=dataStorage{end}.bestBarStretch(idxses);
-    % can run a few loops to converge on a specific value
-    
-    info.goodMols = idxses;
-    info.stretchFac = outFac;
-    info.score = dataStorage{end}.score(idxses);
     info.threshScore = threshScore;
-    info.lambdaLen = lambdaLen;
-    info.bestnmbpStd = dataStorage{end}.bestStrStd;
+    info.idFold = idFold;
+    info.bgMean = bgMean;
+    info.bgStd = bgStd;
+    info.acceptedBars = acceptedBars;
+    info.targetFolder = targetFolder;
+    info.kymoFoldName ='kymo';
+    info.barFoldName = 'comparison';
 
-    %% plot:     
-    bestBarStretch = dataStorage{end}.bestBarStretch;
-    rezMaxM = dataStorage{end}.rezMaxM;
-    lambdaScaled = dataStorage{end}.lambdaScaled;
-    lambdaMask = dataStorage{end}.lambdaMask;
-    
-    % signal to noise ratio:
-    estSNR = nan(1,length(barcodeGen));
-    for ii=idxses
-    %     curBar = imresize(barcodeGen{ii}.rawBarcode(barcodeGen{ii}.rawBitmask),'Scale' ,[1 bestBarStretch(ii)]) ;
-    %     meanSignal = (mean(curBar)-bgMean(ii))/mean(lambdaScaled(find(lambdaMask)));
-    %     stdBg = bgStd(ii);
-        estSNR(ii) =  barcodes_snr(filtKymo{acceptedBars(ii)},filtBitmask{acceptedBars(ii)}, bgMean(ii), bgStd(ii));
-    %     estSNR(ii) = meanSignal/stdBg;
-    end
-    
-    info.snrind = estSNR(idxses);
-    
-
-    info.snr = nanmean(estSNR);
-    info.nmbp = nmbpHist(end)
-%     mkdir(targetFolder);
-    % info.snrind(idxses)
-    printName = lambda_det_print(targetFolder, info, barcodeGen, idFold,molLengths);
-    
-    % save kymos
-    
-    % targetFolder = fullfile(targetFolder,num2str(idFold));
-        files = cellfun(@(rawKymo, outputKymoFilepath)...
-        isfile(fullfile(targetFolder,outputKymoFilepath)),...
-        dbmStruct.kymoCells.enhanced(acceptedBars(idxses)), dbmStruct.kymoCells.rawKymoName(acceptedBars(idxses)));
-    
-        if sum(files) > 0
-            cellfun(@(rawKymo, outputKymoFilepath)...
-            delete(fullfile(targetFolder,outputKymoFilepath)),...
-            dbmStruct.kymoCells.rawKymos, dbmStruct.kymoCells.rawKymoName);
-        end
-            
-    cellfun(@(rawKymo, outputKymoFilepath)...
-    imwrite(uint16(round(double(rawKymo)./max(rawKymo(:))*2^16)), fullfile(targetFolder,outputKymoFilepath), 'tif','WriteMode','append'),...
-    dbmStruct.kymoCells.rawKymos(acceptedBars(idxses)), dbmStruct.kymoCells.rawKymoName(acceptedBars(idxses)));
-    
-%     timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
-%     save(fullfile(targetFolder,['lambda_session_data',timestamp,'.mat']),'barcodeGen','kymoStructs','dataStorage')
-
-
-
-
-    %% Plot comparison?
-        
-        % plot
-        for idx = idxses;
-        curBar = imresize(barcodeGen{idx}.rawBarcode,'Scale' ,[1 bestBarStretch(idx)]) ;
-        
-        if rezMaxM{idx}.or==2
-            curBar = fliplr(curBar);
-        end
-        
-        curBar = curBar - bgMean(idx);
-        curBar = curBar/max(curBar);
-        
-        f = figure('visible','off');
-        plot( [lambdaScaled])
-        hold on
-        plot(rezMaxM{idx}.pos:rezMaxM{idx}.pos+length(curBar)-1,curBar)
-        saveas(f,fullfile(targetFolder,['bar_comparison_' num2str(idx) '.png']));
-        
-        end
-        
-    end
+    import DBM4.LambdaDet.export_lambda_res;
+    [info] = export_lambda_res(dbmStruct,nmbpHist,lambdaLen,dataStorage,info,barcodeGen,filtKymo,filtBitmask);
     
     DBMSettingsstruct = dbmOSW.DBMSettingsstruct;
     DBMMainstruct = dbmStruct;
+    DBMMainstruct.kymoStructs = kymoStructs;
+    DBMMainstruct.barcodeGen = barcodeGen;
+    DBMMainstruct.dataStorage = dataStorage;
+    DBMMainstruct.info = info;
+
+    for j=1:length(DBMMainstruct.fileCells)
+        DBMMainstruct.fileCells{j}.preCells = [];% save some space by not printing this
+    end
     % always save session data as DBM loadable. kymoStructs possibly saved
     % twice (also in dbmStruct)
     timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
-    save(fullfile(targetFolder,['lambda_session_data',timestamp,'.mat']),'DBMMainstruct','DBMSettingsstruct','barcodeGen','kymoStructs','dataStorage','info')
+    save(fullfile(targetFolder,['lambda_session_data',timestamp,'.mat']),'DBMMainstruct','DBMSettingsstruct')
     disp(['Data saved at ',targetFolder ])
 
 

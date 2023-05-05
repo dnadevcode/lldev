@@ -12,13 +12,28 @@ function [kymoStatsTable,moleculeMasks] = run_kymo_analysis(kymoCells,sets)
     end
     
     rawKymos = kymoCells.rawKymos; % should be aligned raw kymos
-    rawKymoFileIdxs = kymoCells.rawKymoFileIdxs;
-    rawKymoFileMoleculeIdxs = kymoCells.rawKymoFileMoleculeIdxs;
+
+    if isfield(kymoCells,'rawKymoFileIdxs')
+        rawKymoFileIdxs = kymoCells.rawKymoFileIdxs;
+    else
+        rawKymoFileIdxs = 1:length(rawKymos);
+    end
+
+    if isfield(kymoCells,'rawKymoFileMoleculeIdxs')
+        rawKymoFileMoleculeIdxs = kymoCells.rawKymoFileMoleculeIdxs;
+    else
+        rawKymoFileMoleculeIdxs = 1:length(rawKymos);
+    end
     
     import DBM4.run_raw_kymos_edge_detection;
     if sets.skipEdgeDetection
-       kymosMoleculeLeftEdgeIdxs = kymoCells.kymosMoleculeLeftEdgeIdxs;
-       kymosMoleculeRightEdgeIdxs = kymoCells.kymosMoleculeRightEdgeIdxs;
+        if isfield(kymoCells,'kymosMoleculeLeftEdgeIdxs')
+           kymosMoleculeLeftEdgeIdxs = kymoCells.kymosMoleculeLeftEdgeIdxs;
+           kymosMoleculeRightEdgeIdxs = kymoCells.kymosMoleculeRightEdgeIdxs;
+        else
+            kymosMoleculeLeftEdgeIdxs = cellfun(@(y) arrayfun(@(x) find(y(x,:) >0,1,'first'),1:size(y,1)),kymoCells.rawBitmask,'un',false);
+            kymosMoleculeRightEdgeIdxs =  cellfun(@(y) arrayfun(@(x) find(y(x,:) >0,1,'last')',1:size(y,1)),kymoCells.rawBitmask,'un',false);
+        end
        moleculeMasks = kymoCells.rawBitmask';
     else
         [ ...

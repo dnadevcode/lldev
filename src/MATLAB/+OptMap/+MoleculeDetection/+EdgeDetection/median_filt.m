@@ -68,6 +68,7 @@ function [bitmask, posY,mat,threshval,threshstd,badMol,bitWithGaps] = median_fil
 
     for i=1:length(km)
         
+        
         K = medfilt2(km{i},filterM,'symmetric') > threshval+bgSigma*threshstd;
         
         % potential speed up : run medfilt2 for discretized image, x5 times
