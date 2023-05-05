@@ -46,7 +46,7 @@ import DBM4.LambdaDet.compare_lambda_to_theory;
     filtKymo = dbmStruct.kymoCells.rawKymos;
     filtBitmask = dbmStruct.kymoCells.rawBitmask;
 
-
+    info.idFold = '_r';
     import DBM4.LambdaDet.export_lambda_res;
     [info] = export_lambda_res(dbmStruct,nmbpHist,lambdaLen,dataStorage,info,barcodeGen,filtKymo,filtBitmask);
     
