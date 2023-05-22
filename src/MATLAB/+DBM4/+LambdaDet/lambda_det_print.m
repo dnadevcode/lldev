@@ -53,7 +53,28 @@ writecell({'Mol nr','Re-scale factor', 'Length (micron)', 'Score','SNR'} ,xlsxNa
     fprintf(fid, '----------------------------------------------------------------------- \n');
     
     fprintf(fid, 'Analysis settings:\n');
-    fprintf(fid, '\n XResolution for experiment: %.1f micrometer \n', 1000/info.nmpx);
+    fprintf(fid, '\n lldev version: %s ', info.sets.versionLLDEV{1});
+    fprintf(fid, '\n XResolution for experiment: %.1f micrometer', 1000/info.nmpx);
+    fprintf(fid, '\n numPts: %.1f ', info.sets.numPts);
+    fprintf(fid, '\n averagingWindowWidth: %.1f ', info.sets.averagingWindowWidth);
+    fprintf(fid, '\n nmPerPixel: %.1f ', info.sets.nmPerPixel);
+    fprintf(fid, '\n distbetweenChannels: %.1f ', info.sets.distbetweenChannels);
+    fprintf(fid, '\n max_number_of_frames: %.1f ', info.sets.max_number_of_frames);
+    fprintf(fid, '\n stdDifPos: %.1f ', info.sets.stdDifPos);
+    fprintf(fid, '\n minLen: %.1f ', info.sets.minLen);
+    fprintf(fid, '\n parForNoise: %.1f ', info.sets.parForNoise);
+    fprintf(fid, '\n initialAngle: %.1f ', info.sets.initialAngle);
+    fprintf(fid, '\n minAngle: %.1f ', info.sets.minAngle);
+    fprintf(fid, '\n minLambdaLen: %.1f ', info.sets.minLambdaLen);
+    fprintf(fid, '\n maxLambdaLen: %.1f ', info.sets.maxLambdaLen);
+    fprintf(fid, '\n MaxNumPts: %.1f ', info.sets.MaxNumPts);
+    fprintf(fid, '\n autothreshLambda: %.1f ', info.sets.autothreshLambda);
+    fprintf(fid, '\n atPref: %.1f ', info.sets.atPref);
+    fprintf(fid, '\n nEdge: %.1f ', info.sets.nEdge);
+    fprintf(fid, '\n numrandlambda: %.1f ', info.sets.numrandlambda);
+    fprintf(fid, '\n SigmaLambdaDet: %.1f \n', info.sets.SigmaLambdaDet);
+
+    %
 
     
 %   lengthLims = output{1}.lengthLims;
@@ -75,6 +96,8 @@ writecell({'Mol nr','Re-scale factor', 'Length (micron)', 'Score','SNR'} ,xlsxNa
 % 
 % 
 % 
+
+
     fprintf(fid, strcat(['\n Total SNR : %4f']), info.snr);
     fprintf(fid, strcat(['\n Estimated NM/BP ratio : %4f']), info.nmbp);
 

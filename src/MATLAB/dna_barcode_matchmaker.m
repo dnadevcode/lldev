@@ -121,8 +121,10 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
     function show_home()
         % shows home tile
-        numP = ceil(sqrt(length(dbmStruct.fileCells)));
-        hHomeScreenTile = tiledlayout(hHomeScreen,ceil(length(dbmStruct.fileCells)/numP),numP,'TileSpacing','none','Padding','none');
+        numP = max(1,ceil(sqrt(length(dbmStruct.fileCells))));
+        numRows = max(1,ceil(length(dbmStruct.fileCells)/numP));
+
+        hHomeScreenTile = tiledlayout(hHomeScreen,numRows,numP,'TileSpacing','none','Padding','none');
          import DBM4.Figs.disp_rect_image; % new plot to display annotated image
         % for each tile, plot rectangle with molecules
         
@@ -186,10 +188,28 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         %             end
         dbmODW.DBMMainstruct = dbmStruct;
         dbmOSW.DBMSettingsstruct = sets;
+        
         export_dbm_session_struct_mat(dbmODW, dbmOSW, defaultOutputDirpath);  
+        
+        disp(['Session data saved at ',defaultOutputDirpath ])
+
     end
 
+    % saving light session data (only kymo output. no calculations possible
+    function save_light_session_data(src,event)
+        import DBM4.Export.export_dbm_session_struct_mat;
 
+        try 
+            [defaultOutputDirpath,~] = fileparts(dbmOSW.DBMSettingsstruct.movies.movieNames{1});
+            defaultOutputDirpath = fullfile(defaultOutputDirpath,'session');
+        catch
+            defaultOutputDirpath = dbmOSW.get_default_export_dirpath('session');
+        end
+        import DBM4.Export.create_light_struct;
+        dbmODW.DBMMainstruct =  create_light_struct(dbmStruct);
+        dbmOSW.DBMSettingsstruct = sets;
+        export_dbm_session_struct_mat(dbmODW, dbmOSW, defaultOutputDirpath);  
+    end
 
     function [] = export_raw_kymos(src,event)
         if ~isfield(sets,'choose_output_folder')
@@ -235,6 +255,9 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         cellfun(@(rawKymo, outputKymoFilepath)...
         imwrite(uint16(rawKymo), fullfile(outputDirpath,outputKymoFilepath), 'tif','WriteMode','append'),...
         dbmStruct.kymoCells.rawBitmask, dbmStruct.kymoCells.rawKymoName);
+
+        disp(['Kymo data saved at ',defaultOutputDirpath ])
+
     end
     
     function [] = export_aligned_kymos(src, event)
@@ -497,7 +520,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
             cellsImport = {'Load Session Data','Convert czi to tif','Load Movie(s) (tif format)','Load Raw Kymograph(s)'};
 
-            cellsExport = {'Save Session Data','Raw kymographs','Aligned Kymographs','Time Averages'};
+            cellsExport = {'Save Session Data','Raw kymographs','Aligned Kymographs','Time Averages','Session Data (light)'};
             cellsKymographs = {'Display Raw kymographs','Display Aligned Kymographs','Plot Time Averages','Display lambdas','Filter molecules'};
             cellsStatistics = {'Calculate molecule lengths and intensities','Calculate Raw Kymos Center of Mass','Plot length vs intensity'};
             cellsPipelines = {'Genome assembly','Lambda lengths','Lambda recalc'};
@@ -514,9 +537,11 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             mSubImport{4}.MenuSelectedFcn = @load_kymo_data;
 
             mSubExport{1}.MenuSelectedFcn = @save_session_data;
+            
             mSubExport{2}.MenuSelectedFcn = @export_raw_kymos;
             mSubExport{3}.MenuSelectedFcn = @export_aligned_kymos;
             mSubExport{4}.MenuSelectedFcn = @export_time_averages_kymos;
+            mSubExport{5}.MenuSelectedFcn = @save_light_session_data;
 
 
             mSubKymographs{1}.MenuSelectedFcn = @display_raw_kymographs;

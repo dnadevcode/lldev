@@ -1,10 +1,13 @@
-function [barRand] = lambda_rand(dbmStruct,barcodeGen,bgest,nbars)
+function [barRand] = lambda_rand(dbmStruct,barcodeGen,bgest,nbars,nEdge)
     % create shuffled barcodes for lambda thresh estimation
 %     bgest = dbmStruct.kymoCells.threshval(acceptedBars);
 
     randPermIdx = datasample(1:length(barcodeGen),nbars);
     barRand = barcodeGen(randPermIdx);
-    nEdge = 20;
+
+    if nargin < 5
+        nEdge = 20;
+    end
 
     for i=1:length(barRand)
         barRand{i}.rawBarcode = barRand{i}.rawBarcode-bgest{randPermIdx(i)};

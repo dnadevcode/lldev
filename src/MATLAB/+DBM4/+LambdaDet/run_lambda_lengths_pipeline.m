@@ -20,6 +20,11 @@ function [] = run_lambda_lengths_pipeline(userDir,dbmOSW)
     dbmOSW.DBMSettingsstruct.auto_run = 1;
 
 
+    mFilePath = mfilename('fullpath');
+    mfolders = split(mFilePath, {'\', '/'});
+    dbmOSW.DBMSettingsstruct.versionLLDEV = importdata(fullfile(mfolders{1:end-5},'VERSION'));
+
+
     % dbm settings
     useGUI = 0;
 
@@ -158,7 +163,7 @@ for idFold = 1:length(dfolders)
     % Compare to theory  random/ put to function
     if dbmOSW.DBMSettingsstruct.autothreshLambda
         try
-        [barRand] = lambda_rand(dbmStruct,barcodeGen, dbmStruct.kymoCells.threshval(acceptedBars), dbmOSW.DBMSettingsstruct.numrandlambda);
+        [barRand] = lambda_rand(dbmStruct,barcodeGen, dbmStruct.kymoCells.threshval(acceptedBars), dbmOSW.DBMSettingsstruct.numrandlambda,dbmOSW.DBMSettingsstruct.nEdge);
         [dataStorageRand, nmbpHistRand, lambdaLenRand] = compare_lambda_to_theory(barRand,zeros(1,length(barRand)),curSetsNMBP, 1, stretchFactors, nmPx,nmPsf, BP, threshScore,atPref);
         threshScore = nanmedian(dataStorageRand{1}.score)-3*nanstd(dataStorageRand{1}.score);
         catch
@@ -181,6 +186,8 @@ for idFold = 1:length(dfolders)
     info.targetFolder = targetFolder;
     info.kymoFoldName ='kymo';
     info.barFoldName = 'comparison';
+    info.sets = dbmOSW.DBMSettingsstruct;
+    info.setsAlign = sets;
 
     import DBM4.LambdaDet.export_lambda_res;
     [info] = export_lambda_res(dbmStruct,nmbpHist,lambdaLen,dataStorage,info,barcodeGen,filtKymo,filtBitmask);

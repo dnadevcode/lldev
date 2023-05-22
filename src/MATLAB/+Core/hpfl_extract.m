@@ -124,7 +124,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         % could remove based on bg images
             rotImgOrig = rotImg;
             %     [rotImg,centralTend,bgTrend,bgSub] = remove_noise(rotImg, rotMask);
-            [rotImg, centralTend, bgTrend, bgSub,background] = remove_noise_mean(rotImg, rotMask, firstIdx, remNonuniform);
+            [rotImg, centralTend, bgTrend, bgSub,background] = remove_noise_mean(rotImg, rotMask, 1, remNonuniform);
 %             visual_mean(rotImg{1}{1}) % visualize channel vs mean
     
            % now detect channels
@@ -138,19 +138,19 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
                 %% find lambda molecules
                  [params{idx}.posY,params{idx}.posX, params{idx}.posYcoord, params{idx}.posMax,thedges,params{idx}.kymos,params{idx}.wideKymos,pxBg,bgmean,bgstd,params{idx}.posXUpd,bitmask,...
             positions, mat,params{idx}.threshval,params{idx}.threshstd, badMol,bitWithGaps] = detect_lambda_positions(params{idx}.meanRotatedDenoisedMovieFrame,...
-            sets,rotImgOrig,firstIdx,channels,params{idx}.movieAngle,params{idx}.name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+            sets,rotImgOrig,1,channels,params{idx}.movieAngle,params{idx}.name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
                  noiseKymos = [];
 
             else
                 % find columns which have long molecules
-                [params{idx}.posX, params{idx}.posMax,params{idx}. nonrelevantRowsFarAway] = find_mols_corr(rotImg, bgTrend, numPts, params{idx}.channelForDist, firstIdx, centralTend, farAwayShift, distbetweenChannels,timeframes );
+                [params{idx}.posX, params{idx}.posMax,params{idx}. nonrelevantRowsFarAway] = find_mols_corr(rotImg, bgTrend, numPts, params{idx}.channelForDist, 1, centralTend, farAwayShift, distbetweenChannels,timeframes );
             
                 % update positions which has at least numPts pts above 3
                 % times bgTrend
                 meanVal = 0;
                 stdVal = bgTrend{1}; % here could use bg kymos for this
                 % remove rows that don't have enough signal pixels // could use
-                numElts = find(sum(rotImg{1}{firstIdx}(:,params{idx}.posX)  > meanVal+3*stdVal) > numPts);
+                numElts = find(sum(rotImg{1}{1}(:,params{idx}.posX)  > meanVal+3*stdVal) > numPts);
                 params{idx}.posXUpd = params{idx}.posX(numElts);
 
                 % extract single bg kymo: background has to be within +-sets.parForNoise from the
@@ -175,8 +175,8 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 
 
             % means - max should be center
-            %     figure,plot(cellfun(@(x) nanmean(x,[1 2]), kmChangingPos{1}{1}))
-            %     plot_result(channelImg,rotImg,rotImg,posXUpd,posMax)
+%                 figure,plot(cellfun(@(x) nanmean(x,[1 2]), kmChangingPos{1}{1}))
+%                 plot_result(rotImg,rotImg,rotImg,params{idx}.posXUpd,params{idx}.posX)
 
             %     out.kymos=kymos;
             %     out.wideKymos=wideKymos;
@@ -426,6 +426,9 @@ function [posY,posX, posYcoord, posMax,thedges,kymos,wideKymos,pxBg,bgmean,bgstd
             posYcoord = posYcoord(find(~badMol),:);
             
             kymos{1} = kymos{1}(find(~badMol));
+            if length(kymos) > 1
+                kymos{2} = kymos{2}(find(~badMol));
+            end
             bitmask = bitmask(find(~badMol));
             
             disp(strcat(['Removed ' num2str(sum(badMol)) ' molecules due to bad/fragmented edges']));
@@ -512,7 +515,9 @@ function [rotImg, rotMask, movieAngle, maxCol] = image_rotation(channelImg, mean
         resSize = 1; % put to settings
 
         try % for big image, take the enter
-            resizedImg = meanMovieFrame(end/2-250:end/2+250,end/2-250:end/2+250);
+            if sets.takeSmaller
+                resizedImg = meanMovieFrame(end/2-250:end/2+250,end/2-250:end/2+250);
+            end
         catch
             resizedImg = meanMovieFrame;
         end
@@ -677,7 +682,7 @@ function [channelImg, imageData] = load_first_frame(moleculeImgPath, max_number_
     disp(strcat(['Assuming that images start from ' num2str(firstIdx)]));
 
 %     if channels~=1
-    numFrames = min(numFrames,frames/channels-firstIdx+1);
+    numFrames = min(numFrames,maxFr/channels-firstIdx+1);
 %     end
 
     % also want to substract background, here already?

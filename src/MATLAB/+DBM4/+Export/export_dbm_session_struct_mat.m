@@ -11,5 +11,9 @@ function [] = export_dbm_session_struct_mat(dbmODW, dbmOSW, outputFilepath)
     outputFilepath = fullfile(outputFilepath, outputMatFilename);
     DBMMainstruct = dbmODW.DBMMainstruct; %#ok<NASGU>
     DBMSettingsstruct = dbmOSW.DBMSettingsstruct; %#ok<NASGU>
-    save(outputFilepath, 'DBMMainstruct', 'DBMSettingsstruct');
+    try
+        save(outputFilepath, 'DBMMainstruct', 'DBMSettingsstruct','-v6');
+    catch
+        save(outputFilepath, 'DBMMainstruct', 'DBMSettingsstruct','-v7.3');
+    end
 end
