@@ -162,7 +162,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
                 end
                 
                 [~,diffPeaks]  = min(nanmean(params{idx}.meanRotatedMovieFrame(:,columns)));
-                [params{idx}.noiseKymos] = create_channel_kymos_one(columns(diffPeaks),rotImgOrig,firstIdx,channels,params{idx}.movieAngle, params{idx}.name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+                [params{idx}.noiseKymos] = create_channel_kymos_one(columns(diffPeaks),rotImgOrig,1,channels,params{idx}.movieAngle, params{idx}.name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
           
     
 
@@ -170,7 +170,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 %                 tic
                 % extract elements
                 [params{idx}.kymos, params{idx}.wideKymos, params{idx}.kmChanginW, params{idx}.kmChangingPos] = ...
-                    create_channel_kymos_one(params{idx}.posXUpd,rotImgOrig,firstIdx,channels,params{idx}.movieAngle,params{idx}.name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
+                    create_channel_kymos_one(params{idx}.posXUpd,rotImgOrig,1,channels,params{idx}.movieAngle,params{idx}.name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
 %                 disp(strcat(['Barcodes extracted in ' num2str(toc) ' seconds']));
 
 
