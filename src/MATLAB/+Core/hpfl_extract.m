@@ -60,7 +60,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     % 3) load image first frame for mol detection
     tic
     % settingsHPFL.numFrames = 1;
-    parfor idx = 1:length(movieFilenames)
+    for idx = 1:length(movieFilenames)
         if usePrecalc
             params{idx} = fileCells{idx}.preCells;
         else
@@ -223,8 +223,13 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     [params{idx}.kymo, params{idx}.kymoW, params{idx}.kymoNames, params{idx}.Length,~, params{idx}.kymoOrig, params{idx}.idxOut] =...
         extract_from_channels(params{idx}.kymos, params{idx}.wideKymos, params{idx}.posXUpd, params{idx}.posY, params{idx}.channelForDist, minLen, stdDifPos);
     
-    if channels == 2 % in case of two channels
+    if channels > 1 % in case of two channels
         [~, ~, ~, ~,~, params{idx}.kymoOrigDots] = extract_from_channels(params{idx}.kymos, params{idx}.wideKymos, params{idx}.posXUpd, params{idx}.posY, 2, minLen, stdDifPos);
+        try
+            [~, ~, ~, ~,~, params{idx}.kymoOrigDots3] = extract_from_channels(params{idx}.kymos, params{idx}.wideKymos, params{idx}.posXUpd, params{idx}.posY, 3, minLen, stdDifPos);
+        catch
+        end
+
     else
         params{idx}.kymoOrigDots = [];
     end
@@ -241,7 +246,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     for i=1:numMoleculesDetected
         moleculeStructs{i}.miniRotatedMovie = params{idx}.kymoW{i}{1};
         moleculeStructs{i}.kymograph = params{idx}.kymoOrig{i};
-        if channels == 2 % in case of two channels
+        if channels > 1 % in case of two channels
             moleculeStructs{i}.kymographDots = params{idx}.kymoOrigDots{i};
         end
 
@@ -312,7 +317,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         for rawKymoNum = 1:numRawKymos
             [~, srcFilenameNoExt, ~] = fileparts(movieFilenames{rawMovieIdx});
             kymoCells.rawKymos{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymograph;
-            if channels == 2
+            if channels > 1
                 kymoCells.rawKymosDots{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.kymographDots;
             end
 
@@ -644,6 +649,11 @@ function [channelImg, imageData] = load_first_frame(moleculeImgPath, max_number_
     
 
     [beg,mid,ending] =  fileparts(moleculeImgPath); % todo: move outside since can be multiple files
+
+    if isequal(ending,'.mat') % load all frames
+        load(moleculeImgPath);
+        return;
+    end
     if isequal(ending,'.czi') % load all frames
         import DBM4.load_czi;
         [channelImg,imageData] = load_czi(moleculeImgPath, max_number_of_frames, channels);

@@ -38,7 +38,7 @@ function [barcodeGen,barGenMerged,kymoStructs] = run_genome_assembly_pipeline(us
 
 
 
-    files = [dir(fullfile(userDir,'*.tif')),dir(fullfile(userDir,'*.czi'))];
+    files = [dir(fullfile(userDir,'*.tif')),dir(fullfile(userDir,'*.czi')),dir(fullfile(userDir,'*.mat'))];
 
     % check if movies or kymos
 
@@ -73,6 +73,9 @@ function [barcodeGen,barGenMerged,kymoStructs] = run_genome_assembly_pipeline(us
             kymoStructs{i}.unalignedBitmask = bitmask{i};  
             kymoStructs{i}.unalignedKymo = kymo{i};
             kymoStructs{i}.rawKymoFileIdxs  = rawKymoFileIdxs(i);
+            if ~isempty( dbmStruct.kymoCells.rawKymosDots{i})
+                kymoStructs{i}.rawKymosDots = dbmStruct.kymoCells.rawKymosDots{i};
+            end
         end
 
     else
@@ -118,6 +121,13 @@ function [barcodeGen,barGenMerged,kymoStructs] = run_genome_assembly_pipeline(us
 
     save(fullfile(outputTarget,['session_data',timestamp,'.mat']),'barcodeGen','barGenMerged','kymoStructs')
 
+    % In case we want stuff loadable in DBM:
+    if isfield(dbmOSW.DBMSettingsstruct,'savefullsession')
+            DBMSettingsstruct =  dbmOSW.DBMSettingsstruct;
+            dbmOSW.DBMSettingsstruct.sets = sets;
+            DBMMainstruct = dbmStruct;
+            save(fullfile(outputTarget,['dbm_session_data',timestamp,'.mat']),'DBMMainstruct','DBMSettingsstruct','-v6')
+    end
     if ~isKymo
 
     files = cellfun(@(rawKymo, outputKymoFilepath)...
