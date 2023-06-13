@@ -10,12 +10,10 @@ function [barcodeGen,barGenMerged,kymoStructs] = run_genome_assembly_pipeline(us
     end
 
     if nargin < 2
-        import OldDBM.General.SettingsWrapper;
-        defaultSettingsFilepath = SettingsWrapper.get_default_newDBM_ini_filepath();
-        if not(exist(defaultSettingsFilepath, 'file'))
-            defaultSettingsFilepath = '';
-        end
-        dbmOSW = SettingsWrapper.import_dbm_settings_from_ini(defaultSettingsFilepath);
+        import DBM4.UI.find_default_settings_path;
+        defaultSettingsFilepath = find_default_settings_path('DBMnew.ini');
+        import Fancy.IO.ini2struct;
+        dbmOSW.DBMSettingsstruct = ini2struct(defaultSettingsFilepath);
     end
 
     % specific settings

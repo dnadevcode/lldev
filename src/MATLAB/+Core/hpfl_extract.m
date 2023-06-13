@@ -137,7 +137,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             if sets.detectlambdas         
                 %% find lambda molecules
                  [params{idx}.posY,params{idx}.posX, params{idx}.posYcoord, params{idx}.posMax,thedges,params{idx}.kymos,params{idx}.wideKymos,pxBg,bgmean,bgstd,params{idx}.posXUpd,bitmask,...
-            positions, mat,params{idx}.threshval,params{idx}.threshstd, badMol,bitWithGaps] = detect_lambda_positions(params{idx}.meanRotatedDenoisedMovieFrame,...
+            positions, mat,params{idx}.threshval,params{idx}.threshstd, badMol,bitWithGaps,params{idx}.bgnorm] = detect_lambda_positions(params{idx}.meanRotatedDenoisedMovieFrame,...
             sets,rotImgOrig,1,channels,params{idx}.movieAngle,params{idx}.name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
                  noiseKymos = [];
 
@@ -212,7 +212,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
                 % mean & std - used for SNR
                 params{idx}.threshval = nanmedian(params{idx}.noiseKymos{1}{params{idx}.channelForDist}(:));
                 params{idx}.threshstd = iqr(params{idx}.noiseKymos{1}{params{idx}.channelForDist}(:));
-
+                params{idx}.bgnorm = nan; % todo calculate for this method too
             end
 
         end
@@ -260,6 +260,8 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         try
              moleculeStructs{i}.threshval = params{idx}.threshval;
              moleculeStructs{i}.threshstd = params{idx}.threshstd;
+             moleculeStructs{i}.bgnorm = params{idx}.bgnorm;
+
              moleculeStructs{i}.snrValues = Core.barcodes_snr(moleculeStructs{i}.kymograph, moleculeStructs{i}.moleculeMasks,params{idx}.threshval,params{idx}.threshstd);
         end
         % need to add some filters, i.e. is it too close to something?
@@ -310,6 +312,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     kymoCells.enhancedName = [];
     kymoCells.threshval = []; % for threshval (Bg mean)
     kymoCells.threshstd = [];
+    kymoCells.bgnorm = [];
     kymoCells.snrValues = [];
 
     for rawMovieIdx=1:length(fileMoleculeCells)
@@ -325,6 +328,8 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             try
                 kymoCells.threshval{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.threshval;
                 kymoCells.threshstd{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.threshstd;
+                kymoCells.bgnorm{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.bgnorm;
+
                 kymoCells.snrValues{end+1} = fileMoleculeCells{rawMovieIdx}{rawKymoNum}.snrValues;
             end
 
@@ -359,7 +364,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 end
 
 function [posY,posX, posYcoord, posMax,thedges,kymos,wideKymos,pxBg,bgmean,bgstd,posXUpd,bitmask,...
-    positions, mat,threshval,threshstd, badMol,bitWithGaps]= detect_lambda_positions(meanRotatedDenoisedMovieFrame,sets,rotImgOrig,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background)
+    positions, mat,threshval,threshstd, badMol,bitWithGaps,bgnorm]= detect_lambda_positions(meanRotatedDenoisedMovieFrame,sets,rotImgOrig,firstIdx,channels,movieAngle,name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background)
     %    Args:
     
     %   Returns
@@ -397,9 +402,26 @@ function [posY,posX, posYcoord, posMax,thedges,kymos,wideKymos,pxBg,bgmean,bgstd
             disp(strcat(['Kymo extraction done in ' num2str(toc) ' seconds']));
 
 %             
-            pxBg = cellfun(@(x) x(thedges),rotImgOrig{1},'un',false);      
+            pxBg = cellfun(@(x) x(thedges),rotImgOrig{1},'un',false);   % calculate this  for all channels instead?/multiframes?
             bgmean = nanmean(cellfun(@(x) nanmean(x),pxBg));
             bgstd = nanmean(cellfun(@(x) nanstd(x),pxBg));
+%             pxBgdeNoised = cellfun(@(x) x-mean(x(:)),pxBg,'un',false);
+%             pxBgdeNoised(pxBgdeNoised<0) = 0;
+            if channels==2
+                pxBg = cellfun(@(x) x(thedges),rotImgOrig{2},'un',false);   % calculate this  for all channels instead?/multiframes?
+% 
+                bgnorm = [];
+
+%             bgnorm = cellfun(@(x) norm(x,'fro')/length(x),pxBg);
+%             bgnorm = cellfun(@(x) norm(x,'fro')/length(x),pxBg);
+% 
+%             meanbar = mean(reshape(pxBg{1}(randperm(length(pxBg{1}),3*30000)),[3 30000]));
+%             meanbar = meanbar - mean(meanbar);
+% %             meanbar(meanbar<0) = 0;
+%             norm(meanbar,'fro')/length(meanbar)
+            else
+                bgnorm = [];
+            end
 %             
 %             figure,tiledlayout(8,8,'TileSpacing','none','Padding','none')
 %             for i=1:length(kymos{1})

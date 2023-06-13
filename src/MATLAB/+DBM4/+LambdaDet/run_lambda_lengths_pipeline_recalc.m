@@ -1,11 +1,17 @@
-function [] = run_lambda_lengths_pipeline_recalc(dbmOSW,dbmStruct)
+function [] = run_lambda_lengths_pipeline_recalc(dbmOSW,dbmStruct,tshAdd)
+    % lambda_recalc using DBM's good/bad tool
 
-kymoStructs = dbmStruct.kymoStructs;
 info = dbmStruct.info;
+kymoStructs = dbmStruct.kymoCells;
 barcodeGen = dbmStruct.barcodeGen;
 
-import DBM4.UI.good_mol_selection;
-[goodKymosIdx,info] = good_mol_selection([4 4],kymoStructs,info);
+import Microscopy.UI.UserSelection.goodbadtool;
+[allKymos] = goodbadtool([4 4], info.compName, [],[],dbmOSW,tshAdd);
+
+goodKymosIdx = sum(allKymos.selected==1);
+disp(['Keeping ', num2str(sum(goodKymosIdx)),' barcodes']);
+% import DBM4.UI.good_mol_selection;
+% [goodKymosIdx,info] = good_mol_selection([4 4],kymoStructs,info);
 
 barcodeGen = barcodeGen(logical(goodKymosIdx));
 bgMean =  dbmStruct.info.bgMean(logical(goodKymosIdx));
@@ -37,7 +43,7 @@ import DBM4.LambdaDet.compare_lambda_to_theory;
 %     info.idFold = idFold;
     info.bgMean = bgMean;
     info.bgStd = bgStd;
-    info.acceptedBars = info.acceptedBarsCorrected;
+    info.acceptedBars = find(goodKymosIdx);
     info.targetFolder = targetFolder;
 
     info.kymoFoldName ='kymo_sel';

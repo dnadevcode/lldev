@@ -1,4 +1,9 @@
 function [] = plot_aligned_kymo_time_avg(hAxis, headerText, fgStartIdx, fgEndIdx, kymoTimeAvg, kymoTimeStd, numKymoFrames)
+    % plot_aligned_kymo_time_avg
+    %
+    %
+
+    % standard deviation divided by sqrt(num frames)
     kymoTimeStdErrOfMean = kymoTimeStd / sqrt(numKymoFrames);
 
     % find and plot edges
@@ -21,8 +26,9 @@ function [] = plot_aligned_kymo_time_avg(hAxis, headerText, fgStartIdx, fgEndIdx
     axis(hAxis, 'tight');
     xlim(hAxis,[startEdgePtsX(1)-50 endEdgePtsX(1)+50])
     grid on
+    title(strrep(headerText,'_','\_'),'FontSize',6);
     % Show the time-averaged kymograph.  
-    import OldDBM.General.UI.set_centered_header_text;
-    set_centered_header_text(hAxis, headerText, [1 1 0], 'none');
+%     import OldDBM.General.UI.set_centered_header_text;
+%     set_centered_header_text(hAxis, headerText, [1 1 0], 'none');
     hold(hAxis, 'off');
 end

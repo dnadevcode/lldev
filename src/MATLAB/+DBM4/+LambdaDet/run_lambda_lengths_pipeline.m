@@ -1,15 +1,13 @@
-function [] = run_lambda_lengths_pipeline(userDir,dbmOSW)
+function [dbmStruct,dbmOSW] = run_lambda_lengths_pipeline(userDir,dbmOSW)
 
     %     run_lambda_lengths_pipeline
     %       LAMBDA's detection pipeline
 
     if nargin < 2
-        import OldDBM.General.SettingsWrapper;
-        defaultSettingsFilepath = SettingsWrapper.get_default_newDBM_ini_filepath();
-        if not(exist(defaultSettingsFilepath, 'file'))
-        defaultSettingsFilepath = '';
-        end
-        dbmOSW = SettingsWrapper.import_dbm_settings_from_ini(defaultSettingsFilepath);
+        import DBM4.UI.find_default_settings_path;
+        defaultSettingsFilepath = find_default_settings_path('DBMnew.ini');
+        import Fancy.IO.ini2struct;
+        dbmOSW.DBMSettingsstruct = ini2struct(defaultSettingsFilepath);
     else
          dbmOSW.DBMSettingsstruct = dbmOSW;
     end
@@ -59,11 +57,14 @@ function [] = run_lambda_lengths_pipeline(userDir,dbmOSW)
    
 
     % get all folders we should run through
-    d = dir(userDir);
-    dfolders = d([d(:).isdir]);
-    dfolders = dfolders(~ismember({dfolders(:).name},{'.','..'}));
-    
-    display(strcat([num2str(length(dfolders)) ' number of folders to run']));
+%     d = dir(userDir);
+%     dfolders = d([d(:).isdir]);
+%     dfolders = dfolders(~ismember({dfolders(:).name},{'.','..'}));
+%     
+    dfolders(1).folder = userDir; % just the single folder with images.
+    dfolders(1).name = ''; % just the single folder with images.
+
+%     display(strcat([num2str(length(dfolders)) ' number of folders to run']));
     
     import DBM4.gen_barcodes_from_kymo;
     import Core.hpfl_extract;
@@ -73,42 +74,45 @@ function [] = run_lambda_lengths_pipeline(userDir,dbmOSW)
 
    
     % loop over folders
-for idFold = 1:length(dfolders)
-    display(strcat(['Runnning fold ' num2str(idFold) ' out of '  num2str(length(dfolders)) ]));
+for idFold = 1:length(dfolders) % for now will be a single.
+%     display(strcat(['Runnning fold ' num2str(idFold) ' out of '  num2str(length(dfolders)) ]));
 
     info = [];
     
     files = dir(fullfile(dfolders(idFold).folder,dfolders(idFold).name,'*.tif'));
+    if isempty(files) % if no converted tifs, look for czi
+        files = dir(fullfile(dfolders(idFold).folder,dfolders(idFold).name,'*.czi'));
+    end
     info.foldName = dfolders(idFold).name;
     filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:length(files),'un',false);
 
-    % generate info files / one-liner
-    infoFile = cellfun(@(x) imfinfo(x),filesC,'un',false); % doesn't give
-
-    % todo: change to case
-    if isequal(infoFile{1}(1).ResolutionUnit,'None')
-        nmPx =  1/infoFile{1}(1).XResolution*1000; % this could be instead taken from metadata file, where it's given in Scaling|Distance|Value
-    else
-        if isequal(infoFile{1}(1).ResolutionUnit,'Centimeter')
-            nmPx =  1/infoFile{1}(1).XResolution*10^7;
-        else
-%             if isequal(infoFile{1}(1).ResolutionUnit,'Inch')
-%                 nmPx =  1/infoFile{1}(1).XResolution*10^7;
+%     % generate info files / one-liner
+%     infoFile = cellfun(@(x) imfinfo(x),filesC,'un',false); % doesn't give
 % 
-%             else
-                nmPx =  1/infoFile{1}(1).XResolution*1000; % this could be instead taken from metadata file, where it's given in Scaling|Distance|Value
-%             end
-
-        end
-    end
+%     % todo: change to case
+%     if isequal(infoFile{1}(1).ResolutionUnit,'None')
+%         nmPx =  1/infoFile{1}(1).XResolution*1000; % this could be instead taken from metadata file, where it's given in Scaling|Distance|Value
+%     else
+%         if isequal(infoFile{1}(1).ResolutionUnit,'Centimeter')
+%             nmPx =  1/infoFile{1}(1).XResolution*10^7;
+%         else
+% %             if isequal(infoFile{1}(1).ResolutionUnit,'Inch')
+% %                 nmPx =  1/infoFile{1}(1).XResolution*10^7;
+% % 
+% %             else
+%                 nmPx =  1/infoFile{1}(1).XResolution*1000; % this could be instead taken from metadata file, where it's given in Scaling|Distance|Value
+% %             end
+% 
+%         end
+%     end
     
 
 
  
-    if dbmOSW.DBMSettingsstruct.nmPerPixel~=nmPx
-        warning('Strange nm/px ratio in the info file');
+%     if dbmOSW.DBMSettingsstruct.nmPerPixel~=nmPx
+%         warning('Strange nm/px ratio in the info file');
         nmPx = dbmOSW.DBMSettingsstruct.nmPerPixel;
-    end
+%     end
 %     dbmOSW.DBMSettingsstruct.nmPerPixel = nmPx(1); % check if all the same
     info.nmpx = dbmOSW.DBMSettingsstruct.nmPerPixel;
 
@@ -158,7 +162,7 @@ for idFold = 1:length(dfolders)
     % background mean and standard deviation
     bgMean = cell2mat(dbmStruct.kymoCells.threshval(acceptedBars));
     bgStd = cell2mat(dbmStruct.kymoCells.threshstd(acceptedBars));
- 
+    dbmStruct.barcodeGen = barcodeGen;
     
     % Compare to theory  random/ put to function
     if dbmOSW.DBMSettingsstruct.autothreshLambda
@@ -198,7 +202,8 @@ for idFold = 1:length(dfolders)
     DBMMainstruct.barcodeGen = barcodeGen;
     DBMMainstruct.dataStorage = dataStorage;
     DBMMainstruct.info = info;
-
+     dbmOSW.DBMSettingsstruct.info = info;
+    dbmStruct.info = info;
     for j=1:length(DBMMainstruct.fileCells)
         DBMMainstruct.fileCells{j}.preCells = [];% save some space by not printing this
     end

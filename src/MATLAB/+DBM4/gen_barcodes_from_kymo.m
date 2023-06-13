@@ -24,7 +24,12 @@ function [ barcodeGen,acceptedBars ] = gen_barcodes_from_kymo( kymoStructs, sets
     import DBM4.gen_barcode_data;
     for i=1:numBar 
         % generate barcode data
-        [barcodeGen{i}] = gen_barcode_data(kymoStructs{i}.alignedKymo,kymoStructs{i}.leftEdgeIdxs, kymoStructs{i}.rightEdgeIdxs,sets.skipEdgeDetection);
+        if ~isempty(kymoStructs{i}.leftEdgeIdxs)
+            [barcodeGen{i}] = gen_barcode_data(kymoStructs{i}.alignedKymo,kymoStructs{i}.leftEdgeIdxs, kymoStructs{i}.rightEdgeIdxs,sets.skipEdgeDetection);
+        else
+            barcodeGen{i}.rawBarcode = [];
+        end
+%         [barcodeGen{i}] = gen_barcode_data(kymoStructs{i}.alignedKymo,kymoStructs{i}.leftEdgeIdxs, kymoStructs{i}.rightEdgeIdxs,sets.skipEdgeDetection);
         barcodeGen{i}.name =  kymoStructs{i}.name;
         barcodeGen{i}.kymoIdx = i;
     end

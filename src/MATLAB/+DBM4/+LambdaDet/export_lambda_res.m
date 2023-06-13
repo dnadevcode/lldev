@@ -77,23 +77,50 @@ if ~isempty(nmbpHist)
 
     %% Plot comparison?
     [~,~] = mkdir(fullfile(targetFolder,barFoldName));
+    f = figure('visible','off');
+    hAxis = axes(f);
+
         % plot
-        for idx = idxses;
-        curBar = imresize(barcodeGen{idx}.rawBarcode,'Scale' ,[1 bestBarStretch(idx)]) ;
+        for idx = 1:length(idxses);
+            curBar = imresize(barcodeGen{idxses(idx)}.rawBarcode,'Scale' ,[1 bestBarStretch(idxses(idx))]) ;
+            
+            if rezMaxM{idxses(idx)}.or==2
+                curBar = fliplr(curBar);
+            end
         
-        if rezMaxM{idx}.or==2
-            curBar = fliplr(curBar);
-        end
-        
-        curBar = curBar - bgMean(idx);
-        curBar = curBar/max(curBar);
-        
-        f = figure('visible','off');
-        plot( [lambdaScaled])
-        hold on
-        plot(rezMaxM{idx}.pos:rezMaxM{idx}.pos+length(curBar)-1,curBar)
-        saveas(f,fullfile(targetFolder,barFoldName,['bar_comparison_' num2str(idx) '.png']));
-        
+            curBar = curBar - bgMean(idxses(idx));
+            curBar = curBar/max(curBar);
+            cla(hAxis)
+            plot( [lambdaScaled],'LineWidth',2)
+            hold on
+            plot(rezMaxM{idxses(idx)}.pos:rezMaxM{idxses(idx)}.pos+length(curBar)-1,curBar,'LineWidth',2)
+    %         saveas(f,fullfile(targetFolder,barFoldName,['bar_comparison_' num2str(idx) '.png']));
+            axisFrame = getframe(hAxis);
+            axisImg = frame2im(axisFrame);
+            imwrite(axisImg, fullfile(targetFolder,barFoldName,['bar_comparison_' num2str(idx) '.png']));
+            info.compName{idx} =  fullfile(targetFolder,barFoldName,['bar_comparison_' num2str(idxses(idx)) '.png']);
+
+%         f = figure('Visible','off');
+%         hAxis = axes(f);
+%         %             
+%         import DBM4.Figs.disp_rect_image;
+%         disp_rect_image(hAxis, dbmStruct.kymoCells.rawKymos{jj}, strrep(fe,'_','\_'))
+%         %      
+%             hAxis.YDir = 'reverse'; % show kymo's flowing down
+% 
+%             hold on
+%             set(gca,'color',[0 0 0]);
+%             set(hAxis,'XTick',[]);
+%             set(hAxis,'YTick',[]);
+%             [fb,fe] = fileparts(dbmStruct.kymoCells.rawKymoName{jj});
+% 
+%             plot_kymo_edges(hAxis,...
+%             dbmStruct.kymoCells.kymosMoleculeLeftEdgeIdxs{jj}', ...
+%             dbmStruct.kymoCells.kymosMoleculeRightEdgeIdxs{jj}');
+%                 axisFrame = getframe(hAxis);
+%             axisImg = frame2im(axisFrame);
+%             imwrite(axisImg, fullfile(defaultStatsOutputDirpath,strrep(dbmStruct.kymoCells.rawKymoName{jj},'.tif','.png')));
+
         end
         
 end

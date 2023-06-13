@@ -14,11 +14,11 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         
     if nargin < 2
         % Get default settings path
-        defaultSettingsFilepath = SettingsWrapper.get_default_newDBM_ini_filepath();
-        if not(exist(defaultSettingsFilepath, 'file'))
-            defaultSettingsFilepath = '';
-        end
-        dbmOSW = SettingsWrapper.import_dbm_settings_from_ini(defaultSettingsFilepath);
+        import DBM4.UI.find_default_settings_path;
+        defaultSettingsFilepath = find_default_settings_path('DBMnew.ini');
+        import Fancy.IO.ini2struct;
+        dbmOSW.DBMSettingsstruct = ini2struct(defaultSettingsFilepath);
+
         dbmOSW.DBMSettingsstruct.dbmtool = 'hpfl-odm'; 
     end
     
@@ -30,13 +30,13 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         % generate menu
         % https://se.mathworks.com/help/matlab/ref/uimenu.html
         [sets,tsHCC,textList,textListT,itemsList,...
-                hHomeScreen,hPanelRawKymos,hPanelAlignedKymos,hPanelTimeAverages,hAdditional]= generate_gui();
+                hHomeScreen,hPanelRawKymos,hPanelAlignedKymos,hPanelTimeAverages,hAdditional,tshAdd]= generate_gui();
     else
         if dbmOSW.DBMSettingsstruct.auto_run     
             [dbmStruct.fileCells, dbmStruct.fileMoleculeCells,dbmStruct.kymoCells] = hpfl_extract(dbmOSW.DBMSettingsstruct);
 
             [sets,tsHCC,textList,textListT,itemsList,...
-            hHomeScreen,hPanelRawKymos,hPanelAlignedKymos,hPanelTimeAverages,hAdditional]= generate_gui();
+            hHomeScreen,hPanelRawKymos,hPanelAlignedKymos,hPanelTimeAverages,hAdditional,tshAdd]= generate_gui();
         
             show_home();
         else
@@ -73,8 +73,12 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
  
     end
 
-    function restore_settings(src, event) % restore settings
-        sets =  dbmOSW.DBMSettingsstruct;
+    function restore_settings(src, event,x) % restore settings
+        if nargin<3
+            sets =  dbmOSW.DBMSettingsstruct;
+        else
+            sets = x;
+        end
         % also uppdate values
         textList{1}.String = num2str(sets.averagingWindowWidth );
         textList{2}.String   =  num2str(sets.nmPerPixel);
@@ -182,7 +186,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             [defaultOutputDirpath,~] = fileparts(dbmOSW.DBMSettingsstruct.movies.movieNames{1});
             defaultOutputDirpath = fullfile(defaultOutputDirpath,'session');
         catch
-            defaultOutputDirpath = dbmOSW.get_default_export_dirpath('session');
+            defaultOutputDirpath = DBM4.UI.default_output_path('Sessions');
+%             defaultOutputDirpath = dbmOSW.get_default_export_dirpath('session');
         end
         %             if nargin < 2
         %             end
@@ -203,7 +208,9 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             [defaultOutputDirpath,~] = fileparts(dbmOSW.DBMSettingsstruct.movies.movieNames{1});
             defaultOutputDirpath = fullfile(defaultOutputDirpath,'session');
         catch
-            defaultOutputDirpath = dbmOSW.get_default_export_dirpath('session');
+            defaultOutputDirpath = DBM4.UI.default_output_path('Sessions');
+
+%             defaultOutputDirpath = dbmOSW.get_default_export_dirpath('session');
         end
         import DBM4.Export.create_light_struct;
         dbmODW.DBMMainstruct =  create_light_struct(dbmStruct);
@@ -222,7 +229,9 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
                 outputDirpath = fullfile(defaultOutputDirpath,'raw_kymo');
                 [~,~] = mkdir(outputDirpath);
             catch
-                defaultOutputDirpath = dbmOSW.get_default_export_dirpath('raw_kymo');
+                defaultOutputDirpath = DBM4.UI.default_output_path('RawKymos');
+
+%                 defaultOutputDirpath = dbmOSW.get_default_export_dirpath('raw_kymo');
                 outputDirpath = uigetdir(defaultOutputDirpath, 'Select Directory to Save Raw Kymo Files');
             end
         else
@@ -268,7 +277,9 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             outputDirpath = fullfile(defaultOutputDirpath,'aligned_kymo');
             [~,~] = mkdir(outputDirpath);
         catch
-            defaultOutputDirpath = dbmOSW.get_default_export_dirpath('aligned_kymo');
+            defaultOutputDirpath = DBM4.UI.default_output_path('AlignedKymos');
+
+%             defaultOutputDirpath = dbmOSW.get_default_export_dirpath('aligned_kymo');
             outputDirpath = uigetdir(defaultOutputDirpath, 'Select Directory to Save Aligned Kymo Files');
         end
     
@@ -284,6 +295,50 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         cellfun(@(rawKymo, outputKymoFilepath)...
         imwrite(uint16(rawKymo), fullfile(outputDirpath,outputKymoFilepath), 'tif'),...
         dbmStruct.kymoCells.alignedBitmasks, dbmStruct.kymoCells.alignedNamesBitmask);
+    end
+
+    function [] = export_pngs(src, event)
+    
+        if ~isfield(dbmStruct.kymoCells,'kymoStatsTable')
+            calculate_lengths;
+%             [dbmStruct.kymoCells.kymoStatsTable] = run_calculate_lengths(sets);
+        end
+        defaultStatsOutputDirpath =   fullfile(fileparts(sets.movies.movieNames{1}),'pngs');
+
+        [~,~] = mkdir(defaultStatsOutputDirpath);
+
+        import DBM4.Figs.disp_rect_image; % new plot to display annotated image
+        import DBM4.plot_kymo_edges;
+
+%         tic
+        for jj=1:length(dbmStruct.kymoCells.rawKymos)
+            f = figure('Visible','off');
+            hAxis = axes(f);
+            
+            disp_rect_image(hAxis, dbmStruct.kymoCells.rawKymos{jj}, strrep(fe,'_','\_'))
+     
+            hAxis.YDir = 'reverse'; % show kymo's flowing down
+
+            hold on
+            set(gca,'color',[0 0 0]);
+            set(hAxis,'XTick',[]);
+            set(hAxis,'YTick',[]);
+            [fb,fe] = fileparts(dbmStruct.kymoCells.rawKymoName{jj});
+
+            plot_kymo_edges(hAxis,...
+            dbmStruct.kymoCells.kymosMoleculeLeftEdgeIdxs{jj}', ...
+            dbmStruct.kymoCells.kymosMoleculeRightEdgeIdxs{jj}');
+                axisFrame = getframe(hAxis);
+            axisImg = frame2im(axisFrame);
+            imwrite(axisImg, fullfile(defaultStatsOutputDirpath,strrep(dbmStruct.kymoCells.rawKymoName{jj},'.tif','.png')));
+%             saveas(f, fullfile(defaultStatsOutputDirpath,strrep(dbmStruct.kymoCells.rawKymoName{jj},'.tif','.png')));
+
+        end
+% toc
+    
+%         cellfun(@(rawKymo, outputKymoFilepath)...
+%         imwrite(uint16(rawKymo), fullfile(outputDirpath,outputKymoFilepath), 'tif'),...
+%         dbmStruct.kymoCells.alignedBitmasks, dbmStruct.kymoCells.alignedNamesBitmask);
     end
     
     function [] = export_time_averages_kymos(src, event)
@@ -312,8 +367,9 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
     % loading session data / only from new DBM
     function load_session_data(src, event)
-        
-        defaultSessionDirpath = dbmOSW.get_default_import_dirpath('session');
+        defaultSessionDirpath = DBM4.UI.default_output_path('Sessions');
+
+%         defaultSessionDirpath = dbmOSW.get_default_import_dirpath('session');
 
         import OldDBM.General.Import.try_prompt_single_session_filepath;
         sessionFilepath = try_prompt_single_session_filepath(defaultSessionDirpath);
@@ -326,6 +382,13 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         
         sets = dbmODW.DBMSettingsstruct;
         dbmStruct = dbmODW.DBMMainstruct;
+
+        if isfield(dbmStruct,'fileCell')
+            import DBM4.UI.load_all_session_data;
+            dbmStruct = load_all_session_data(dbmStruct);
+         
+        end
+        
 
         show_home();
     end
@@ -357,23 +420,19 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
     function display_raw_kymographs(src, event)
     % 1: verify information score & length, etc. threshold
-    
+        
         numP = ceil(sqrt(length(dbmStruct.kymoCells.rawKymos)));
-        hPanelRawKymosTile = tiledlayout(hPanelRawKymos,numP,numP,'TileSpacing','none','Padding','none');
+        hPanelRawKymosTile = tiledlayout(hPanelRawKymos,numP,numP,'TileSpacing','tight','Padding','tight');
+
+        import DBM4.Figs.disp_rect_image;
 
         for jj=1:length(dbmStruct.kymoCells.rawKymos)
             hAxis = nexttile(hPanelRawKymosTile);
-            hAxis.YDir = 'reverse'; % show kymo's flowing down
 
-            hold on
-            set(gca,'color',[0 0 0]);
-            set(hAxis,'XTick',[]);
-            set(hAxis,'YTick',[]);
             [fb,fe] = fileparts(dbmStruct.kymoCells.rawKymoName{jj});
-            import OldDBM.General.UI.disp_img_with_header;
-            disp_img_with_header(hAxis, dbmStruct.kymoCells.rawKymos{jj}, fe);
+            disp_rect_image(hAxis, dbmStruct.kymoCells.rawKymos{jj}, strrep(fe,'_','\_'));
+            hAxis.YDir = 'reverse'; % show kymo's flowing down
         end
-
         tsHCC.SelectedTab = hPanelRawKymos;
         % todo: allow selecting kymo's in this window
     end
@@ -393,22 +452,19 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
                     dbmStruct.kymoCells.shiftAlignedKymo{ix} = shiftAlignedKymo;     
                     dbmStruct.kymoCells.alignedNames{ix} =  strrep(dbmStruct.kymoCells.rawKymoName{ix},'_kymograph','_alignedkymograph');
                     dbmStruct.kymoCells.alignedNamesBitmask{ix} =  strrep(dbmStruct.kymoCells.rawBitmaskName{ix},'_bitmask','_alignedbitmask');
-
             end 
         end
            
+        import DBM4.Figs.disp_rect_image;
+
         hPanelAlignedKymosTile = tiledlayout(hPanelAlignedKymos,numP,numP,'TileSpacing','none','Padding','none');
         for jj=1:numK
             hAxis = nexttile(hPanelAlignedKymosTile);
-            hold on
             hAxis.YDir = 'reverse'; % show kymo's flowing down
 
-            set(gca,'color',[0 0 0]);
-            set(hAxis,'XTick',[]);
-            set(hAxis,'YTick',[]);
             [fb,fe] = fileparts(dbmStruct.kymoCells.rawKymoName{jj});
-            import OldDBM.General.UI.disp_img_with_header;
-            disp_img_with_header(hAxis, dbmStruct.kymoCells.alignedKymos{jj}, fe);
+            disp_rect_image(hAxis, dbmStruct.kymoCells.alignedKymos{jj}, strrep(fe,'_','\_'));
+
         end
         tsHCC.SelectedTab = hPanelAlignedKymos; 
     end
@@ -439,9 +495,6 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             end
         end
         
-%            import OldDBM.Kymo.UI.plot_aligned_kymo_time_avgs;
-%     plot_aligned_kymo_time_avgs(hFgKymoTimeAvgAxes, headerTexts, fgStartIdxs, fgEndIdxs,   dbmStruct.kymoCells.barcodes,  dbmStruct.kymoCells.barcodesStd, numsKymoFrames);
-    
         hPanelTimeAveragesTile = tiledlayout(hPanelTimeAverages,numP,numP,'TileSpacing','none','Padding','none');
         import DBM4.Figs.plot_aligned_kymo_time_avg;
 
@@ -499,7 +552,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
     end
     
         function [sets,tsHCC,textList,textListT,itemsList,...
-               hHomeScreen, hPanelRawKymos,hPanelAlignedKymos,hPanelTimeAverages,hAdditional] = generate_gui()
+               hHomeScreen, hPanelRawKymos,hPanelAlignedKymos,hPanelTimeAverages,hAdditional,tshAdd] = generate_gui()
       
             mFilePath = mfilename('fullpath');
             mfolders = split(mFilePath, {'\', '/'});
@@ -520,7 +573,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
             cellsImport = {'Load Session Data','Convert czi to tif','Load Movie(s) (tif format)','Load Raw Kymograph(s)'};
 
-            cellsExport = {'Save Session Data','Raw kymographs','Aligned Kymographs','Time Averages','Session Data (light)'};
+            cellsExport = {'Save Session Data','Raw kymographs','Aligned Kymographs','Time Averages','Pngs with edges','Session Data (light)'};
             cellsKymographs = {'Display Raw kymographs','Display Aligned Kymographs','Plot Time Averages','Display lambdas','Filter molecules'};
             cellsStatistics = {'Calculate molecule lengths and intensities','Calculate Raw Kymos Center of Mass','Plot length vs intensity'};
             cellsPipelines = {'Genome assembly','Lambda lengths','Lambda recalc'};
@@ -541,7 +594,9 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             mSubExport{2}.MenuSelectedFcn = @export_raw_kymos;
             mSubExport{3}.MenuSelectedFcn = @export_aligned_kymos;
             mSubExport{4}.MenuSelectedFcn = @export_time_averages_kymos;
-            mSubExport{5}.MenuSelectedFcn = @save_light_session_data;
+            mSubExport{5}.MenuSelectedFcn = @export_pngs;
+
+            mSubExport{6}.MenuSelectedFcn = @save_light_session_data;
 
 
             mSubKymographs{1}.MenuSelectedFcn = @display_raw_kymographs;
@@ -586,6 +641,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             tshAdd = uitabgroup('Parent',hAdditional.hAdd);
             hAdditional.length = uitab(tshAdd, 'title',strcat('Mol lengths'));
             hAdditional.lengthPlot = uitab(tshAdd, 'title',strcat('length vs int'));
+            hAdditional.Re = uitab(tshAdd, 'title',strcat('Re'));
 
         % set(hHomeScreen,'Visible','off')
             sets =  dbmOSW.DBMSettingsstruct;
@@ -712,7 +768,7 @@ function [kymoStatsTable] = run_calculate_lengths(sets)
     end
     % % 
     try
-        defaultStatsOutputDirpath =   sets.dirs.stats;
+        defaultStatsOutputDirpath =   fileparts(sets.movies.movieNames{1});
     catch
         defaultStatsOutputDirpath = pwd;
     end
@@ -721,39 +777,29 @@ function [kymoStatsTable] = run_calculate_lengths(sets)
         % %     % add timestamp
         timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
         filename = sprintf('stats_%s.mat', timestamp);
+
+        
         % % 
         defaultStatsOutputFilepath = fullfile(defaultStatsOutputDirpath, filename);
         [statsOutputMatFilename, statsOutputMatDirpath, ~] = uiputfile('*.mat', 'Save Molecule Stats As', defaultStatsOutputFilepath);
         % %     
         if not(isequal(statsOutputMatDirpath, 0))
-           statsOutputMatFilepath = fullfile(statsOutputMatDirpath, statsOutputMatFilename);
-           save(statsOutputMatFilepath, 'kymoStatsTable');
-    
+            statsOutputMatFilepath = fullfile(statsOutputMatDirpath, statsOutputMatFilename);
+            save(statsOutputMatFilepath, 'kymoStatsTable');
+
+            % todo: if time-frame size different, returns error
+            
+            csvFilename = strrep(statsOutputMatFilepath,'.mat','.csv');
             numRows = size(kymoStatsTable, 1);
-            for rowIdx = 1:numRows
-                fileIdx = kymoStatsTable(rowIdx, :).fileIdx;
-                fileMoleculeIdx = kymoStatsTable(rowIdx, :).fileMoleculeIdx;
-                srcFilename = kymoStatsTable{rowIdx, 'srcFilename'};
-                if iscell(srcFilename)
-                    if isempty(srcFilename)
-                        srcFilename = '';
-                    else
-                        srcFilename = srcFilename{1};
-                    end
-                end
-                [~, name] = fileparts(srcFilename);
-                csvFilename = sprintf('stats_%d_(%s)_%d.csv', fileIdx, name, fileMoleculeIdx);
-                csvFilepath = fullfile(statsOutputMatDirpath, csvFilename);
-    
-                framewiseStatsTable = struct();
-                framewiseStatsTable.moleculeLeftEdgeIdxs = kymoStatsTable{rowIdx, 'moleculeLeftEdgeIdxs'}{1};
-                framewiseStatsTable.moleculeRightEdgeIdxs = kymoStatsTable{rowIdx, 'moleculeRightEdgeIdxs'}{1};
-                framewiseStatsTable.framewiseMoleculeExts = kymoStatsTable{rowIdx, 'framewiseMoleculeExts'}{1};
-                framewiseStatsTable.meanFramewiseMoleculeIntensity = kymoStatsTable{rowIdx, 'meanFramewiseMoleculeIntensity'}{1};
-                framewiseStatsTable.stdFramewiseMoleculeIntensity = kymoStatsTable{rowIdx, 'stdFramewiseMoleculeIntensity'}{1};
-                framewiseStatsTable = struct2table(framewiseStatsTable);
-                writetable(framewiseStatsTable, csvFilepath);
-            end
+            fun = @(x) {['moleculeLeftEdgeIdxs_',x],['moleculeRightEdgeIdxs_',x],['framewiseMoleculeExts_',x],['meanFramewiseMoleculeIntensity_',x],...
+            ['stdFramewiseMoleculeIntensity_',x]};
+            % if tables the same length, if not this will give issue
+            fT = cell2mat(arrayfun(@(rowIdx) [kymoStatsTable{rowIdx, 'moleculeLeftEdgeIdxs'}{1},kymoStatsTable{rowIdx, 'moleculeRightEdgeIdxs'}{1}, kymoStatsTable{rowIdx, 'framewiseMoleculeExts'}{1},...
+            kymoStatsTable{rowIdx, 'meanFramewiseMoleculeIntensity'}{1},kymoStatsTable{rowIdx, 'stdFramewiseMoleculeIntensity'}{1}],1:numRows,'un',false));
+            allnames = (arrayfun(@(rowIdx) fun(num2str(rowIdx)),1:numRows,'un',false));
+            framewiseStatsTable = array2table(fT,'VariableNames',[allnames{:}]);
+            writetable(framewiseStatsTable, csvFilename);
+
         end
     end
 end
@@ -778,10 +824,11 @@ end
 % lambda pipeline
 function detect_lambda_lengths_pipeline(src, event)
     % runs the detect_lambdas pipeline   
-    userDir = uigetdir(pwd,'Select directory with movies to run through lambda pipeline');
+    userDir = uigetdir(pwd,'Select a single directory with movies to run through lambda pipeline');
     import DBM4.LambdaDet.run_lambda_lengths_pipeline;
     
-    run_lambda_lengths_pipeline(userDir,sets);
+    [dbmStruct,~] = run_lambda_lengths_pipeline(userDir,sets);
+%     restore_settings(sets)
 end
 
 
@@ -789,8 +836,10 @@ function detect_lambda_lengths_recalc(src, event)
     % runs the detect_lambdas pipeline   
 %     userDir = uigetdir(pwd,'Select directory with movies to run through lambda pipeline');
     import DBM4.LambdaDet.run_lambda_lengths_pipeline_recalc;
-    
-    run_lambda_lengths_pipeline_recalc(sets,dbmStruct);
+    tsHCC.SelectedTab = hAdditional.hAdd;
+%     hAdditional
+    tshAdd.SelectedTab = hAdditional.Re;
+    run_lambda_lengths_pipeline_recalc(sets,dbmStruct,hAdditional);
 end
 
 % genome assembly pipeline
@@ -825,7 +874,8 @@ function [] = calculate_com(src, event)
 % 
     if writeToTSV
         timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
-        defaultOutputDirpath = dbmOSW.get_default_export_dirpath('raw_kymo_center_of_mass');
+         defaultOutputDirpath = DBM4.UI.default_output_path('raw_kymo_center_of_mass');
+%         defaultOutputDirpath = dbmOSW.get_default_export_dirpath('raw_kymo_center_of_mass');
         defaultOutputFilename = sprintf('centerOfMassTable_%s.tsv', timestamp);
         defaultOutputFilepath = fullfile(defaultOutputDirpath, defaultOutputFilename);
 

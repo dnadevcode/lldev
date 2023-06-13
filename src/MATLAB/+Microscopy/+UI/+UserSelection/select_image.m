@@ -37,6 +37,8 @@ function my_closereq(src,callbackdata)
 % to display a question dialog box 
     try
     varargout{1} = find(cellfun(@(x) ~isempty(x),get(h1,'Userdata')));
+    varargout{2} = find(cellfun(@(x) isempty(x),get(h1,'Userdata')));
+
     catch
     end
     delete(h)
