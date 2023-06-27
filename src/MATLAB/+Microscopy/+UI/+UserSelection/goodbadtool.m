@@ -1,4 +1,4 @@
-function [goodBadSession,kymoStatsTableGood] = goodbadtool(numImages, foldImgs, statsFile, foldOut, sets, hfig)
+function [goodBadSession,kymoStatsTable] = goodbadtool(numImages, foldImgs, statsFile, foldOut, sets, hfig)
     %   Args:
     %   numImages - array of number of images to display in x and y ,
     %   fold - folder with input images
@@ -123,13 +123,13 @@ function [goodBadSession,kymoStatsTableGood] = goodbadtool(numImages, foldImgs, 
             goodKymosIdx = sum(goodBadSession.selected==1);
             stats = load(statsFile);
 
-            kymoStatsTableGood = stats.kymoStatsTable(find(goodKymosIdx),:);
+            kymoStatsTable = stats.kymoStatsTable(find(goodKymosIdx),:);
 %             kymoStatsTableBad = stats.kymoStatsTable(find(~goodKymosIdx),:);
 
-            writetable(kymoStatsTableGood, strrep(statsFile,'.csv','_goodbad.csv'));
+            save(strrep(statsFile,'.mat','_goodbad.mat'),'kymoStatsTable');
 
         else
-            kymoStatsTableGood = [];
+            kymoStatsTable = [];
         end
 
 % copyfiles
@@ -144,11 +144,11 @@ function run_next_set(src, event)
     
     h1 = [];
     if numRun > 1 && transfer
-        copy_files_fold(find(goodBadSession.selected(numRun,:)),files, tiffs, foldOut,'good');
-        copy_files_fold(find(goodBadSession.selected(numRun,:)==-1),files, tiffs, foldOut,'bad');
+        copy_files_fold(find(goodBadSession.selected(numRun,:) == 1),files, tiffs, foldOut,'good');
+        copy_files_fold(find(goodBadSession.selected(numRun,:) == -1),files, tiffs, foldOut,'bad');
         try
-            copy_files_fold(find(goodBadSession.selected(numRun,:)),filesTiff, tiffsTiff, foldOut,'goodKymos');
-            copy_files_fold(find(goodBadSession.selected(numRun,:)==-1),filesTiff, tiffsTiff, foldOut,'badKymos');
+            copy_files_fold(find(goodBadSession.selected(numRun,:) == 1),filesTiff, tiffsTiff, foldOut,'goodKymos');
+            copy_files_fold(find(goodBadSession.selected(numRun,:) == -1),filesTiff, tiffsTiff, foldOut,'badKymos');
         catch
         end
     end
@@ -201,7 +201,7 @@ function run_next_set(src, event)
             end
         end
     else
-        warning('No more kymos to run')
+        disp('No more kymos to run. Finishing analysis')
         summary_data()
         uiresume()
     end
