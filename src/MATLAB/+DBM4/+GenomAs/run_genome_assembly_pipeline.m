@@ -52,7 +52,8 @@ function [barcodeGen,barGenMerged,kymoStructs] = run_genome_assembly_pipeline(us
     
     filesC = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:length(files),'un',false);
     dbmOSW.DBMSettingsstruct.movies.movieNames = filesC;
-    % dna_barcode_matchmaker(0,dbmOSW); % if we want to plot results in GUI
+    
+%     dna_barcode_matchmaker(0,dbmOSW); % if we want to plot results in GUI
 
     if ~isKymo
         % detect molecules
@@ -71,8 +72,11 @@ function [barcodeGen,barGenMerged,kymoStructs] = run_genome_assembly_pipeline(us
             kymoStructs{i}.unalignedBitmask = bitmask{i};  
             kymoStructs{i}.unalignedKymo = kymo{i};
             kymoStructs{i}.rawKymoFileIdxs  = rawKymoFileIdxs(i);
+            try
             if ~isempty( dbmStruct.kymoCells.rawKymosDots{i})
                 kymoStructs{i}.rawKymosDots = dbmStruct.kymoCells.rawKymosDots{i};
+            end
+            catch
             end
         end
 
@@ -103,7 +107,7 @@ function [barcodeGen,barGenMerged,kymoStructs] = run_genome_assembly_pipeline(us
     [barGenMerged, posMulti, cnt_unique] = merge_neighbor_barcodes(barcodeGen,sets.minOverlap,1);
     disp('Done stitching neighbor barcodes');
 
-%     mergId = 1;
+%     mergId = length(barGenMerged)-length(posMulti)+14;
 %     mergPair = 1;
 %     import Core.plot_match_simple;
 %     [f] = plot_match_simple(barGenMerged{mergId}.pairBars{mergPair}, barGenMerged{mergId}.overlapStruct{mergPair},2,1);
