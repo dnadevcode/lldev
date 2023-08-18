@@ -52,6 +52,7 @@ if ~isempty(nmbpHist)
     % info.snrind(idxses)
     printName = lambda_det_print(targetFolder, info, barcodeGen, idFold,molLengths);
     
+%     idxses = 1:length(acceptedBars);
     % save kymos
     [~,~] = mkdir(targetFolder,kymoFoldName);
     % targetFolder = fullfile(targetFolder,num2str(idFold));
@@ -77,11 +78,16 @@ if ~isempty(nmbpHist)
 
     %% Plot comparison?
     [~,~] = mkdir(fullfile(targetFolder,barFoldName));
-    f = figure('visible','off');
-    hAxis = axes(f);
 
         % plot
-        for idx = 1:length(idxses);
+%         idxses = 1:length(acceptedBars);
+        for idx = 1:length(idxses); %length(idxses); % need to plot all for then to use recalc
+%             hold off
+
+            try
+               f = figure('visible','off');
+                hAxis = axes(f);
+
             curBar = imresize(barcodeGen{idxses(idx)}.rawBarcode,'Scale' ,[1 bestBarStretch(idxses(idx))]) ;
             
             if rezMaxM{idxses(idx)}.or==2
@@ -90,16 +96,21 @@ if ~isempty(nmbpHist)
         
             curBar = curBar - bgMean(idxses(idx));
             curBar = curBar/max(curBar);
-            cla(hAxis)
+           % cla(hAxis)
+
             plot( [lambdaScaled],'LineWidth',2)
             hold on
             plot(rezMaxM{idxses(idx)}.pos:rezMaxM{idxses(idx)}.pos+length(curBar)-1,curBar,'LineWidth',2)
     %         saveas(f,fullfile(targetFolder,barFoldName,['bar_comparison_' num2str(idx) '.png']));
+%             catch
+%                 plot(1,1)
+%             end   
             axisFrame = getframe(hAxis);
             axisImg = frame2im(axisFrame);
-            imwrite(axisImg, fullfile(targetFolder,barFoldName,['bar_comparison_' num2str(idx) '.png']));
+            imwrite(axisImg, fullfile(targetFolder,barFoldName,['bar_comparison_' num2str(idxses(idx)) '.png']));
             info.compName{idx} =  fullfile(targetFolder,barFoldName,['bar_comparison_' num2str(idxses(idx)) '.png']);
-
+            catch
+            end
 %         f = figure('Visible','off');
 %         hAxis = axes(f);
 %         %             

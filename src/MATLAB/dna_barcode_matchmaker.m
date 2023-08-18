@@ -180,6 +180,9 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
     % saving session data
     function save_session_data(src,event)
 %         import OldDBM.General.Export.export_dbm_session_struct_mat;
+        dbmODW.DBMMainstruct = dbmStruct;
+        dbmOSW.DBMSettingsstruct = sets;
+
         import DBM4.Export.export_dbm_session_struct_mat;
 
         try 
@@ -191,8 +194,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         end
         %             if nargin < 2
         %             end
-        dbmODW.DBMMainstruct = dbmStruct;
-        dbmOSW.DBMSettingsstruct = sets;
+
         
         export_dbm_session_struct_mat(dbmODW, dbmOSW, defaultOutputDirpath);  
         
@@ -203,6 +205,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
     % saving light session data (only kymo output. no calculations possible
     function save_light_session_data(src,event)
         import DBM4.Export.export_dbm_session_struct_mat;
+        dbmOSW.DBMSettingsstruct = sets;
 
         try 
             [defaultOutputDirpath,~] = fileparts(dbmOSW.DBMSettingsstruct.movies.movieNames{1});
@@ -214,13 +217,16 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         end
         import DBM4.Export.create_light_struct;
         dbmODW.DBMMainstruct =  create_light_struct(dbmStruct);
-        dbmOSW.DBMSettingsstruct = sets;
         export_dbm_session_struct_mat(dbmODW, dbmOSW, defaultOutputDirpath);  
     end
 
     function [] = export_raw_kymos(src,event)
         if ~isfield(sets,'choose_output_folder')
             sets.choose_output_folder = 1;
+        end
+        try
+            dbmOSW.DBMSettingsstruct = sets;
+        catch
         end
 
         if sets.choose_output_folder==1
@@ -315,6 +321,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             f = figure('Visible','off');
             hAxis = axes(f);
             
+            [fb,fe] = fileparts(dbmStruct.kymoCells.rawKymoName{jj});
             disp_rect_image(hAxis, dbmStruct.kymoCells.rawKymos{jj}, strrep(fe,'_','\_'))
      
             hAxis.YDir = 'reverse'; % show kymo's flowing down
@@ -323,7 +330,6 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             set(gca,'color',[0 0 0]);
             set(hAxis,'XTick',[]);
             set(hAxis,'YTick',[]);
-            [fb,fe] = fileparts(dbmStruct.kymoCells.rawKymoName{jj});
 
             plot_kymo_edges(hAxis,...
             dbmStruct.kymoCells.kymosMoleculeLeftEdgeIdxs{jj}', ...

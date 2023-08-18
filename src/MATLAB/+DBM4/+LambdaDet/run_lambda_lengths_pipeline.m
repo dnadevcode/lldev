@@ -57,12 +57,14 @@ function [dbmStruct,dbmOSW] = run_lambda_lengths_pipeline(userDir,dbmOSW)
    
 
     % get all folders we should run through
-%     d = dir(userDir);
-%     dfolders = d([d(:).isdir]);
-%     dfolders = dfolders(~ismember({dfolders(:).name},{'.','..'}));
+
+    % if no subfolders, run single folder
+    d = dir(userDir);
+    dfolders = d([d(:).isdir]);
+    dfolders = dfolders(~ismember({dfolders(:).name},{'.','..'}));
 %     
-    dfolders(1).folder = userDir; % just the single folder with images.
-    dfolders(1).name = ''; % just the single folder with images.
+%     dfolders(1).folder = userDir; % just the single folder with images.
+%     dfolders(1).name = ''; % just the single folder with images.
 
 %     display(strcat([num2str(length(dfolders)) ' number of folders to run']));
     
