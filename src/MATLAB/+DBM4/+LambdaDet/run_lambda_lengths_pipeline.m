@@ -68,7 +68,11 @@ function [dbmStruct,dbmOSW] = run_lambda_lengths_pipeline(userDir,dbmOSW)
         dfolders = [];
         userDirSplit = split(userDir, {'\', '/'});
         userDirSplit(cellfun('isempty',userDirSplit)) = []; % remove empty cells from userDirSplit
-        dfolders(1).folder = [filesep,fullfile(userDirSplit{1:end-1})]; % just the single folder with images.
+        if ispc
+            dfolders(1).folder = [fullfile(userDirSplit{1:end-1})]; % just the single folder with images.
+        else
+            dfolders(1).folder = [filesep,fullfile(userDirSplit{1:end-1})]; % just the single folder with images.
+        end
         dfolders(1).name = userDirSplit{end}; % just the single folder with images.
 
     end
