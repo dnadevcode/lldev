@@ -61,11 +61,18 @@ function [dbmStruct,dbmOSW] = run_lambda_lengths_pipeline(userDir,dbmOSW)
     % if no subfolders, run single folder
     d = dir(userDir);
     dfolders = d([d(:).isdir]);
-    dfolders = dfolders(~ismember({dfolders(:).name},{'.','..'}));
-%     
-%     dfolders(1).folder = userDir; % just the single folder with images.
-%     dfolders(1).name = ''; % just the single folder with images.
 
+    dfolders = dfolders(~ismember({dfolders(:).name},{'.','..'}));
+
+    if sum(arrayfun(@(x) ~startsWith(dfolders(x).name,'analysis_'),1:length(dfolders)))==0
+        dfolders = [];
+        userDirSplit = split(userDir, {'\', '/'});
+        userDirSplit(cellfun('isempty',userDirSplit)) = []; % remove empty cells from userDirSplit
+        dfolders(1).folder = [filesep,fullfile(userDirSplit{1:end-1})]; % just the single folder with images.
+        dfolders(1).name = userDirSplit{end}; % just the single folder with images.
+
+    end
+%     
 %     display(strcat([num2str(length(dfolders)) ' number of folders to run']));
     
     import DBM4.gen_barcodes_from_kymo;
