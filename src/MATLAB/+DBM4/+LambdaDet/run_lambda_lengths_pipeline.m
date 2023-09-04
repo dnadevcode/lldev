@@ -194,6 +194,9 @@ for idFold = 1:length(dfolders) % for now will be a single.
     targetFolder = fullfile(dfolders(idFold).folder, info.foldName, strcat(['analysis_' info.foldName]));
     [~,~] = mkdir(targetFolder);
 
+    timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
+
+
 %     info = [];
     info.threshScore = threshScore;
     info.idFold = idFold;
@@ -205,6 +208,7 @@ for idFold = 1:length(dfolders) % for now will be a single.
     info.barFoldName = 'comparison';
     info.sets = dbmOSW.DBMSettingsstruct;
     info.setsAlign = sets;
+    info.timestamp = timestamp;
 
     import DBM4.LambdaDet.export_lambda_res;
     [info] = export_lambda_res(dbmStruct,nmbpHist,lambdaLen,dataStorage,info,barcodeGen,filtKymo,filtBitmask);
@@ -222,7 +226,6 @@ for idFold = 1:length(dfolders) % for now will be a single.
     end
     % always save session data as DBM loadable. kymoStructs possibly saved
     % twice (also in dbmStruct)
-    timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
     save(fullfile(targetFolder,['lambda_session_data',timestamp,'.mat']),'DBMMainstruct','DBMSettingsstruct')
     disp(['Data saved at ',targetFolder ])
 

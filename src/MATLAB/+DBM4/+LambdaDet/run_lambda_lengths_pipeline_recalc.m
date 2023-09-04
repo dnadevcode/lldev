@@ -45,6 +45,8 @@ import DBM4.LambdaDet.compare_lambda_to_theory;
     info.bgStd = bgStd;
     info.acceptedBars = find(goodKymosIdx);
     info.targetFolder = targetFolder;
+    timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
+    info.timestamp = timestamp;
 
     info.kymoFoldName ='kymo_sel';
     info.barFoldName = 'comparison_sel';
@@ -63,7 +65,6 @@ import DBM4.LambdaDet.compare_lambda_to_theory;
     end
     % always save session data as DBM loadable. kymoStructs possibly saved
     % twice (also in dbmStruct)
-    timestamp = datestr(clock(), 'yyyy-mm-dd_HH_MM_SS');
     save(fullfile(targetFolder,['lambda_session_data_recalc',timestamp,'.mat']),'DBMMainstruct','DBMSettingsstruct','barcodeGen','kymoStructs','dataStorage','info')
     disp(['Data saved at ',targetFolder ])
 

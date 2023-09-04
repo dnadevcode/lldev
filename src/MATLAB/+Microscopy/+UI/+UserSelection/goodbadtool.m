@@ -64,6 +64,7 @@ function [goodBadSession,kymoStatsTable] = goodbadtool(numImages, foldImgs, stat
     end
 
     runButton = uicontrol('Parent', htab, 'Style', 'pushbutton','String',{'Run next set'},'Callback',@run_next_set,'Units', 'normal', 'Position', [0.5 0.0 0.2 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
+    selectButton = uicontrol('Parent', htab, 'Style', 'pushbutton','String',{'Select all'},'Callback',@select_all,'Units', 'normal', 'Position', [0.3 0.0 0.2 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
 
     hPanelRawKymosTile = tiledlayout(htab,numImages(1)+1,numImages(2),'TileSpacing','loose','Padding','loose');
     tile = [];
@@ -86,6 +87,7 @@ function [goodBadSession,kymoStatsTable] = goodbadtool(numImages, foldImgs, stat
     end
  
     iiSt = 1;
+    iiCur = iiSt;
   
 %     statsFile = load(statsFile);
     numImagesToShow = numImages(1)*numImages(2);
@@ -103,7 +105,8 @@ function [goodBadSession,kymoStatsTable] = goodbadtool(numImages, foldImgs, stat
     else
         files = foldImgs;
     end
-            sets.files = files;
+
+        sets.files = files;
 
         % sets.tiffs = tiffs;
         sets.ii = 1;
@@ -112,7 +115,7 @@ function [goodBadSession,kymoStatsTable] = goodbadtool(numImages, foldImgs, stat
         numRuns = ceil(length(files)/numImagesToShow);
         
         numRun = 1;
-        for i=1:numRuns
+        for i = 1:numRuns
             goodBadSession.selected = zeros(numRuns,  length(files));
         end
 
@@ -132,6 +135,8 @@ function [goodBadSession,kymoStatsTable] = goodbadtool(numImages, foldImgs, stat
             kymoStatsTable = [];
         end
 
+
+
 % copyfiles
 function copy_files_fold(idxs,files, tiffs, foldOut,fold)
     for i = idxs
@@ -139,6 +144,7 @@ function copy_files_fold(idxs,files, tiffs, foldOut,fold)
     end
 
 end
+
 
 function run_next_set(src, event)
     
@@ -171,7 +177,7 @@ function run_next_set(src, event)
             end
         end
 
-
+        iiCur = iiSt;
         for idx = 1:sets.numImages(1)
             for jdx = 1:sets.numImages(2)
                 if iiSt <= length(files)
@@ -207,6 +213,24 @@ function run_next_set(src, event)
     end
 
 end
+
+
+function select_all(src, event)
+% %                set(src,'UserData',1)
+% %              goodBadSession.selected(numRun,x) = 1;
+%     kk=1;
+    iiTemp = iiCur;
+    for idx1 = 1:sets.numImages(1)
+        for jdx1 = 1:sets.numImages(2)
+            if iiTemp <= length(files)
+                tile{idx1}{jdx1}.Title.String = 'Selected';
+                goodBadSession.selected(numRun,iiTemp) = 1;
+                iiTemp = iiTemp+1;
+            end
+        end
+    end
+%     end
+end
 % 
 % 
 %   h=figure('CloseRequestFcn',@my_closereq)
@@ -229,18 +253,15 @@ end
 %     
 % 
     function loads_of_stuff(src,eventdata,x,idx,jdx)
-        if get(src,'UserData')
-            set(src,'UserData',0)
+        if  goodBadSession.selected(numRun,x)==-1
+%             set(src,'UserData',0)
              goodBadSession.selected(numRun,x) = -1;
             tile{idx}{jdx}.Title.String = '';
 %             tile{idx}{jdx}.Title.String = '';
         else
-            set(src,'UserData',1)
+%             set(src,'UserData',1)
              goodBadSession.selected(numRun,x) = 1;
             tile{idx}{jdx}.Title.String = 'Selected';
-
-%             title(src,'Selected');
-%             tile{idx}{jdx}.Title.String = 'Selected';
 
         end
 %         fprintf('%s\n',num2str(x));

@@ -3,7 +3,7 @@ function printName = lambda_det_print(targetFolder, info,barcodeGen, runNo , len
     
     experiment.targetFolder = targetFolder;
     % Initiate printing - make file with corrects filename - make new file if old is present
-    printName = print_version( experiment, runNo);
+    printName = print_version( experiment, runNo,info.timestamp);
     
         
     xlsxName = strrep(printName,'.txt','.xlsx');
@@ -30,7 +30,7 @@ function printName = lambda_det_print(targetFolder, info,barcodeGen, runNo , len
     
 %     writecell({[info.numKymos], [ 1000/info.nmpx],[ mean(lengths)], [ info.snr],[info.nmbp],[length(info.goodMols)],[info.threshScore] }  ,strrep(printName,'.txt','.xlsx'),'Sheet','Lambda molecules','Range',['A', num2str(3) ] );
 % 
-writecell({'Mol nr','Re-scale factor', 'Length (micron)', 'Score','SNR'} ,xlsxName,'Sheet','Lambda molecules','Range',['A', num2str(13) ] );%,'WriteMode','append')
+    writecell({'Mol nr','Re-scale factor', 'Length (micron)', 'Score','SNR'} ,xlsxName,'Sheet','Lambda molecules','Range',['A', num2str(13) ] );%,'WriteMode','append')
 %      
     for jj=1:length(info.goodMols)
         writematrix([info.goodMols(jj) info.stretchFac(jj) lengths(info.goodMols(jj)) info.score(jj) info.snrind(jj) ],xlsxName,'Sheet','Lambda molecules','Range',['A', num2str(jj+14) ] );%,'WriteMode','append')
@@ -119,12 +119,12 @@ end
 
 end
 
-function printName = print_version(experiment, runNo)
+function printName = print_version(experiment, runNo, timestamp)
 
     folderName = experiment.targetFolder;
     
     nameType = 'results_lambda';
     
     version = runNo;
-    printName = fullfile(folderName, [nameType, num2str(version), '.txt']);
+    printName = fullfile(folderName, [nameType, num2str(version), timestamp, '.txt']);
 end
