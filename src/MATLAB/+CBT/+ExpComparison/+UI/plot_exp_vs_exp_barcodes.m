@@ -55,6 +55,8 @@ function [] = plot_exp_vs_exp_barcodes( ...
         if flipMat(barcodeIdxA, barcodeIdxB)
             shorterBarcode = fliplr(shorterBarcode);
         end
+        shortShifted = shorterBarcode;
+        longShifted = longerBarcode;
     else
         lShift = longShiftMat(barcodeIdxA, barcodeIdxB);
         sShift = shortShiftMat(barcodeIdxA, barcodeIdxB);
