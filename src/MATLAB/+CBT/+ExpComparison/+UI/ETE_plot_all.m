@@ -5,10 +5,12 @@ clear,clc
 
 %%  Change parameters here !!!  --------------- 
 
-barcode_to_plot = [2,1]; %10 8 12 11 13 1];  % [1 2 3];
 refBarcodeIndex = 1;  % identify which barcode as reference
+barcode_to_plot = [1 2]; %10 8 12 11 13 1];  % [1 2 3];
 
-gCircShift = -180;  % global circular shift to all barcodes
+yShift = 5; % vertical shift barcodes
+
+gCircShift = 50;  % global circular shift to all barcodes
 default_annotation_loc = []; % text for labeling each curve
 
 %% import data
@@ -127,7 +129,7 @@ for i = 1:nBarcodes
         % short shift
         tempBarcode = [tempBarcode(shortShiftMat(i,refBarcodeIndex)+1:end),...
             tempBarcode(1:shortShiftMat(i,refBarcodeIndex))];
-        
+
         if ~isempty(tempCuttingSite)  % if CBC_output is generated from a Fasta file. Skip it. 
             tempCuttingSite = [tempCuttingSite(shortShiftMat(i,refBarcodeIndex)+1:end),...
                 tempCuttingSite(1:shortShiftMat(i,refBarcodeIndex))];
@@ -154,6 +156,7 @@ for i = 1:nBarcodes
             if ~isempty(tempCuttingSite)
                 move_to_front = tempCuttingSite(refBarcodeLen+1:end);
                 tempCuttingSite(1:length(move_to_front)) = move_to_front;
+                tempCuttingSite = tempCuttingSite(1:refBarcodeLen);
             end
         end
 
@@ -176,7 +179,6 @@ similarity = sum(pValMat<0.01);
 [~,similarityOrder] = sort(similarity,'descend');
 
 %% Plot
-yShift = 5;
 
 figure(2)
 clf
@@ -220,7 +222,7 @@ for i = barcode_to_plot
 %     end 
     color = [.3 .3 .3];
     plot(xData,yData,'-','linewidth',2,'color',color);
-    scatter(xCut, yCut, 'ok','LineWidth',1)
+    scatter(xCut, yCut, 'filled')
     
     % label
     fileName = consensusBarcodeNames{i};
@@ -232,7 +234,7 @@ for i = barcode_to_plot
         text_location = default_annotation_loc;
     end
     
-    text(text_location, yShift*k + 1, name,'fontsize',20,'color',[.3 .3 .45]);
+    text(text_location, yShift*k + 1, name,'fontsize',10,'color',[.3 .3 .45]);
 
     k = k+1;
 
@@ -241,9 +243,9 @@ hold off
 
 %xlim([0, 240]);% text_location+14])
 %ylim([0, (length(barcode_to_plot)+1)*yShift])
-xlabel('Position (kbp)','FontSize',14)
-ylabel('Shifted Intensity','FontSize',14)
-set(gca,'FontSize',20)
+xlabel('Position (kbp)','FontSize',10)
+ylabel('Shifted Intensity','FontSize',10)
+set(gca,'FontSize',12)
 
 %--------------------------------------------------------------------------
 %% Define functions
