@@ -106,6 +106,7 @@ for i = 1:nBarcodes
     %-- if longer than reference barcode ( DO NOTHING )
     elseif barcodeLens(i) > refBarcodeLen
         lenDifference = barcodeLens(i) - refBarcodeLen;
+%         error(['Barcode', num2str(i) ' longer than reference, chose another reference'])
         % --- Do nothing!!! ---
 
     elseif barcodeLens(i) == refBarcodeLen
@@ -196,6 +197,9 @@ if max(barcode_to_plot) > nBarcodes
     fprintf('\n====================================================================\n\n')
 end
 
+DataOut=[]; % output barcode pos
+CutOut=[]; % output cut pos
+
 k = 1;
 for i = barcode_to_plot
     %disp([num2str(i),'...',num2str(barcodeLens(i))]);
@@ -235,6 +239,10 @@ for i = barcode_to_plot
     end
     
     text(text_location, yShift*k + 1, name,'fontsize',10,'color',[.3 .3 .45]);
+
+    DataOut(1:numel(xData),(2*i-1))=xData';
+    DataOut(1:numel(yData),2*i)=yData';
+    CutOut=[CutOut; xCut, yCut];
 
     k = k+1;
 
@@ -299,5 +307,3 @@ function [posEndCounts, posEndCountsPreCut] = count_cut_positions(barcodeLens, b
     posEndCounts = sum(endsMat)';
     posEndCountsPreCut = sum(circshift(endsMat, -1, 2) & endsMat)';
 end
-
-
