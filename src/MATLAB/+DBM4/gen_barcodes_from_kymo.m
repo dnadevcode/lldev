@@ -32,6 +32,12 @@ function [ barcodeGen,acceptedBars ] = gen_barcodes_from_kymo( kymoStructs, sets
 
         barcodeGen{i}.name =  kymoStructs{i}.name;
         barcodeGen{i}.kymoIdx = i;
+        try
+        	barcodeGen{i}.snr = mean(kymoStructs{i}.sigstd.^2./kymoStructs{i}.bgstd.^2,'omitnan');
+        	barcodeGen{i}.snrSTD = std(kymoStructs{i}.sigstd.^2./kymoStructs{i}.bgstd.^2,'omitnan');
+        catch
+        end
+
     end
    
     %% Now define bitmasks
