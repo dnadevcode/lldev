@@ -125,7 +125,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             rotImgOrig = rotImg;
             %     [rotImg,centralTend,bgTrend,bgSub] = remove_noise(rotImg, rotMask);
             [rotImg, centralTend, bgTrend, bgSub,background] = remove_noise_mean(rotImg, rotMask, 1, remNonuniform);
-%             visual_mean(rotImg{1}{1}) % visualize channel vs mean
+            %visual_mean(rotImg{1}{1}) % visualize channel vs mean
     
            % now detect channels
             for ch=1:length(rotImg)
@@ -143,7 +143,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 
             else
                 % find columns which have long molecules
-                [params{idx}.posX, params{idx}.posMax,params{idx}. nonrelevantRowsFarAway] = find_mols_corr(rotImg, bgTrend, numPts, params{idx}.channelForDist, 1, centralTend, farAwayShift, distbetweenChannels,timeframes );
+                [params{idx}.posX, params{idx}.posMax,params{idx}.nonrelevantRowsFarAway] = find_mols_corr(rotImg, bgTrend, numPts, params{idx}.channelForDist, 1, centralTend, farAwayShift, distbetweenChannels,timeframes );
             
                 % update positions which has at least numPts pts above 3
                 % times bgTrend
@@ -556,13 +556,17 @@ function [rotImg, rotMask, movieAngle, maxCol] = image_rotation(channelImg, mean
         mpkdist = min(20,min(sz)-2);% minimum peak distance. So that taking mean would be more robust 
 
         %% Determine if image is rotated 90 degrees
+        if sets.checkfornineteedegrees
         thet = [nanmean(findpeaks(nanmean(resizedImg'),'Npeaks',npeaks,'SortStr','descend','MinPeakDistance',mpkdist)) nanmean(findpeaks(nanmean(resizedImg),'Npeaks',npeaks,'SortStr','descend','MinPeakDistance',mpkdist))];
-
-        [int,pos] = max(thet) ;
-        if pos==2
-            movieAngle = 90;
+    
+            [int,pos] = max(thet) ;
+            if pos==2
+                movieAngle = 90;
+            else
+                movieAngle = 0;
+            end
         else
-            movieAngle = 0;
+            movieAngle = 90;
         end
 
         % TEST ANGLE DETECTION
