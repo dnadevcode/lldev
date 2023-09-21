@@ -6,7 +6,7 @@ function [stretchedBarcodes, stretchedKbpsPerPixel] = standardize_barcodes(barco
 
     % Choose which kind of length input for the ZM barcodes
     optStretchToSameLen = 'Stretch to same length';
-    optStandardizeByBpExtLens = 'Prompt for basepair ext lens (px/bp)';
+    optStandardizeByBpExtLens = 'Prompt for basepair ext lens (nm/bp)';
     optInputBarcodeBpLens = 'Prompt for barcode lens (kbps)';
     if forceStretchToSameBpsPerPixel
         lenNormalizationOption = questdlg(...
