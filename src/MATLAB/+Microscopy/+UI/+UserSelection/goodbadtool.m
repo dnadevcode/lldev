@@ -38,7 +38,6 @@ function [goodBadSession,kymoStatsTable] = goodbadtool(numImages, foldImgs, stat
 
     else
         htab = hfig.Re;
-%         htab = uitab(hfig, 'title',strcat('Good-bad filtering tab'));
     end
 
 
@@ -114,10 +113,8 @@ function [goodBadSession,kymoStatsTable] = goodbadtool(numImages, foldImgs, stat
         
         numRuns = ceil(length(files)/numImagesToShow);
         
-        numRun = 1;
-        for i = 1:numRuns
-            goodBadSession.selected = zeros(numRuns,  length(files));
-        end
+        numRun = 0;
+        goodBadSession.selected = zeros(numRuns,  length(files));
 
         run_next_set();
         uiwait();
@@ -147,9 +144,8 @@ end
 
 
 function run_next_set(src, event)
-    
-    h1 = [];
-    if numRun > 1 && transfer
+    %h1 = [];
+    if numRun >= 1 && transfer
         copy_files_fold(find(goodBadSession.selected(numRun,:) == 1),files, tiffs, foldOut,'good');
         copy_files_fold(find(goodBadSession.selected(numRun,:) == -1),files, tiffs, foldOut,'bad');
         try
@@ -159,53 +155,40 @@ function run_next_set(src, event)
         end
     end
 
-    if numRun <= numRuns
+    if numRun < numRuns
+        numRun = numRun+1;    
+        runName = ['Run\_',num2str(numRun),'\_from\_',num2str(numRuns)];
+        title(hPanelRawKymosTile,runName);
 
-        title(hPanelRawKymosTile,['Run\_',num2str(numRun),'\_from\_',num2str(numRuns)]);
-        numRun = numRun+1;      
-        for idx = 1:numImages(1)
-            for jdx = 1:numImages(2)
-              tile{idx}{jdx}.Title.String = [];
-%                 cla(im{idx}{jdx});
-%                 delete(tile{idx}{jdx});
-                cla(tile{idx}{jdx});
-%                 cla(im{idx}{jdx})
-%                 set(gca,'color',[0 0 0]);
-%                 set(hAxis,'XTick',[]);
-%                 set(hAxis,'YTick',[]);
-    % 
+        runButton.String = {['Finish run ', num2str(numRun)]}; % update run button
+
+        for nidx = 1:numImages(1)
+            for njdx = 1:numImages(2)
+                tile{nidx}{njdx}.Title.String = [];
+                cla(tile{nidx}{njdx});
             end
         end
 
         iiCur = iiSt;
-        for idx = 1:sets.numImages(1)
-            for jdx = 1:sets.numImages(2)
+        for nidx = 1:sets.numImages(1)
+            for njdx = 1:sets.numImages(2)
                 if iiSt <= length(files)
-                     goodBadSession.selected(numRun,iiSt) = -1;
-
-%                     axes(tile{idx}{jdx})
-%                     if ~ismatrix(sets.files{iiSt+sets.ii-1})
-%                         nexttile
-                        im{idx}{jdx} = imagesc(tile{idx}{jdx} ,imread(sets.files{iiSt+sets.ii-1}));
-%                         h1(iiSt) = 
-%                         tile{idx}{jdx}.
-%                     else
-%                         h1(iiSt) = imagesc(sets.files{iiSt+sets.ii-1});
-%                     end
-%                     hold on
-
-                    colormap gray
-%                     set(gca,'color',[0 0 0]);
-%                     set( h1(iiSt),'XTick',[]);
-%                     set( h1(iiSt),'YTick',[]);
-                           
-                    set(im{idx}{jdx}, 'buttondownfcn', {@loads_of_stuff,iiSt+sets.ii-1,idx,jdx});
+                    goodBadSession.selected(numRun,iiSt) = -1;
+                    im{nidx}{njdx} = imagesc(tile{nidx}{njdx} ,imread(sets.files{iiSt+sets.ii-1}));
+                    colormap gray                           
+                    set(im{nidx}{njdx}, 'buttondownfcn', {@loads_of_stuff,iiSt+sets.ii-1,nidx,njdx});
                     iiSt = iiSt+1;
+%                     tile{nidx}{njdx}.Visible = 'on';
                 else
-                    iiSt = length(files)+1;
+                      iiSt = length(files)+1;
+                      tile{nidx}{njdx}.Visible='off';
+%                       break;
+
+%                     tile{nidx}{njdx}.Visible = 'off';
                 end
             end
         end
+
     else
         disp('No more kymos to run. Finishing analysis')
         summary_data()
@@ -215,86 +198,43 @@ function run_next_set(src, event)
 end
 
 
-function select_all(src, event)
-% %                set(src,'UserData',1)
-% %              goodBadSession.selected(numRun,x) = 1;
-%     kk=1;
-    iiTemp = iiCur;
-    for idx1 = 1:sets.numImages(1)
-        for jdx1 = 1:sets.numImages(2)
-            if iiTemp <= length(files)
-                tile{idx1}{jdx1}.Title.String = 'Selected';
-                goodBadSession.selected(numRun,iiTemp) = 1;
-                iiTemp = iiTemp+1;
+    function select_all(src, event)
+        % select_all - select/deselect all elements
+        iiTemp = iiCur;
+        for idx1 = 1:sets.numImages(1)
+            for jdx1 = 1:sets.numImages(2)
+                if iiTemp <= length(files)
+                    if goodBadSession.selected(numRun,iiTemp) == -1
+                        tile{idx1}{jdx1}.Title.String = 'Selected';
+                        goodBadSession.selected(numRun,iiTemp) = 1;
+                    else
+                        tile{idx1}{jdx1}.Title.String = '';
+                        goodBadSession.selected(numRun,iiTemp) = -1;
+                    end
+                    iiTemp = iiTemp+1;
+                end
             end
         end
     end
-%     end
-end
-% 
-% 
-%   h=figure('CloseRequestFcn',@my_closereq)
-%     iiSt = 1;
-% 
-%     try
-%         h1 = [];
-%         for idx = 1:numImages(1)
-%             for jdx = 1:numImages(2)
-%                 subplot(dim1,dim2,iiSt);
-%                 h1(iiSt) = imagesc(imread(tiffs{iiSt+ii-1}));
-%                 colormap gray
-% 
-%                 set(h1(iiSt), 'buttondownfcn', {@loads_of_stuff,iiSt+ii-1});
-%                 iiSt = iiSt+1;
-%             end
-%         end
-%     catch
-%     end
-%     
-% 
-    function loads_of_stuff(src,eventdata,x,idx,jdx)
-        if  goodBadSession.selected(numRun,x)==-1
-%             set(src,'UserData',0)
-             goodBadSession.selected(numRun,x) = -1;
-            tile{idx}{jdx}.Title.String = '';
-%             tile{idx}{jdx}.Title.String = '';
-        else
-%             set(src,'UserData',1)
-             goodBadSession.selected(numRun,x) = 1;
-            tile{idx}{jdx}.Title.String = 'Selected';
 
+    function loads_of_stuff(src,eventdata,x,idx,jdx)
+        if  goodBadSession.selected(numRun,x)== 1
+            goodBadSession.selected(numRun,x) = -1;
+            tile{idx}{jdx}.Title.String = '';
+        else
+            goodBadSession.selected(numRun,x) = 1;
+            tile{idx}{jdx}.Title.String = 'Selected';
         end
-%         fprintf('%s\n',num2str(x));
-%         C = get(h, 'UserData')
+    end
+
+    function summary_data(src,eventdata)
+        delete( hPanelRawKymosTile)
+    %     return 
+                
+    %     hPanelRawKymosTile = tiledlayout(htab,2,1,'TileSpacing','loose','Padding','loose');
+    %     nexttile
+    %     imshow( goodBadSession.selected)
     
     end
-% %     
-% function my_closereq(src,callbackdata)
-% % Close request function 
-% % to display a question dialog box 
-%     try
-%     varargout{1} = find(cellfun(@(x) ~isempty(x),get(h1,'Userdata')));
-%     varargout{2} = find(cellfun(@(x) isempty(x),get(h1,'Userdata')));
-% 
-%     catch
-%     end
-%     delete(h)
-% %     uiresume() 
-% 
-% end
-% 
-% end
-% 
-% end
-% 
-function summary_data(src,eventdata)
-    delete( hPanelRawKymosTile)
-%     return 
-            
-%     hPanelRawKymosTile = tiledlayout(htab,2,1,'TileSpacing','loose','Padding','loose');
-%     nexttile
-%     imshow( goodBadSession.selected)
-
-end
 
 end
