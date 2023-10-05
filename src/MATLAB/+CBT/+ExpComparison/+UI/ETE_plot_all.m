@@ -5,8 +5,8 @@ clear,clc
 
 %%  Change parameters here !!!  --------------- 
 
-refBarcodeIndex = 1;  % identify which barcode as reference
-barcode_to_plot = [1 2]; %10 8 12 11 13 1];  % [1 2 3];
+refBarcodeIndex = 3;  % identify which barcode as reference
+barcode_to_plot = [1 2 3]; 
 
 yShift = 5; % vertical shift barcodes
 
@@ -17,8 +17,7 @@ default_annotation_loc = []; % text for labeling each curve
 
 [file_name, path_name] = uigetfile;
 ETE_file = fullfile(path_name, file_name);
-%ETE_file = '/Users/yiilih/data/2019-03 Iranian ndm1 and oxa48/Iran ETE with the same sizes MMT_ETE session.mat';
-%ETE_file = '/Users/yiilih/data/2019-03 Iranian ndm1 and oxa48/Iran ETE with respective sizes MMT_ETE session 2019-03-16_00_14_19_2019-03-16_09_16_52.mat';
+%ETE_file = 'MMT_ETE session 2022-04-01_07_39_37_2022-04-01_07_42_38.mat';
 load(ETE_file)
 
 % Extract variables from structural array (eteSessionStruct)
@@ -30,39 +29,8 @@ end
 
 nBarcodes = numel(stretchedConsensusBarcodes);
 
-%% load CBC data.  Get the cut positions
-folder = fileparts(ETE_file);
-cuttingSites = cell(nBarcodes,1);
-for i = 1:nBarcodes
-    CBC_file = fullfile(folder, [consensusBarcodeNames{i}, '.mat']);
-
-    % Get the cut positions in CBC
-    try
-        [posEndCounts, posEndCountsPreCut] = get_cut_positions(CBC_file);
-        [~,index] = max(posEndCountsPreCut);
-    
-        % Sizes and stretches
-        size_in_CBC = length(posEndCountsPreCut);
-        size_in_ETE = length(stretchedConsensusBarcodes{i});
-        index = round(index * (size_in_ETE / size_in_CBC));
-
-        % assign the cut position
-        tempCuttingSite = zeros(1,size_in_ETE);
-        tempCuttingSite(index) = 1;
-        cuttingSites{i} = tempCuttingSite;
-    catch
-        try
-            load(CBC_file);
-            [a,idx] = max(clusterConsensusData.bindingBarcode);
-            
-            
-            cuttingSites{i} = zeros(1,length(clusterConsensusData.bindingBarcode));
-            cuttingSites{i}(idx)=1;
-        catch
-            disp(['Were not able to find cut positions in file => ',consensusBarcodeNames{i}, '.mat'])
-        end
-    end
-end
+%% load CBC data.  Get all the cut positions
+cuttingSites = get_all_cut_positions(ETE_file,nBarcodes,consensusBarcodeNames,stretchedConsensusBarcodes);
 
 %% Choose the reference barcode . (Must choose the longest & consensus one!)
 refBarcodeName = consensusBarcodeNames{refBarcodeIndex};
@@ -82,8 +50,7 @@ for i = 1:nBarcodes
     
     if ~isempty(cuttingSites{i})
         cuttingSites{i} = interp1(cuttingSites{i},linspace(1,oldBarcodeLen,newBarcodeLen));
-    end
-    
+    end 
 end
 
 %% Shift and flip
@@ -106,7 +73,10 @@ for i = 1:nBarcodes
     %-- if longer than reference barcode ( DO NOTHING )
     elseif barcodeLens(i) > refBarcodeLen
         lenDifference = barcodeLens(i) - refBarcodeLen;
-%         error(['Barcode', num2str(i) ' longer than reference, chose another reference'])
+        if ismember(i,barcode_to_plot)
+            warning(['Barcode', num2str(i) ' longer than reference, chose another reference!']);
+            return;
+        end
         % --- Do nothing!!! ---
 
     elseif barcodeLens(i) == refBarcodeLen
@@ -159,12 +129,15 @@ for i = 1:nBarcodes
                 tempCuttingSite(1:length(move_to_front)) = move_to_front;
                 tempCuttingSite = tempCuttingSite(1:refBarcodeLen);
             end
+        else % if length of tempBarcode is shorter than refBarcodeLen, add nan to the right too
+            tempBarcode = [tempBarcode, NaN(1,refBarcodeLen-length(tempBarcode))];
+            tempCuttingSite = [tempCuttingSite, NaN(1,refBarcodeLen-length(tempCuttingSite))];
         end
-
     end
+    % now tempBarcode and  refBarcode are of the same length
 
-    tempBarcode = circshift(tempBarcode,gCircShift);
-    tempCuttingSite = circshift(tempCuttingSite,gCircShift);
+    tempBarcode = circshift(tempBarcode, gCircShift);
+    tempCuttingSite = circshift(tempCuttingSite, gCircShift);
     
     finalBarcodes{i} = tempBarcode;
     finalCuttingsites{i} = tempCuttingSite;
@@ -181,7 +154,7 @@ similarity = sum(pValMat<0.01);
 
 %% Plot
 
-figure(2)
+figure%(2)
 clf
 hold on
 
@@ -277,6 +250,43 @@ function dispParams(i,name, refBarcodeIndex,longShiftMat, flipMat,shortShiftMat,
         '  Longshift=',num2str(longShiftMat(i,refBarcodeIndex)),...
         '...flip=', num2str(flipMat(i,refBarcodeIndex)),...
         '...shortshift=',num2str(shortShiftMat(i,refBarcodeIndex))])
+end
+
+function cuttingSites = get_all_cut_positions(ETE_file,nBarcodes,consensusBarcodeNames,stretchedConsensusBarcodes)
+folder = fileparts(ETE_file);
+cuttingSites = cell(nBarcodes,1);
+for i = 1:nBarcodes
+    CBC_file = fullfile(folder, [consensusBarcodeNames{i}, '.mat']);
+
+    % Get the cut positions in CBC
+    try
+        [posEndCounts, posEndCountsPreCut] = get_cut_positions(CBC_file);
+        [~,index] = max(posEndCountsPreCut);
+    
+        % Sizes and stretches
+        size_in_CBC = length(posEndCountsPreCut);
+        size_in_ETE = length(stretchedConsensusBarcodes{i});
+        index = round(index * (size_in_ETE / size_in_CBC));
+
+        % assign the cut position
+        tempCuttingSite = zeros(1,size_in_ETE);
+        tempCuttingSite(index) = 1;
+        cuttingSites{i} = tempCuttingSite;
+    catch
+        try
+            load(CBC_file);
+            [a,idx] = max(clusterConsensusData.bindingBarcode);
+            
+            
+            cuttingSites{i} = zeros(1,length(clusterConsensusData.bindingBarcode));
+            cuttingSites{i}(idx)=1;
+        catch
+            disp(['Were not able to find cut positions in file => ',consensusBarcodeNames{i}, '.mat'])
+        end
+    end
+end
+
+
 end
  
 function [posEndCounts, posEndCountsPreCut] = get_cut_positions(consensusMatFilepath)

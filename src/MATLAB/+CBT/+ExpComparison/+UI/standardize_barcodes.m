@@ -98,7 +98,9 @@ function [stretchedBarcodes, stretchedKbpsPerPixel] = standardize_barcodes(barco
             if shouldImportFromFile
                 import CBT.ExpComparison.Core.BarcodeLenNormalization.Helpers.Import.import_numeric_vector_from_textfile;
                 vectMeanBpExts_nm = import_numeric_vector_from_textfile('Select Text with Mean bp extensions (nm)');
-                vectMeanBpExts_nm = cellfun(@str2double, vectMeanBpExts_nm);
+                if iscell(vectMeanBpExts_nm) % convert if inputs in txt are cells
+                    vectMeanBpExts_nm = cellfun(@str2double, vectMeanBpExts_nm);
+                end
             else
                 promptBpsPerMicrometer = barcodeNames(:);
                 defaultMeanBpExts_nm_strs = arrayfun(@num2str, vectDefaultMeanBpExts_nm, 'UniformOutput', false);
