@@ -17,7 +17,7 @@ function [bitmask, posY,mat,threshval,threshstd,badMol,bitWithGaps] = median_fil
         filterM = [5 15];
     end
 
-    if nargin < 6
+    if nargin < 6 || isempty(N)
         N = 50;
     end
 

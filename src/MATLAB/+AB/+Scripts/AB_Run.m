@@ -1,6 +1,6 @@
 % AB_Run. Runs auto-barcoding without ever going into GUI windows.
 
-% Written by Albertas Dvirnas
+% Written by Albertas Dvirnas. 
 
 % load settings
 [sets] = AB.Scripts.ab_sets();

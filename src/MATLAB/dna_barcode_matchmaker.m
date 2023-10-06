@@ -70,7 +70,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         sets.timeframes = itemsList{2}.Value;
         sets.denoise = itemsList{3}.Value;
         sets.detectlambdas  = itemsList{4}.Value;
- 
+        sets.keepBadEdgeMols  = itemsList{5}.Value;
+
     end
 
     function restore_settings(src, event,x) % restore settings
@@ -98,7 +99,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         itemsList{1}.Value =  sets.moleculeAngleValidation;
         itemsList{2}.Value = sets.timeframes;
         itemsList{3}.Value  =  sets.denoise;
-        itemsList{3}.Value  =  sets.detectlambdas;
+        itemsList{4}.Value  =  sets.detectlambdas;
+        itemsList{5}.Value  =  sets.keepBadEdgeMols;
 
     end
 
@@ -401,6 +403,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
 
     function load_kymo_data(src,event)
+        dbmStruct = [];
         
 %         defaultSessionDirpath = dbmOSW.get_default_import_dirpath('session');
 % 
@@ -582,7 +585,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             cellsExport = {'Save Session Data','Raw kymographs','Aligned Kymographs','Time Averages','Pngs with edges','Session Data (light)'};
             cellsKymographs = {'Display Raw kymographs','Display Aligned Kymographs','Plot Time Averages','Display lambdas','Filter molecules'};
             cellsStatistics = {'Calculate molecule lengths and intensities','Calculate Raw Kymos Center of Mass','Plot length vs intensity'};
-            cellsPipelines = {'Genome assembly','Lambda lengths','Lambda recalc'};
+            cellsPipelines = {'Genome assembly','Lambda lengths','Lambda recalc','Good/bad tool'};
 
             mSubImport = cellfun(@(x) uimenu(mSub{1},'Text',x),cellsImport,'un',false);
             mSubExport = cellfun(@(x) uimenu(mSub{2},'Text',x),cellsExport,'un',false);
@@ -622,6 +625,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             mSubPipelines{1}.MenuSelectedFcn = @genome_assembly_pipeline;
             mSubPipelines{2}.MenuSelectedFcn = @detect_lambda_lengths_pipeline;
             mSubPipelines{3}.MenuSelectedFcn = @detect_lambda_lengths_recalc;
+            mSubPipelines{4}.MenuSelectedFcn = @good_bad_recalc;
+
 %             set( mSubPipelines{3}, 'Enable', 'off');
 
 %             mSubPipelines{3}.MenuSelectedFcn = @scattering_microscopy_pipeline;
@@ -654,8 +659,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
                 % Put the loaded settings into the GUI.
                     % make into loop
-            checkItems =  {'Molecule angle calculation (skip if angle is known)','Single frame molecule detection','Denoise (Experimental)','Detect short molecules'};
-            checkValues = [sets.moleculeAngleValidation  sets.timeframes  sets.denoise, sets.detectlambdas ] ;
+            checkItems =  {'Molecule angle calculation (skip if angle is known)','Single frame molecule detection','Denoise (Experimental)','Detect short molecules','Keep bad molecules'};
+            checkValues = [sets.moleculeAngleValidation  sets.timeframes  sets.denoise, sets.detectlambdas sets.keepBadEdgeMols ] ;
            % checkbox for things to plot and threshold
             for i=1:length(checkItems)
                 itemsList{i} = uicontrol('Parent', hPanelImport, 'Style', 'checkbox','Value',checkValues(i),'String',{checkItems{i}},'Units', 'normal', 'Position', [0.45 .83-0.05*i 0.3 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
@@ -744,9 +749,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
                 import DBM4.plot_kymo_edges;
     
                      plot_kymo_edges(hAxis,...
-                dbmStruct.kymoCells.kymosMoleculeLeftEdgeIdxs{jj}', ...
-                dbmStruct.kymoCells.kymosMoleculeRightEdgeIdxs{jj}');
-        
+                        dbmStruct.kymoCells.kymoStatsTable.moleculeLeftEdgeIdxs{jj}', ...
+                        dbmStruct.kymoCells.kymoStatsTable.moleculeRightEdgeIdxs{jj}');
             
     %             disp_rect_annotated_image(, fe, {});
     
@@ -837,6 +841,18 @@ function detect_lambda_lengths_pipeline(src, event)
 %     restore_settings(sets)
 end
 
+
+function good_bad_recalc(src, event)
+    % runs the detect_lambdas pipeline   
+%     userDir = uigetdir(pwd,'Select directory with movies to run through lambda pipeline');
+    import Microscopy.UI.UserSelection.good_bad_recalc;
+    tsHCC.SelectedTab = hAdditional.hAdd;
+%     hAdditional
+    tshAdd.SelectedTab = hAdditional.Re;
+
+    export_raw_kymos();% force export raw kymos
+    good_bad_recalc(sets,dbmStruct,hAdditional);
+end
 
 function detect_lambda_lengths_recalc(src, event)
     % runs the detect_lambdas pipeline   
