@@ -1,4 +1,4 @@
-function [] = good_bad_recalc(dbmOSW,dbmStruct,tshAdd)
+function [] = good_bad_recalc(dbmOSW,dbmStruct, tshAdd)
     % lambda_recalc using DBM's good/bad tool
 
 % info = dbmStruct.info;
@@ -6,10 +6,10 @@ kymoStructs = dbmStruct.kymoCells;
 % barcodeGen = dbmStruct.barcodeGen;
 
 import Microscopy.UI.UserSelection.goodbadtool;
-[allKymos] = goodbadtool([4 4], fullfile(dbmStruct.rawMovieDirPath,'raw_kymo'), [],[],dbmOSW,tshAdd);
+[allKymos] = goodbadtool([4 4], fullfile(dbmOSW.rawMovieDirPath,'raw_kymo'), [],dbmOSW.rawMovieDirPath,dbmOSW,tshAdd);
 
 goodKymosIdx = sum(allKymos.selected==1);
-disp(['Keeping ', num2str(sum(goodKymosIdx)),' barcodes']);
+disp(['Keeping ', num2str(sum(goodKymosIdx)),' barcodes, saved at',dbmOSW.rawMovieDirPath,'good' ]);
 % import DBM4.UI.good_mol_selection;
 % [goodKymosIdx,info] = good_mol_selection([4 4],kymoStructs,info);
 % 
@@ -60,8 +60,10 @@ disp(['Keeping ', num2str(sum(goodKymosIdx)),' barcodes']);
 %     
     DBMSettingsstruct = dbmOSW;
     DBMMainstruct = dbmStruct;
-    for j=1:length(DBMMainstruct.fileCells)
-        DBMMainstruct.fileCells{j}.preCells = [];% save some space by not printing this
+    if isfield(DBMMainstruct,'fileCells')
+        for j=1:length(DBMMainstruct.fileCells)
+            DBMMainstruct.fileCells{j}.preCells = [];% save some space by not printing this
+        end
     end
 %     % always save session data as DBM loadable. kymoStructs possibly saved
 %     % twice (also in dbmStruct)

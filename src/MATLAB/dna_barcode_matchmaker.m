@@ -278,6 +278,13 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
         disp(['Kymo data saved at ',defaultOutputDirpath ])
 
+        %% extra for re-calc
+        sets.loaded_raw_kymos_from_files = 1; % in case we need to check later
+        try
+            splitName = strsplit(dbmStruct.kymoCells.rawKymoName{1},'raw_kymo');
+            sets.kymofold = splitName{1};
+        catch
+        end
     end
     
     function [] = export_aligned_kymos(src, event)
@@ -414,7 +421,14 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         [dbmStruct.kymoCells.rawKymos, dbmStruct.kymoCells.rawKymoName,...
             dbmStruct.kymoCells.rawBitmask,dbmStruct.kymoCells.enhanced]  = import_raw_kymos();
 
-        
+        sets.loaded_raw_kymos_from_files = 1;
+        try % if kymos are save in raw_kymo, this is suitable for recalc
+            splitName = strsplit(dbmStruct.kymoCells.rawKymoName{1},'raw_kymo');
+            sets.kymofold = splitName{1};
+        catch
+        end
+        sets.rawMovieDirPath = sets.kymofold;
+
         display_raw_kymographs()
 %         if isempty(sessionFilepath)
 %             return;
@@ -853,7 +867,11 @@ function good_bad_recalc(src, event)
 %     hAdditional
     tshAdd.SelectedTab = hAdditional.Re;
 
-    export_raw_kymos();% force export raw kymos
+    if ~sets.loaded_raw_kymos_from_files 
+        export_raw_kymos();% force export raw kymos
+    else
+        sets.rawMovieDirPath = sets.kymofold;
+    end
     good_bad_recalc(sets,dbmStruct,hAdditional);
 end
 
