@@ -65,7 +65,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     % 3) load image first frame for mol detection
     tic
     % settingsHPFL.numFrames = 1;
-    for idx = 1:length(movieFilenames)
+    parfor idx = 1:length(movieFilenames)
         if usePrecalc
             params{idx} = fileCells{idx}.preCells;
         else
