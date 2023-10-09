@@ -30,5 +30,14 @@ function [eteSessionStruct ] = create_ete_session_struct(...
     eteSessionStruct.longShiftMat=longShiftMat;
     eteSessionStruct.stretchFactorsMat=stretchFactorsMat;
     eteSessionStruct.consensusBarcodeNames=consensusBarcodeNames;
+    %
+    try
+        mFilePath = mfilename('fullpath');
+        mfolders = split(mFilePath, {'\', '/'});
+        versionLLDEV = importdata(fullfile(mfolders{1:end-6},'VERSION'));
+        eteSessionStruct.ete_version = versionLLDEV{1};
+    catch
+        eteSessionStruct.ete_version = '';
+    end
 end
 
