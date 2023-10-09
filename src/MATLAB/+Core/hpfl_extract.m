@@ -480,6 +480,9 @@ function [posY,posX, posYcoord, posMax,thedges,kymos,wideKymos,pxBg,bgmean,bgstd
                 disp(strcat(['Removed ' num2str(sum(badMol)) ' molecules due to bad/fragmented edges']));
             else
                 posXUpd = posX;
+                for jj=find(badMol)
+                    bitmask{jj} = ones(size(kymos{1}{jj}));
+                end
             end
             
 
@@ -1924,7 +1927,7 @@ function [kymo, kymoW, kymoNames,Length,posXOut,kymoOrig,idxOut] = extract_from_
 %         Length = cell(1,length(posY));
         nonemptypos = find(cellfun(@(x) ~isempty(x),posY));
         for i = nonemptypos
-            if length(posY{i}.leftEdgeIdxs)==1
+            if length(posY{i}.leftEdgeIdxs) == 1
                 stdY = 0; stdX = 0;
             else
                 stdX = std(diff(posY{i}.leftEdgeIdxs));

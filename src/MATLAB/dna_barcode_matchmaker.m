@@ -126,6 +126,9 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
 
     function show_home()
+        % Shows home screen:
+        % future: from update 0.10.0.0: no longer display all movies by default, but give an
+        % option for the user of what they want to see. Maybe as a slider?
         % shows home tile
         numP = max(1,ceil(sqrt(length(dbmStruct.fileCells))));
         numRows = max(1,ceil(length(dbmStruct.fileCells)/numP));

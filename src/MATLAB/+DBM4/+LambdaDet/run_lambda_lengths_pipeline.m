@@ -16,6 +16,8 @@ function [dbmStruct,dbmOSW] = run_lambda_lengths_pipeline(userDir,dbmOSW)
     dbmOSW.DBMSettingsstruct.movies.askForMovies = 0;
     dbmOSW.DBMSettingsstruct.detectlambdas = 1;
     dbmOSW.DBMSettingsstruct.auto_run = 1;
+    dbmOSW.DBMSettingsstruct.MaxNumPts = 500;
+    dbmOSW.DBMSettingsstruct.maxLambdaLen = 200;
 
 
     mFilePath = mfilename('fullpath');

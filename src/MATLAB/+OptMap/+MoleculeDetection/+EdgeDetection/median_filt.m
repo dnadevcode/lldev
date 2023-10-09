@@ -104,7 +104,7 @@ function [bitmask, posY,mat,threshval,threshstd,badMol,bitWithGaps] = median_fil
             [maxArea, largestIndex] = max([props.Area]);
             labK = labeledImage==largestIndex; % either just max or create a loop here
             
-            if sum(0==sum(labK,2))~= 0;
+            if sum(0==sum(labK,2)) ~= 0;
                 badMol(i)=1;
                 continue;
             end
