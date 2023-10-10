@@ -1,5 +1,5 @@
 function [] = disp_rect_image(hAxis, imgArr, imgHeaderText)
-
+    try
     cutout = 0.01;
     num_to_cut = ceil( numel(imgArr) * cutout / 2);
     sorted_data = sort(imgArr(~isnan(imgArr)));
@@ -24,6 +24,8 @@ function [] = disp_rect_image(hAxis, imgArr, imgHeaderText)
     set(hAxis,'XTick',[]);
     set(hAxis,'YTick',[]);
     hold(hAxis, 'off');
+    catch
+    end
 
 end
 

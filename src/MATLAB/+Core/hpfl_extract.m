@@ -93,7 +93,10 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             end
 
             number_of_frames = length(channelImg{1}); % maximum number of frames
-
+            
+            % image registration: in some cases fov moves slightly, which
+            [channelImg, tformOrig] = image_registration(channelImg, sets);
+            % needs correction
             %
 %             disp(strcat(['Image loaded in ' num2str(toc) ' seconds']));
             
@@ -541,6 +544,65 @@ end
 % end
 %     
 
+%%{
+function [channelImg,tformOrig] = image_registration(channelImg, sets)
+    % image_registration - affine transformation for slightly shifted
+    % images
+
+    %   Args:
+    %       channelImg - images to transform
+    %       sets - settings
+    %   Returns:
+    %       channelImg - transformed channel images
+    %       tformOrig - transformation parameters
+    tformOrig = [];
+    if sets.affineTransform
+        [optimizer, metric] = imregconfig('monomodal');
+        % We could sit an initial transformation to ease the results
+        T = [1 0 0; 0 1 0; 0 0 1];
+        tInit = affine2d(T);
+    
+        tform = cell(1,length(channelImg)-1);
+        tformOrig= cell(1,length(channelImg)-1);
+    
+        % align everything to first
+        x = double(channelImg{1}{1});
+    
+        tformOrig{1} = zeros(3,3);
+
+        for i=2:length(channelImg{1})
+            
+            % cut out sets.overlap from both
+            y = double(channelImg{1}{i});
+            
+            
+            tform{i} = imregtform(y,x, 'translation',optimizer,metric,'InitialTransformation',tInit);
+
+            % limit transformation to +-3 pixels
+%             if tform{i}.T(3,2)< 3
+%                 tform{i}.T(3,2) = 3;
+%             end
+% 
+%             if tform{i}.T(3,1)< 3
+%                 tform{i}.T(3,1) = 3;
+%             end
+
+%             tform{i}.T(3,1:2)
+            for j=1:length(channelImg)
+                channelImg{j}{i} =  imwarp( channelImg{j}{i},tform{i},'OutputView',imref2d(size(x)));
+            end
+    %         if sets.showresults
+%                 movingRegistered = imwarp(y,tform{i},'OutputView',imref2d(size(x)));
+%                 figure
+%                 imshowpair(x, movingRegistered,'Scaling','joint')
+    %         end
+            
+           tformOrig{i} = tform{i}.T;
+           
+        end
+    end
+end
+%%}
 function [rotImg, rotMask, movieAngle, maxCol] = image_rotation(channelImg, meanMovieFrame, sets)
        % image_rotation
        %
@@ -1234,7 +1296,7 @@ function [rotImg,medianS,bgTrend,bgSub] = remove_noise(rotImg, rotMask,bgSub)
     end
 end
 
-function [posX, posMax,nonrelevantRowsFarAway] = find_mols_corr(rotImg,bgTrend,numPtsAboveSigmaThresh, numPts,channelForDist,firstIdx,centralTend,farAwayShift, distbetweenChannels,timeframes);
+function [posX, posMax,nonrelevantColumnsFarAway] = find_mols_corr(rotImg,bgTrend,numPtsAboveSigmaThresh, numPts,channelForDist,firstIdx,centralTend,farAwayShift, distbetweenChannels,timeframes);
         %   Args:
         %
         %   Returns:
@@ -1245,20 +1307,20 @@ function [posX, posMax,nonrelevantRowsFarAway] = find_mols_corr(rotImg,bgTrend,n
         % Step 1: which columns pass numPtsAboveSigmaThresh ?
         meanVal = 0;
         stdVal = bgTrend{channelForDist};
-        relevantRows = find(sum(rotImg{1}{firstIdx}  > meanVal+4*stdVal) > numPtsAboveSigmaThresh);
-        allrows = 1:size(rotImg{1}{firstIdx},2);
-        allrows(relevantRows)=0;
+        signalColumns = sum(rotImg{1}{firstIdx}  > meanVal+4*stdVal) > numPtsAboveSigmaThresh;
+        bacgroundColumns = 1:size(rotImg{1}{firstIdx},2);
+        bacgroundColumns(signalColumns)=0;
         
         % these will be mostly noise rows
-        nonrelevantRowsFarAway = find(sum(rotImg{1}{firstIdx}  > meanVal+4*stdVal) < numPtsAboveSigmaThresh); % todo: what if everything has signal?
+        nonrelevantColumnsFarAway = find(sum(rotImg{1}{firstIdx}  > meanVal+4*stdVal) < numPtsAboveSigmaThresh); % todo: what if everything has signal?
         faraway = cell(1,2); % far away cells
-        faraway{1} =  rotImg{1}{firstIdx}(:, nonrelevantRowsFarAway);
+        faraway{1} =  rotImg{1}{firstIdx}(:, nonrelevantColumnsFarAway);
         faraway{2} = circshift(faraway{1},[0,1]);
-        faraway{1}(:,1:8)=nan;
-        faraway{1}(:,end-7:end)=nan;
+        faraway{1}(:,1:8) = nan; % mask first and last columns
+        faraway{1}(:,end-7:end) = nan;
 
         for ch=1:length(rotImg)
-            rotImg{ch}{firstIdx}(:,find(allrows))=nan;%min(rotImg{2}{1}(:));
+            rotImg{ch}{firstIdx}(:,find(bacgroundColumns))=nan;%min(rotImg{2}{1}(:));
         end
         % Now find molecules..
         
