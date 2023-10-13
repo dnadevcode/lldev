@@ -133,53 +133,98 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         numP = max(1,ceil(sqrt(length(dbmStruct.fileCells))));
         numRows = max(1,ceil(length(dbmStruct.fileCells)/numP));
 
-        hHomeScreenTile = tiledlayout(hHomeScreen,numRows,numP,'TileSpacing','none','Padding','none');
-         import DBM4.Figs.disp_rect_image; % new plot to display annotated image
+        hHomeScreenTile = tiledlayout(hHomeScreen,numRows,numP,'TileSpacing','tight','Padding','tight');
         % for each tile, plot rectangle with molecules
-        
+        sets.plotImages = 1;
+
         for jj=1:length(dbmStruct.fileCells)
             hAxis = nexttile(hHomeScreenTile);
-            % calc this directly before
-            if isfield(dbmStruct.fileCells{jj},'meanStd')
-                imagesc(dbmStruct.fileCells{jj}.averagedImg', 'Parent', hAxis,[dbmStruct.fileCells{jj}.meanStd(1)-dbmStruct.fileCells{jj}.meanStd(2) dbmStruct.fileCells{jj}.meanStd(1)+5*dbmStruct.fileCells{jj}.meanStd(2)]);
+            if  sets.plotImages
+                % calc this directly before
+                if isfield(dbmStruct.fileCells{jj},'meanStd')
+                    imagesc(dbmStruct.fileCells{jj}.averagedImg', 'Parent', hAxis,[dbmStruct.fileCells{jj}.meanStd(1)-dbmStruct.fileCells{jj}.meanStd(2) dbmStruct.fileCells{jj}.meanStd(1)+5*dbmStruct.fileCells{jj}.meanStd(2)]);
+                else
+                    imagesc(dbmStruct.fileCells{jj}.averagedImg', 'Parent', hAxis);
+                end
+                hold(hAxis, 'on');
+                set(hAxis,'XTick',[])
+                set(hAxis,'YTick',[])
+                colormap(hAxis, gray());
+                
+                % also plot barcodes that were removed for some reason
+                
+                % locations
+                moleculeRectPositions = cell(1,length( dbmStruct.fileCells{jj}.locs));
+                for ii=1:length(dbmStruct.fileCells{jj}.locs)
+                    moleculeRectPositions{ii} = [  dbmStruct.fileCells{jj}.regions(ii,1) dbmStruct.fileCells{jj}.locs(ii)-floor(sets.averagingWindowWidth/2)-0.5  dbmStruct.fileCells{jj}.regions(ii,2)- dbmStruct.fileCells{jj}.regions(ii,1) sets.averagingWindowWidth];
+                end
+                
+                try
+                    cellfun(@(moleculeRectPosition) ...
+                    rectangle(...
+                        'Position', moleculeRectPosition, ...
+                        'LineWidth', 0.2, ...
+                        'EdgeColor', 'r'), ...
+                    moleculeRectPositions);
+                    % todo: this should be index in the final kymograph set
+                    arrayfun(@(x) ...
+                    text(moleculeRectPositions{x}(1), moleculeRectPositions{x}(2),strcat(['ID = ' num2str(x) ' , SNR =  ' num2str(dbmStruct.fileMoleculeCells{jj}{x}.snrValues(1),'%4.1f')] ),...
+                    'Color','white','FontSize',8,'Clipping','on','HorizontalAlignment', 'left', 'VerticalAlignment', 'bottom'), ...
+                    1:length(moleculeRectPositions));
+                catch
+            
+                end
+
             else
-                imagesc(dbmStruct.fileCells{jj}.averagedImg', 'Parent', hAxis);
-            end
-            hold(hAxis, 'on');
-            set(hAxis,'XTick',[])
-            set(hAxis,'YTick',[])
-            colormap(hAxis, gray());
-            
-            % also plot barcodes that were removed for some reason
-            
-            % locations
-            moleculeRectPositions = cell(1,length( dbmStruct.fileCells{jj}.locs));
-            for ii=1:length(dbmStruct.fileCells{jj}.locs)
-                moleculeRectPositions{ii} = [  dbmStruct.fileCells{jj}.regions(ii,1) dbmStruct.fileCells{jj}.locs(ii)-floor(sets.averagingWindowWidth/2)-0.5  dbmStruct.fileCells{jj}.regions(ii,2)- dbmStruct.fileCells{jj}.regions(ii,1) sets.averagingWindowWidth];
-            end
-            
-            try
-                cellfun(@(moleculeRectPosition) ...
-                rectangle(...
-                    'Position', moleculeRectPosition, ...
-                    'LineWidth', 0.2, ...
-                    'EdgeColor', 'r'), ...
-                moleculeRectPositions);
-                % todo: this should be index in the final kymograph set
-                arrayfun(@(x) ...
-                text(moleculeRectPositions{x}(1), moleculeRectPositions{x}(2),strcat(['ID = ' num2str(x) ' , SNR =  ' num2str(dbmStruct.fileMoleculeCells{jj}{x}.snrValues(1),'%4.1f')] ),...
-                'Color','white','FontSize',8,'Clipping','on','HorizontalAlignment', 'left', 'VerticalAlignment', 'bottom'), ...
-                1:length(moleculeRectPositions));
-            catch
-        
+                tb = axtoolbar(hAxis , 'default');
+                btn = axtoolbarbtn(tb,'Icon',1+63*(eye(25)),'Tooltip','Detailed molecule plot');
+                btn.ButtonPushedFcn = @callbackDetailedPlot;
             end
             [fb,fe] = fileparts(dbmStruct.fileCells{jj}.fileName);
             title(strrep(fe,'_','\_'),'Interpreter','latex','FontSize',8)           
         end
-            axtoolbar(hHomeScreenTile,{'zoomin','zoomout','restoreview'});
-            ax = gca;
-            ax.Toolbar.Visible = 'on';
+%             axtoolbar(hHomeScreenTile,{'zoomin','zoomout','restoreview'});
+%             ax = gca;
+%             ax.Toolbar.Visible = 'on';
             tsHCC.SelectedTab = hHomeScreen; 
+    end
+
+    function callbackDetailedPlot(src,event)
+    % calc this directly before
+        if isfield(dbmStruct.fileCells{jj},'meanStd')
+            imagesc(dbmStruct.fileCells{jj}.averagedImg', 'Parent', hAxis,[dbmStruct.fileCells{jj}.meanStd(1)-dbmStruct.fileCells{jj}.meanStd(2) dbmStruct.fileCells{jj}.meanStd(1)+5*dbmStruct.fileCells{jj}.meanStd(2)]);
+        else
+            imagesc(dbmStruct.fileCells{jj}.averagedImg', 'Parent', hAxis);
+        end
+        hold(hAxis, 'on');
+        set(hAxis,'XTick',[])
+        set(hAxis,'YTick',[])
+        colormap(hAxis, gray());
+        
+        % also plot barcodes that were removed for some reason
+        
+        % locations
+        moleculeRectPositions = cell(1,length( dbmStruct.fileCells{jj}.locs));
+        for ii=1:length(dbmStruct.fileCells{jj}.locs)
+            moleculeRectPositions{ii} = [  dbmStruct.fileCells{jj}.regions(ii,1) dbmStruct.fileCells{jj}.locs(ii)-floor(sets.averagingWindowWidth/2)-0.5  dbmStruct.fileCells{jj}.regions(ii,2)- dbmStruct.fileCells{jj}.regions(ii,1) sets.averagingWindowWidth];
+        end
+        
+        try
+            cellfun(@(moleculeRectPosition) ...
+            rectangle(...
+                'Position', moleculeRectPosition, ...
+                'LineWidth', 0.2, ...
+                'EdgeColor', 'r'), ...
+            moleculeRectPositions);
+            % todo: this should be index in the final kymograph set
+            arrayfun(@(x) ...
+            text(moleculeRectPositions{x}(1), moleculeRectPositions{x}(2),strcat(['ID = ' num2str(x) ' , SNR =  ' num2str(dbmStruct.fileMoleculeCells{jj}{x}.snrValues(1),'%4.1f')] ),...
+            'Color','white','FontSize',8,'Clipping','on','HorizontalAlignment', 'left', 'VerticalAlignment', 'bottom'), ...
+            1:length(moleculeRectPositions));
+        catch
+    
+        end
+
     end
 
     % saving session data
