@@ -11,7 +11,7 @@ function [newNames, newInfo ] = convert_czi_to_tif(data, multiChannels)
     command = strcat([st ' -version']);
     [test,testmessage] = system(command);
 
-    isrecognized = isempty(strfind(testmessage,'not recognized'))||isempty(strfind(testmessage,'not found'));
+    isrecognized = isempty(strfind(testmessage,'not recognized'))&&isempty(strfind(testmessage,'not found'));
     
     
     mFilePath = mfilename('fullpath');
