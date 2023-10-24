@@ -8,7 +8,7 @@ barcodeGen = dbmStruct.barcodeGen;
 import Microscopy.UI.UserSelection.goodbadtool;
 [allKymos] = goodbadtool([4 4], info.compName, [],[],dbmOSW,tshAdd);
 
-goodKymosIdx = sum(allKymos.selected==1);
+goodKymosIdx = allKymos.selected==1;
 disp(['Keeping ', num2str(sum(goodKymosIdx)),' barcodes']);
 % import DBM4.UI.good_mol_selection;
 % [goodKymosIdx,info] = good_mol_selection([4 4],kymoStructs,info);

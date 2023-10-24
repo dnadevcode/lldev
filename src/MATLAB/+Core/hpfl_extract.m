@@ -94,9 +94,6 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 
             number_of_frames = length(channelImg{1}); % maximum number of frames
             
-            % image registration: in some cases fov moves slightly, which
-            [channelImg, tformOrig] = image_registration(channelImg, sets);
-            % needs correction
             %
 %             disp(strcat(['Image loaded in ' num2str(toc) ' seconds']));
             
@@ -104,6 +101,11 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
             [rotImg, rotMask, params{idx}.movieAngle,params{idx}.maxCol] = image_rotation(channelImg, params{idx}.meanMovieFrame, sets);
 %             disp(strcat(['Rotation done in ' num2str(toc) ' seconds']));
             channelImg = [];
+
+            % image registration: in some cases fov moves slightly, which
+            [rotImg] = image_registration_simple(rotImg, sets);
+%             [rotImg, tformOrig] = image_registration(rotImg, sets);
+            % needs correction
       
             params{idx}.meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
     
@@ -544,6 +546,61 @@ end
 % end
 %     
 
+function [rotImg] = image_registration_simple(rotImg, sets)
+    % image_registration - very simple transform to correct horizontal
+    % flickering
+
+    if sets.affineTransform
+
+        % Find the indices of non-NaN values
+        [row, col] = find(~isnan(rotImg{1}{1}));
+        
+        % Find the boundaries of the rectangle
+        row_min = min(row)+1; % shift to make sure no nans
+        row_max = max(row)-1;
+        col_min = min(col)+1;
+        col_max = max(col)-1;
+
+        k = 10;
+        
+        % Extract the rectangle without NaNs
+        x = double(rotImg{1}{1}(row_min:row_max, col_min:col_max));
+        x = nanmean(x);
+%             figure,imshowpair(rotImg{1}{1} ,rotImg{1}{50},'Scaling','joint')
+
+
+        offsets = zeros(1,length(rotImg{1}));
+        for i=2:length(rotImg{1})
+            
+            % cut out sets.overlap from both
+            y = nanmean(double(rotImg{1}{i}(row_min:row_max, col_min:col_max)));
+
+            c = xcorr(x, [y(:,end-k+1:end) y y(:,1:k)]);
+            [~, index] = max(c);
+            offsets(i) = length(x) - index+k;
+
+            for j=1:length(rotImg)
+                rotImg{j}{i} =  circshift(rotImg{j}{i}, [0 -offsets(i)]);
+            end
+        end
+    end
+%             figure,imshowpair(rotImg{1}{1} ,rotImg{1}{50},'Scaling','joint')
+
+
+%             tform{i} = imregtform(y,x, 'translation',optimizer,metric,'InitialTransformation',tInit);
+% 
+%             for j=1:length(channelImg)
+%                 channelImg{j}{i} =  imwarp( channelImg{j}{i},tform{i},'OutputView',imref2d(size(x)));
+%             end
+    %         if sets.showresults
+%                 movingRegistered = imwarp(y,tform{i},'OutputView',imref2d(size(x)));
+%                 figure
+%                 imshowpair(x, movingRegistered,'Scaling','joint')
+    %         end
+
+end
+
+
 %%{
 function [channelImg,tformOrig] = image_registration(channelImg, sets)
     % image_registration - affine transformation for slightly shifted
@@ -603,6 +660,8 @@ function [channelImg,tformOrig] = image_registration(channelImg, sets)
     end
 end
 %%}
+
+
 function [rotImg, rotMask, movieAngle, maxCol] = image_rotation(channelImg, meanMovieFrame, sets)
        % image_rotation
        %
@@ -1913,6 +1972,7 @@ function [posY,threshval,threshstd] = find_positions_in_nanochannel(noiseKymos,k
             [maxArea, largestIndex] = max([props.Area]);
         end
         
+        % todo: fix/remove fragmented images
         try
             labK = labeledImage==largestIndex; % either just max or create a loop here
 %             mask2 = zeros(sz(1),sz(2));
