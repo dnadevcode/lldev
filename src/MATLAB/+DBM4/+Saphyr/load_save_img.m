@@ -44,7 +44,11 @@ function [filename,imageData] = load_save_img(moleculeImgPath,idx,meanBgrounds)
         channelImg = cell(1,numChannels);
         imageData =  cell(1,numChannels);
         for i=1:numChannels % check the flow direction (should be top to bottom)
-            channelImg{i}{1} = rawImg((j-1)*fovHeight+1:j*fovHeight, :,i)-meanBgrounds{i};
+            if ~isempty(meanBgrounds)
+                channelImg{i}{1} = rawImg((j-1)*fovHeight+1:j*fovHeight, :,i)-meanBgrounds{i};
+            else
+                channelImg{i}{1} = rawImg((j-1)*fovHeight+1:j*fovHeight, :,i);
+            end
         end
         imageData{1}.IntensityInfo.firstIdx = 1; % only one frame so not really necessary        
         imageData{1}.info.channels = numChannels;

@@ -107,9 +107,11 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
 %             [rotImg, tformOrig] = image_registration(rotImg, sets);
             % needs correction
       
-            params{idx}.meanRotatedMovieFrame = mean(cat(3, rotImg{1}{:}), 3, 'omitnan');
+            for kk=1:length(rotImg)
+                params{idx}.meanRotatedMovieFrame{kk} = mean(cat(3, rotImg{kk}{:}), 3, 'omitnan');
+            end
     
-            sz = size(params{idx}.meanRotatedMovieFrame);
+            sz = size(params{idx}.meanRotatedMovieFrame{1});
         
 %         visual_mean(rotImg{1}{1}) % visualize channel vs mean
 
@@ -171,7 +173,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
                     columns = max(1,params{idx}.posX(round(end/2))-sets.parForNoise): min(params{idx}.posX(round(end/2))+sets.parForNoise,sz(2));
                 end
                 
-                [~,diffPeaks]  = min(nanmean(params{idx}.meanRotatedMovieFrame(:,columns)));
+                [~,diffPeaks]  = min(nanmean(params{idx}.meanRotatedMovieFrame{1}(:,columns)));
                 [params{idx}.noiseKymos] = create_channel_kymos_one(columns(diffPeaks),rotImgOrig,1,channels,params{idx}.movieAngle, params{idx}.name,number_of_frames,averagingWindowWidth,rotMask,bgSub,background);
           
     
@@ -298,7 +300,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
         
         fileCells{idx}.fileName = params{idx}.name;
         fileCells{idx}.averagedImg = params{idx}.meanRotatedMovieFrame;
-        fileCells{idx}.meanStd = [nanmean(params{idx}.meanRotatedMovieFrame(:)) nanstd(params{idx}.meanRotatedMovieFrame(:))];
+        fileCells{idx}.meanStd = [nanmean(params{idx}.meanRotatedMovieFrame{1}(:)) nanstd(params{idx}.meanRotatedMovieFrame{1}(:))];
         fileCells{idx}.locs = colCenterIdxs;
         fileCells{idx}.regions = rowEdgeIdxs;
 %         fileStruct.locsRejected = colCenterIdxsRejected; % rejected regions
@@ -820,13 +822,13 @@ function [movieAngle, maxCol] = maxcol_angle_detection(meanMovieFrame,movieAngle
         method = 'bilinear'; %bicubic bilinear
         resSize = 1; % put to settings
 
-        try % for big image, take the enter
-            if sets.takeSmaller
-                resizedImg = meanMovieFrame(end/2-250:end/2+250,end/2-250:end/2+250);
-            end
-        catch
+
+        if sets.takeSmaller
+            resizedImg = meanMovieFrame(max(1,end/2-250):min(end,end/2+250),max(1,end/2-250):min(end,end/2+250));
+        else
             resizedImg = meanMovieFrame;
         end
+
             
         sz = size(resizedImg);
         % resize images to bigger
@@ -853,7 +855,7 @@ function [movieAngle, maxCol] = maxcol_angle_detection(meanMovieFrame,movieAngle
 
         resizedImg = imresize(resizedImg,  [resSize*sz(1) resSize*sz(2)], method);
 
-        maxCol = arrayfun(@(x) sum(findpeaks(nansum(imrotate(resizedImg, -(90+x), method)),'Npeaks',npeaks,'SortStr','descend','MinPeakDistance',mpkdist)),pos);
+        maxCol = arrayfun(@(x) sum(findpeaks(nanmean(imrotate(resizedImg, -(90+x), method)),'Npeaks',npeaks,'SortStr','descend','MinPeakDistance',mpkdist)),pos);
 
         [a,b] = max(maxCol);
         movieAngle =  pos(b); % best angle

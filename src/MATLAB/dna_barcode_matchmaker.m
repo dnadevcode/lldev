@@ -138,6 +138,11 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         sets.plotImages = 1;
 
         for jj=1:length(dbmStruct.fileCells)
+
+            if iscell(dbmStruct.fileCells{jj}.averagedImg) % temp fix for multi-frame averaged img
+                dbmStruct.fileCells{jj}.averagedImg = dbmStruct.fileCells{jj}.averagedImg{1};
+            end
+
             hAxis = nexttile(hHomeScreenTile);
             if  sets.plotImages
                 % calc this directly before
@@ -621,6 +626,12 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             import DBM4.convert_czi_to_tif;
             convert_czi_to_tif;  
     end
+
+    function SelectedJxrConvertToTif(src, event)
+            disp('Select files to convert to tif')
+            import DBM4.convert_jxr_to_tif;
+            convert_czi_to_tif;  
+    end
     
         function [sets,tsHCC,textList,textListT,itemsList,...
                hHomeScreen, hPanelRawKymos,hPanelAlignedKymos,hPanelTimeAverages,hAdditional,tshAdd] = generate_gui()
@@ -637,12 +648,21 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
                 'ToolBar', 'none' ...
             );
             m = uimenu('Text','DBM');
-            cells1 = {'Import','Export','Kymographs','Statistics','Convert czi to tif','Pipelines'};
+
+            mAdd = uimenu('Text','Tools');
+            cellsAdd = {'Convert'};
+            mSubAdd = cellfun(@(x) uimenu(mAdd,'Text',x),cellsAdd,'un',false);
+            cellsConvertAdd = {'Convert czi to tif','Convert jxr to tif'};
+            mSubConvertAdd  = cellfun(@(x) uimenu(mSubAdd{1},'Text',x),cellsConvertAdd,'un',false);
+            mSubConvertAdd{1}.MenuSelectedFcn = @SelectedConvertToTif;
+            mSubConvertAdd{2}.MenuSelectedFcn = @SelectedJxrConvertToTif;
+
+
+            cells1 = {'Import','Export','Kymographs','Statistics','Pipelines'};
             mSub = cellfun(@(x) uimenu(m,'Text',x),cells1,'un',false);
-            mSub{5}.MenuSelectedFcn = @SelectedConvertToTif;
 
 
-            cellsImport = {'Load Session Data','Convert czi to tif','Load Movie(s) (tif format)','Load Raw Kymograph(s)'};
+            cellsImport = {'Load Session Data','Convert czi to tif','Load Movie(s) (czi/tif)','Load Raw Kymograph(s)'};
 
             cellsExport = {'Save Session Data','Raw kymographs','Aligned Kymographs','Time Averages','Pngs with edges','Session Data (light)'};
             cellsKymographs = {'Display Raw kymographs','Display Aligned Kymographs','Plot Time Averages','Display lambdas','Filter molecules'};
@@ -683,7 +703,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
             mSubStatistics{3}.MenuSelectedFcn = @calculate_length_intensity_plot;
 
 
-            mSubPipelines = cellfun(@(x) uimenu(mSub{6},'Text',x),cellsPipelines,'un',false);
+            mSubPipelines = cellfun(@(x) uimenu(mSub{5},'Text',x),cellsPipelines,'un',false);
             mSubPipelines{1}.MenuSelectedFcn = @genome_assembly_pipeline;
             mSubPipelines{2}.MenuSelectedFcn = @detect_lambda_lengths_pipeline;
             mSubPipelines{3}.MenuSelectedFcn = @detect_lambda_lengths_recalc;
@@ -741,19 +761,10 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
                 positionsBox{i} =   [0.2-0.2*mod(i,2) .83-0.1*ceil(i/2) 0.15 0.05];
             end
 
-        %     
-        %     for i=7:11 % these will be in two columns
-        %         positionsText{i} =   [0.2*(i-7) .45 0.15 0.03];
-        %         positionsBox{i} =   [0.2*(i-7) .4 0.15 0.05];
-        %     end
-
             for i=1:length(textItems)
                 textListT{i} = uicontrol('Parent', hPanelImport, 'Style', 'text','String',{textItems{i}},'Units', 'normal', 'Position', positionsText{i},'HorizontalAlignment','Left');%, 'Max', Inf, 'Min', 0);  [left bottom width height]
                 textList{i} = uicontrol('Parent', hPanelImport, 'Style', 'edit','String',{values{i}},'Units', 'normal', 'Position', positionsBox{i});%, 'Max', Inf, 'Min', 0);  [left bottom width height]
             end
-%             set(textList{8}, 'Enable', 'off');
-%             set(textList{6}, 'Enable', 'off');
-
 
             runButton = uicontrol('Parent', hPanelImport, 'Style', 'pushbutton','String',{'Save settings'},'Callback',@save_settings,'Units', 'normal', 'Position', [0.7 0.4 0.2 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
             clearButton = uicontrol('Parent', hPanelImport, 'Style', 'pushbutton','String',{'Restore settings'},'Callback',@restore_settings,'Units', 'normal', 'Position', [0.7 0.3 0.2 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]

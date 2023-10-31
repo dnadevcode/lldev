@@ -28,7 +28,7 @@ function [fullfiles] = file_list(mainFold)
                     
                     start = strcat(['Run' run '/Scan' scan '/Bank' bank '/']);% '\ or /' depending on system..
                     for l=1:3
-                        foldEnd = fullfile(start,strcat(['*CH' num2str(l) '_*C*.tif']));  
+                        foldEnd = fullfile(start,strcat(['*CH' num2str(l) '_*C*.tif*']));  
                         
                         files = dir(fullfile(mainFold,foldEnd));
                         fullfiles.run(i).scan(j).bank(d).ch{l} = arrayfun(@(x) fullfile(files(x).folder,files(x).name),1:length(files),'un',false);

@@ -1,152 +1,110 @@
-function [newNames, newInfo ] = convert_czi_to_tif(data, multiChannels)
+function [newNames, newInfo ] = convert_czi_to_tif(data, numChannels)
+%   convert_czi_to_tif
+%
+%   Args:
+%       data - files to convert. If empty, asks for folder to convert
+%       multiChannels - whether data should be loaded as multichannel
 
-% https://forum.image.sc/t/bfconvert-command-line-tool/5872
-% wget https://downloads.openmicroscopy.org/bio-formats/5.5.2/artifacts/bftools.zip
-% unzip bftools.zip 
-% ./bftools/bfconvert -version
-% add to path
-%test
-    st = 'bfconvert';
-    se = 'showinf';
-    command = strcat([st ' -version']);
-    [test,testmessage] = system(command);
+%   Returns:
+%       newNames - new names for data files
+%       newInfo - new info for data files
 
-    isrecognized = isempty(strfind(testmessage,'not recognized'))&&isempty(strfind(testmessage,'not found'));
-    
-    
-    mFilePath = mfilename('fullpath');
-    mfolders = split(mFilePath, {'\', '/'});
-    if ispc
-        catcheFold = fullfile(mfolders{1:end - 4},'DataCache','bftools','bfconvert');
-        seFold =   fullfile(mfolders{1:end - 4},'DataCache','bftools','showinf');
-    else
-        catcheFold = strcat('/',fullfile(mfolders{1:end - 4},'DataCache','bftools','bfconvert'));
-        seFold =   strcat('/',fullfile(mfolders{1:end - 4},'DataCache','bftools','showinf'));
+%   Requirements:
+%       bfconvert/bfmatlab should be in "DataCatche" folder, or
+%       installed globally
 
-    end
+%   Example:
+%
+%   Modified:
+%       31/10/23
 
-    if exist(catcheFold, 'file')
-        st = catcheFold;
-        se = seFold;
-        isrecognized = 1;    
-    end
-          
-          
-    if ~isrecognized
-        disp('Please download https://downloads.openmicroscopy.org/bio-formats/5.5.2/artifacts/bftools.zip unzip and add to path');
-        newNames =[];
-        newInfo = [];
-        return;
-    end
-    
-% [status,results] = system('badcmd');
+% First check if the selected tool (bfopen) is loaded:
+mFilePath = mfilename('fullpath');
+dataCatcheFold = fileparts(fileparts(fileparts(fileparts(mFilePath))));
+bfmatloaded = exist('bfopen', 'file') == 2;
 
-if nargin < 1
-    data =[];
+
+% download and un-zip bfmatlab
+if bfmatloaded == 0  
+    websave(fullfile(dataCatcheFold,'DataCache','bfmatlab.zip'),'https://downloads.openmicroscopy.org/bio-formats/7.0.1/artifacts/bfmatlab.zip');
+    unzip(fullfile(dataCatcheFold,'DataCache','bfmatlab.zip'),fullfile(dataCatcheFold,'DataCache'));
+    addpath(genpath(fullfile(dataCatcheFold,'DataCache')));
+    bfmatloaded = exist('bfopen', 'file') == 2;
 end
 
-if nargin < 2
-    multiChannels = [];
+if bfmatloaded == 0
+    error('Failed to load bfmatlab, please download https://downloads.openmicroscopy.org/bio-formats/7.0.1/artifacts/bfmatlab.zip and unzip to DataCache folder');
 end
 
-if isempty(multiChannels)
+if nargin < 1 || isempty(data)
+    data = dir(fullfile(uigetdir(),'*.czi'));
+end
+
+
+if nargin < 2 || isempty(numChannels)
     opts.Interpreter = 'tex';
     % Include the desired Default answer
-    opts.Default = 'No';
+    opts.Default = '1';
     % Use the TeX interpreter to format the question
-    quest = 'Is data multichannel';
-    answer = questdlg(quest,'Multichannel parameter',...
-              'Yes','No',opts)
-
-    multiChannels = isequal(answer,'Yes');
+    quest = 'How many channels in the data?';
+    answer = questdlg(quest,'Number channels',...
+              '1','2','3',opts)
+    numChannels = str2num(answer);
 end
  
+newNames = cell(1,length(data));
+newInfo = cell(1,length(data));
 
-
-% data = 'C:\Users\Lenovo\postdoc\DATA\DOTS\Albertas\1';
-if isempty(data)
-    data = dir(fullfile(uigetdir(),'*.czi'));
-% else
-%     data = dir(fullfile(data,'*.czi'));
-end
-
-newNames = [];
-newInfo = [];
-
+import DBM4.load_czi;
 for i=1:length(data)
     disp(strcat(['Converting movie ' num2str(i) ' from ' num2str(length(data)) ]))
-    name =fullfile(data(i).folder,data(i).name);
-    [fd,fm,fe] = fileparts(name);
-    nameNew = strrep(name,fe,'.tif');
-    nameNew2 = strrep(name,fe,'.ini');
-    
-    if exist(nameNew,'file')
-        delete(nameNew); % in case already exists tif, remove 
-    end
-    command = strcat([st ' "'  name '" "' nameNew '"']);
-    [a1,b1] = system(command);
-    newNames{i} = nameNew;
+    filename = fullfile(data(i).folder,data(i).name);
+    [channelImg,metadata] = load_czi(filename,0, numChannels);
 
-    if exist(nameNew2,'file')
-        delete(nameNew2); % in case already info, remove
+    [fd,fm,fe] = fileparts(filename);
+    nameNew = strrep(filename,fe,'');
+    nameNew2 = strrep(filename,fe,'.ini');
+    if exist(strcat(nameNew,'_CH1.tif'),'file')
+        delete(strcat(nameNew,'_CH1.tif')); % in case already exists tif, remove 
     end
-%     command = strcat([se ' -nopix -nocore "'  name '" > "' nameNew2 '"']);
-    command = strcat([se ' -nopix "'  name '" > "' nameNew2 '"']);
-
-    [a2,b2] = system(command);
+    if exist(strcat(nameNew,'_CH2.tif'),'file')
+        delete(strcat(nameNew,'_CH2.tif')); % in case already exists tif, remove 
+    end
+    if exist(strcat(nameNew,'_CH3.tif'),'file')
+        delete(strcat(nameNew,'_CH3.tif')); % in case already exists tif, remove 
+    end
+%     newInfo{i} = nameNew2;
+    newNames{i} = strcat(nameNew,'_CH1.tif');
     newInfo{i} = nameNew2;
-%     info = rawinfo(name);
-    
-    if multiChannels
-        ch1 = imread(nameNew,1);
-        imwrite(ch1,strcat(name,'_C=0.tif'));
-        ch2 = imread(nameNew,2);
-        imwrite(ch2,strcat(name,'_C=1.tif'));
-    else
-%         d = importdata(nameNew2);
-%         posS = cellfun(@(x) ~isempty(strfind(x,'Information|Image|SizeS')),d);
-%         posS = find(posS);
-%         if ~isempty(posS)
-%             sizeS = strsplit(d{posS},":");
-%             sizeS = str2double(sizeS(end));
-%         else
-%             sizeS = 1;
-%         end
-%         
-% %         posM = cellfun(@(x) ~isempty(strfind(x,'Information|Image|SizeM')),d);
-% %         posM = find(posM);
-% %         if ~isempty(posM)
-% %             sizeM =  strsplit(d{posM},":");
-% %             sizeM = str2double(sizeM(end));
-% %         else
-% %             sizeM = 1;
-% %         end
-%         
-%         posT = cellfun(@(x) ~isempty(strfind(x,'Information|Image|SizeT')),d); % number timeframes
-%         posT = find(posT);
-%         if ~isempty(posT)
-%             sizeT =  strsplit(d{posT},":");
-%             sizeT = str2double(sizeT(end));
-%         else
-%             sizeT = 1;
-%         end
-% %         outputFile = regexprep(name, 'czi','');
-% 
-%         for k=1:sizeS
-%             strn=num2str(k);
-%             % rename the original image file with series number
-%             nameNew2 = strrep(name,'.czi',strcat(['_' strn '.tif']));
-%             if exist(nameNew2, 'file')
-%                 delete(nameNew2);
-%             end
-% 
-%             for n = 1: sizeT 
-%                 imwrite( imread(nameNew,sizeT*(k-1)+n),nameNew2,'WriteMode','append');  
-%             end
+
+    for j=1:length(channelImg{1})
+        switch numChannels
+            case 1
+                imwrite(  uint16(round(channelImg{1}{j})),strcat(nameNew,'_CH1.tif'),"WriteMode","append");
+            case 2
+                
+                imwrite( uint16(round(channelImg{1}{j})),strcat(nameNew,'_CH1.tif'),"WriteMode","append");
+                imwrite( uint16(round(channelImg{2}{j})),strcat(nameNew,'_CH2.tif'),"WriteMode","append");
+            case 3
+                imwrite( uint16(round(channelImg{1}{j})),strcat(nameNew,'_CH1.tif'),"WriteMode","append");
+                imwrite( uint16(round(channelImg{2}{j})),strcat(nameNew,'_CH2.tif'),"WriteMode","append");
+                imwrite( uint16(round(channelImg{3}{j})),strcat(nameNew,'_CH3.tif'),"WriteMode","append");
+            otherwise
         end
-
-
     end
+
+    metadataFile = fopen(nameNew2,'w');
+    metadataKeys = metadata.keySet().iterator();
+    for k=1:metadata.size()
+      key = metadataKeys.nextElement();
+      value = metadata.get(key);
+      fprintf(metadataFile,'%s = %s\n', key, value);
+    end
+    fclose(metadataFile);
+
+
 
 end
+    disp(strcat(['Done converting']));
 
+end
