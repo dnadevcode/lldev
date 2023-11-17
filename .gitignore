@@ -11,3 +11,4 @@ src/MATLAB/+Scripts/
 IntensityCurves
 src/C/Comparison/
 docs/
+*.asv

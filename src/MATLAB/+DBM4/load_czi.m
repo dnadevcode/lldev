@@ -35,7 +35,7 @@ function [channelImg, metadata] = load_czi(filename,max_number_of_frames, channe
 
     for j=1:channels
         for i=1:numFrames 
-            channelImg{j}{i} = double(data{1,1}{1+channels*(i-1),1});
+            channelImg{j}{i} = double(data{1,1}{j+channels*(i-1),1});
         end
     end
 
