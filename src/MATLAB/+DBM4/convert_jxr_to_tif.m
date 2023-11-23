@@ -33,7 +33,11 @@ if nconvertmatloaded == 0
        
     addpath(genpath(fullfile(dataCatcheFold,'DataCache')));
 
-    nconvertmatloaded = exist('nconvert', 'file') == 2;
+   if ispc
+        nconvertmatloaded = exist('nconvert.exe', 'file') == 2;
+   else
+        nconvertmatloaded = exist('nconvert', 'file') == 2;
+   end
 end
 
 if nconvertmatloaded == 0
