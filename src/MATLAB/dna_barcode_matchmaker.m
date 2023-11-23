@@ -630,7 +630,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
     function SelectedJxrConvertToTif(src, event)
             disp('Select files to convert to tif')
             import DBM4.convert_jxr_to_tif;
-            convert_czi_to_tif;  
+            convert_jxr_to_tif;  
     end
     
         function [sets,tsHCC,textList,textListT,itemsList,...
