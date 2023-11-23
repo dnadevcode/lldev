@@ -19,7 +19,11 @@ function [reorientedBayerPattern, unorientedBayerPattern, dngCurrOrientation] = 
     
     dngInfo = imfinfo(dngFilepath);
     imgInfo = dngInfo.SubIFDs{1};
-    unorientedBayerPattern = [imgInfo.UnknownTags([imgInfo.UnknownTags.ID] == tagCode_CFAPattern).Value];
+    if ~isfield(imgInfo, 'UnknownTags')
+        unorientedBayerPattern = [dngInfo.UnknownTags([dngInfo.UnknownTags.ID] == tagCode_CFAPattern).Value];
+    else
+        unorientedBayerPattern = [imgInfo.UnknownTags([imgInfo.UnknownTags.ID] == tagCode_CFAPattern).Value];
+    end
     unorientedBayerPattern = [unorientedBayerPattern(1:2); unorientedBayerPattern(3:4)];
     
     
