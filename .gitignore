@@ -12,3 +12,4 @@ IntensityCurves
 src/C/Comparison/
 docs/
 *.asv
+*.exe

@@ -37,4 +37,4 @@ e.g. if it is "C:\Users\Saair\Documents\MATLAB\LiteLjus\" run the following in t
 
 then run the following to compile the program:
 
-gcc -o bin/dcraw.exe -O3 src/C/ThirdParty/dcraw/dcraw.c -lm -DNODEPS
+gcc -o bin/dcraw.exe -O3 src/C/ThirdParty/dcraw/dcraw.c -lm -DNODEPS  -lws2_32

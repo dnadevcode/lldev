@@ -38,7 +38,7 @@ function [rgbI, bayerI, dngFilepath, tiffFilepath, bayerPattern] = import_dng(so
                     outPathDosEscaped = dos_escape_path(dcrawPath);
                     inPathDosEscaped = dos_escape_path(cDcrawPath);
                     
-                    sysCmdTxtCompileC = sprintf('gcc -o %s -O3 %s -lm -DNODEPS', outPathDosEscaped, inPathDosEscaped);
+                    sysCmdTxtCompileC = sprintf('gcc -o %s -O3 %s -lm -DNODEPS  -lws2_32', outPathDosEscaped, inPathDosEscaped);
                     fprintf('Attempting to compile dcraw.c to bin\n');
                     [~,~,~] = evalc(sprintf('system(''%s'');', sysCmdTxtCompileC));
                     fprintf('Completed compilation attempt\n');
