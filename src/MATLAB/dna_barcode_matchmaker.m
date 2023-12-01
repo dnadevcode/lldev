@@ -926,7 +926,11 @@ function good_bad_recalc(src, event)
     if ~sets.loaded_raw_kymos_from_files 
         export_raw_kymos();% force export raw kymos
     else
-        sets.rawMovieDirPath = sets.kymofold;
+        if isfield(dbmStruct,'rawMovieDirPath')
+            sets.rawMovieDirPath = dbmStruct.rawMovieDirPath;
+        else
+             sets.rawMovieDirPath = sets.kymofold;
+        end
     end
     good_bad_recalc(sets,dbmStruct,hAdditional);
 end
