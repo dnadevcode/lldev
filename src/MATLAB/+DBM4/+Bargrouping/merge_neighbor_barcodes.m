@@ -58,6 +58,7 @@ barGenMerged = cell(1,length(posSingle)+length(posMulti));
 for j=1:length(posSingle)
     barGenMerged{j}.rawBarcode = barcodeGen{posSingle(j)}.rawBarcode;%mean(kymoStructs{posSingle(j)}.alignedKymo,1);
     barGenMerged{j}.rawBitmask = barcodeGen{posSingle(j)}.rawBitmask;%logical(~isnan(  barGenMerged{j}.rawBarcode));
+    barGenMerged{j}.name =  barcodeGen{posSingle(j)}.name;
 	barGenMerged{j}.data =  barcodeGen{posSingle(j)};
     barGenMerged{j}.idx = posSingle(j);
 end
@@ -115,6 +116,8 @@ for i=1:length(posMulti)
 %         import Core.plot_match_simple;
 %         [f] = plot_match_simple(barStruct, oSneighbor{i}{j},2,1);
         barGenMerged{length(posSingle)+i}.pairBars{j} = bars;
+        barGenMerged{length(posSingle)+i}.name =  [barcodeGen{uE+j}.name,'merged'];
+
 
     end
     
