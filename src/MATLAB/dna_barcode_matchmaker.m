@@ -71,6 +71,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         sets.denoise = itemsList{3}.Value;
         sets.detectlambdas  = itemsList{4}.Value;
         sets.keepBadEdgeMols  = itemsList{5}.Value;
+        sets.plotKymos  = itemsList{6}.Value;
 
     end
 
@@ -101,6 +102,7 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         itemsList{3}.Value  =  sets.denoise;
         itemsList{4}.Value  =  sets.detectlambdas;
         itemsList{5}.Value  =  sets.keepBadEdgeMols;
+        itemsList{6}.Value  =  sets.plotKymos;
 
     end
 
@@ -479,7 +481,9 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         end
         sets.rawMovieDirPath = sets.kymofold;
 
-        display_raw_kymographs()
+        if sets.plotKymos
+            display_raw_kymographs();
+        end
 %         if isempty(sessionFilepath)
 %             return;
 %         end
@@ -741,8 +745,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
                 % Put the loaded settings into the GUI.
                     % make into loop
-            checkItems =  {'Molecule angle calculation (skip if angle is known)','Single frame molecule detection','Denoise (Experimental)','Detect short molecules','Keep bad molecules'};
-            checkValues = [sets.moleculeAngleValidation  sets.timeframes  sets.denoise, sets.detectlambdas sets.keepBadEdgeMols ] ;
+            checkItems =  {'Molecule angle calculation (skip if angle is known)','Single frame molecule detection','Denoise (Experimental)','Detect short molecules','Keep bad molecules','Plot kymos'};
+            checkValues = [sets.moleculeAngleValidation  sets.timeframes  sets.denoise, sets.detectlambdas sets.keepBadEdgeMols sets.plotKymos ] ;
            % checkbox for things to plot and threshold
             for i=1:length(checkItems)
                 itemsList{i} = uicontrol('Parent', hPanelImport, 'Style', 'checkbox','Value',checkValues(i),'String',{checkItems{i}},'Units', 'normal', 'Position', [0.45 .83-0.05*i 0.3 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]
