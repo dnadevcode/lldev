@@ -1,4 +1,4 @@
-function [alignedKymo, stretchFactorsMat, shiftAlignedKymo, alignedMask, shiftAlignedKymoMask, shiftingVect, alignmentSuccessTF] = nralign(unalignedKymo, skipPrealignTF, kymoMask)
+function [alignedKymo, stretchFactorsMat, shiftAlignedKymo, alignedMask, shiftAlignedKymoMask, shiftingVect, alignmentSuccessTF,pathsColIdxs] = nralign(unalignedKymo, skipPrealignTF, kymoMask)
     % NRALIGN - non-recursively aligns a kymograph, using a modified
     %  wpalign algorithm.
     %
