@@ -6,10 +6,17 @@ kymoStructs = dbmStruct.kymoCells;
 % barcodeGen = dbmStruct.barcodeGen;
 
 import Microscopy.UI.UserSelection.goodbadtool;
+
+ 
 [allKymos] = goodbadtool([4 4], fullfile(dbmOSW.rawMovieDirPath,'raw_kymo'), [],dbmOSW.rawMovieDirPath,dbmOSW,tshAdd);
 
-goodKymosIdx = sum(allKymos.selected==1);
+
+goodKymosIdx = sum(allKymos.selected==1,1);
+assignin('base','goodKymos', find(goodKymosIdx)); % save the indexes of good kymographs to the workspace
+
 disp(['Keeping ', num2str(sum(goodKymosIdx)),' barcodes, saved at',dbmOSW.rawMovieDirPath,'good' ]);
+
+
 % import DBM4.UI.good_mol_selection;
 % [goodKymosIdx,info] = good_mol_selection([4 4],kymoStructs,info);
 % 

@@ -174,7 +174,21 @@ function run_next_set(src, event)
             for njdx = 1:sets.numImages(2)
                 if iiSt <= length(files)
                     goodBadSession.selected(numRun,iiSt) = -1;
-                    im{nidx}{njdx} = imagesc(tile{nidx}{njdx} ,imread(sets.files{iiSt+sets.ii-1}));
+                    % plot both kymo and bitmask if available
+                    if length(imfinfo(sets.files{iiSt+sets.ii-1})) == 3
+                        img = imread(sets.files{iiSt+sets.ii-1},1);
+%                         leftEndIdxs = arrayfun(@(x) find(img(x,:) >0,1,'first'),1:size(img,1));
+%                         rightEndIdxs =  arrayfun(@(x) find(img(x,:) >0,1,'last')',1:size(img,1));
+%                         hAxis = axes(im{nidx}{njdx});
+%                          plot(hAxis,leftEndIdxs, 1:length(leftEndIdxs), 'm-', 'Linewidth', 2);
+%                             plot(hAxis,rightEndIdxs, 1:length(rightEndIdxs), 'c-', 'Linewidth', 2);
+%                             
+%                         im{nidx}{njdx} = imagesc(tile{nidx}{njdx} ,imread(sets.files{iiSt+sets.ii-1}));
+%                         hold on
+                        im{nidx}{njdx} = imagesc(tile{nidx}{njdx} ,[img;max(img(:))*imread(sets.files{iiSt+sets.ii-1},3)]);
+                    else
+                        im{nidx}{njdx} = imagesc(tile{nidx}{njdx} ,imread(sets.files{iiSt+sets.ii-1}));
+                    end
                     colormap gray                           
                     set(im{nidx}{njdx}, 'buttondownfcn', {@loads_of_stuff,iiSt+sets.ii-1,nidx,njdx});
                     iiSt = iiSt+1;
