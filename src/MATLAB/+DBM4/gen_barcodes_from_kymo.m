@@ -39,6 +39,13 @@ function [ barcodeGen,acceptedBars ] = gen_barcodes_from_kymo( kymoStructs, sets
         catch
         end
 
+        try
+            barcodeGen{i}.nmbp = kymoStructs{i}.nmBpidFold;
+            barcodeGen{i}.nmpx = kymoStructs{i}.nmpxidFold;
+            barcodeGen{i}.idFold = kymoStructs{i}.idFold;
+        catch
+        end
+
     end
    
     %% Now define bitmasks
