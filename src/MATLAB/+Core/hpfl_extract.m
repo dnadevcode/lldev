@@ -694,7 +694,7 @@ function [rotImg, rotMask, movieAngle, maxCol] = image_rotation(channelImg, mean
                 [movieAngle, maxCol] = maxcol_angle_detection(meanMovieFrame,movieAngle, sets);
             case 'hough'
                 % todo: test
-                [movieAngle, maxCol] = hough_angle_detection(channelImg,movieAngle-90,sets);
+                [movieAngle, maxCol] = hough_angle_detection(channelImg, mod(movieAngle,180), sets);
             otherwise
         end
 
@@ -774,7 +774,14 @@ function [movieAngle, maxCol] = hough_angle_detection(channelImg,movieAngle,sets
     % hough_angle_detection
     % from oldDBM
 
-    grayscaleVideo = cell2mat(permute(channelImg{1},[1,3,2]));
+    rot = 0;
+    if movieAngle == 90
+        rot = 90;
+        grayscaleVideo = cell2mat(permute(channelImg{1},[1,3,2])); % flip
+    else
+        grayscaleVideo = cell2mat(permute(channelImg{1},[3,1,2])); % flip
+    end
+
     % minimum and maximum values of the molecule
     minVal = min(grayscaleVideo(:));
     maxVal = max(grayscaleVideo(:));
@@ -808,8 +815,9 @@ function [movieAngle, maxCol] = hough_angle_detection(channelImg,movieAngle,sets
     peak = houghpeaks(H);
 
     % Optimal angle obtained from Hough peaks
-    movieAngle = mod(theta(peak(2)), 360);
+    movieAngle = rot+270-theta(peak(2)); %mod(theta(peak(2)), 360); %? is it correct
     maxCol = theta;
+
 
 end
 
