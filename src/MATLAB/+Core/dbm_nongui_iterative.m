@@ -13,7 +13,7 @@ dbmOSW.DBMSettingsstruct.askForDBMtoolSettings = 0;
 dbmOSW.DBMSettingsstruct.movies.askForMovies = 0;
 
 dbmOSW.DBMSettingsstruct.detectlambdas = 0;
-dbmOSW.DBMSettingsstruct.initialAngle = 0;
+dbmOSW.DBMSettingsstruct.initialAngle = 180;
 dbmOSW.DBMSettingsstruct.maxLambdaLen = inf;
 dbmOSW.DBMSettingsstruct.angleStep = 0.01;
 %
