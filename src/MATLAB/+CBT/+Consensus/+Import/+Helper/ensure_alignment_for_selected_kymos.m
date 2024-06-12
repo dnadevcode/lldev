@@ -18,15 +18,19 @@ function [lm, kymoNames, alignedKymos] = ensure_alignment_for_selected_kymos(lm)
     end
 
     confirmContinuePrompt = sprintf('Align %d kymographs?', lenKymos);
-    confirmContinueChoice = questdlg(confirmContinuePrompt, 'Kymograph Alignment Confirmation', 'Continue','Abort', 'Continue');
+    confirmContinueChoice = questdlg(confirmContinuePrompt, 'Kymograph Alignment Confirmation', 'Continue','No','Abort', 'Continue');
     quitAlignment = strcmp(confirmContinueChoice, 'Abort');
     if quitAlignment
         fprintf('Kymograph alignments aborted\n');
         return;
     end
+    alignmentChoiceNo =  strcmp(confirmContinueChoice, 'No');
+
     trueValueList = lm.get_true_value_list();
     import CBT.Consensus.Import.Helper.ensure_alignment_at_index;
     % should not be passing the whole truevalue list here!
+
+
     numSelected = length(selectedIndices);
     alignedKymos = cell(numSelected, 1);
     for selectedIdx = 1:numSelected
