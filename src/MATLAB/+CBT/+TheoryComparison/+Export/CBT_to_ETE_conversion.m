@@ -76,7 +76,7 @@ function []= CBT_to_ETE_conversion()
                 theoryCurveB_pxRes = zscore(theoryCurveB_pxRes);
                 clusterConsensusData.bindingBarcode = theoryCurveB_pxRes;
             end
-            save(strcat(path,strcat(theorySequence(i).Header,file)),'clusterConsensusData','-v7.3')
+            save(strcat(path,file),'clusterConsensusData','-v7.3')
         end
     end
 
