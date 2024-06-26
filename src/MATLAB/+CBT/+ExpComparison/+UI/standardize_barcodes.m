@@ -3,6 +3,10 @@ function [stretchedBarcodes, stretchedKbpsPerPixel] = standardize_barcodes(barco
         forceStretchToSameBpsPerPixel = false;
     end
 
+    % make sure there are no nan's on the barcodes
+    for i=1:length(barcodes)
+        barcodes{i}(isnan(barcodes{i})) = min(barcodes{i});
+    end
 
     % Choose which kind of length input for the ZM barcodes
     optStretchToSameLen = 'Stretch to same length';
