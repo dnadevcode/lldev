@@ -4,9 +4,23 @@ function [stretchedBarcodes, stretchedKbpsPerPixel] = standardize_barcodes(barco
     end
 
     % make sure there are no nan's on the barcodes
-    for i=1:length(barcodes)
-        barcodes{i}(isnan(barcodes{i})) = min(barcodes{i});
-    end
+%     for i=1:length(barcodes)
+%         barcodes{i}(isnan(barcodes{i})) = min(barcodes{i});
+%     end
+
+% Luis: Previous no-nan's solution broke comparisons where Nans existed
+% due to artificial valleys (dark features)
+% The fix below "cuts down" barcodes so that only non NAN regions are
+% compared, this should only NOT work when Nans exist in between
+% in such case, min values are inserted again
+for i=1:length(barcodes)
+start_idx = find(~isnan(barcodes{i}), 1, 'first');
+end_idx = find(~isnan(barcodes{i}), 1, 'last');
+barcodes{i}= barcodes{i}(start_idx:end_idx);
+barcodes{i}(isnan(barcodes{i})) = min(barcodes{i});
+end
+
+
 
     % Choose which kind of length input for the ZM barcodes
     optStretchToSameLen = 'Stretch to same length';

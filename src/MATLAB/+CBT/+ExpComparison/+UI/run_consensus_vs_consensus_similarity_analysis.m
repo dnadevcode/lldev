@@ -24,13 +24,25 @@ function [] = run_consensus_vs_consensus_similarity_analysis(tsETE)
         return;
     end
     
+
+
+
      %standartize consensusBitmasks aswell
        %standartize consensusBitmasks aswell
+    % Bitmasks are not doing shit, lets crop barcodes (DO ONLY IF NEEDED
+       n=6;
+    for i=1:length(stretchedConsensusBarcodes)
+    stretchedConsensusBarcodes{i}=stretchedConsensusBarcodes{i}((n+1):(end-n));
+    end
+    
     for i=1:length(stretchedConsensusBarcodes)
         v = linspace(1, length(stretchedConsensusBitmasks{i}), length(stretchedConsensusBarcodes{i}));
         stretchedConsensusBitmasks{i} = stretchedConsensusBitmasks{i}(round(v));
     end 
-     
+
+
+    
+    
     stretchedKbpsPerPixel = stretchedKbpsPerPixel(1);
     stretchedBarcodeLens_pixels = cellfun(@length, stretchedConsensusBarcodes);
     sameLengthTF = all(stretchedBarcodeLens_pixels == stretchedBarcodeLens_pixels(1));
