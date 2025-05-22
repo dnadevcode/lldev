@@ -70,8 +70,9 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         sets.timeframes = itemsList{2}.Value;
         sets.denoise = itemsList{3}.Value;
         sets.detectlambdas  = itemsList{4}.Value;
-        sets.keepBadEdgeMols  = itemsList{5}.Value;
-        sets.plotKymos  = itemsList{6}.Value;
+        sets.detectverysmall  = itemsList{5}.Value;
+        sets.keepBadEdgeMols  = itemsList{6}.Value;
+        sets.plotKymos  = itemsList{7}.Value;
 
     end
 
@@ -101,8 +102,9 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
         itemsList{2}.Value = sets.timeframes;
         itemsList{3}.Value  =  sets.denoise;
         itemsList{4}.Value  =  sets.detectlambdas;
-        itemsList{5}.Value  =  sets.keepBadEdgeMols;
-        itemsList{6}.Value  =  sets.plotKymos;
+        itemsList{5}.Value  =  sets.detectverysmall;
+        itemsList{6}.Value  =  sets.keepBadEdgeMols;
+        itemsList{7}.Value  =  sets.plotKymos;
 
     end
 
@@ -745,8 +747,8 @@ function [] = dna_barcode_matchmaker(useGUI, dbmOSW)
 
                 % Put the loaded settings into the GUI.
                     % make into loop
-            checkItems =  {'Molecule angle calculation (skip if angle is known)','Single frame molecule detection','Denoise (Experimental)','Detect short molecules','Keep bad molecules','Plot kymos'};
-            checkValues = [sets.moleculeAngleValidation  sets.timeframes  sets.denoise, sets.detectlambdas sets.keepBadEdgeMols sets.plotKymos ] ;
+            checkItems =  {'Molecule angle calculation (skip if angle is known)','Single frame molecule detection','Denoise (Experimental)','Detect lambda molecules','Detect very small molecules','Keep bad molecules','Plot kymos'};
+            checkValues = [sets.moleculeAngleValidation  sets.timeframes  sets.denoise sets.detectlambdas sets.detectverysmall sets.keepBadEdgeMols sets.plotKymos ] ;
            % checkbox for things to plot and threshold
             for i=1:length(checkItems)
                 itemsList{i} = uicontrol('Parent', hPanelImport, 'Style', 'checkbox','Value',checkValues(i),'String',{checkItems{i}},'Units', 'normal', 'Position', [0.45 .83-0.05*i 0.3 0.05]);%, 'Max', Inf, 'Min', 0);  [left bottom width height]

@@ -23,8 +23,12 @@ function [channelImg, metadata] = load_czi(filename,max_number_of_frames, channe
 
     channelImg = [];
     names = [];
+    try
     T = evalc(['data = bfopen(''', filename, ''');']);  % possible inconvenience: loads all data.
+    catch
 
+    data = bfopen(filename);
+    end
 
     numFrames = size(data{1,1},1)/channels;
     if max_number_of_frames~=0

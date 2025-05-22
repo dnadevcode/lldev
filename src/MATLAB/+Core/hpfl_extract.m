@@ -30,7 +30,11 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     % params taken from settings and simplified calling so we don't need to
     % access fields of sets every time
     numPts = sets.numPts; % minimum length of barcode
-    numPtsAboveSigmaThresh = sets.numPtsAboveSigmaThresh; % number of points above meanNoise+4stdNoise for each row
+    if sets.detectverysmall
+    numPtsAboveSigmaThresh=ceil(numPts*0.5);%20
+    else
+    numPtsAboveSigmaThresh = sets.numPtsAboveSigmaThresh;  % number of points above meanNoise+4stdNoise for each row
+    end
     averagingWindowWidth = sets.averagingWindowWidth; % averaging window width
     distbetweenChannels = sets.distbetweenChannels; % estimated distance between channels
     remNonuniform = sets.denoise;
@@ -65,7 +69,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     % 3) load image first frame for mol detection
     tic
     % settingsHPFL.numFrames = 1;
-    parfor idx = 1:length(movieFilenames)
+    for idx = 1:length(movieFilenames)
         if usePrecalc
             params{idx} = fileCells{idx}.preCells;
         else
@@ -154,17 +158,17 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
                  noiseKymos = [];
 
             else
-                % find columns which have long molecules
+                % find columns which have appropiated size molecules
                 [params{idx}.posX, params{idx}.posMax,params{idx}.nonrelevantRowsFarAway] = find_mols_corr(rotImg, bgTrend, numPtsAboveSigmaThresh, numPts, params{idx}.channelForDist, 1, centralTend, farAwayShift, distbetweenChannels,timeframes );
-            
+ %length(  params{idx}.posX) % Testing
                 % update positions which has at least numPts pts above 3
                 % times bgTrend
                 meanVal = 0;
                 stdVal = bgTrend{1}; % here could use bg kymos for this
-                % remove rows that don't have enough signal pixels // could use
+                % remove rows that don't have enough signal pixels // could use               
                 numElts = find(sum(rotImg{1}{1}(:,params{idx}.posX)  > meanVal+3*stdVal) > numPts);
                 params{idx}.posXUpd = params{idx}.posX(numElts);
-
+    %params{idx}.posXUpd % Testing
                 % extract single bg kymo: background has to be within +-sets.parForNoise from the
                 % middle posX
                 if isempty(params{idx}.posX)
@@ -240,7 +244,7 @@ function [fileCells, fileMoleculeCells,kymoCells] = hpfl_extract(sets, fileCells
     % now final step is to extract "nice" kymographs
     [params{idx}.kymo, params{idx}.kymoW, params{idx}.kymoNames, params{idx}.Length,~, params{idx}.kymoOrig, params{idx}.idxOut] =...
         extract_from_channels(params{idx}.kymos, params{idx}.wideKymos, params{idx}.posXUpd, params{idx}.posY, params{idx}.channelForDist, minLen, stdDifPos);
-    
+    %length(params{idx}.kymo)%
     if channels > 1 % in case of two channels
         [~, ~, ~, ~,~, params{idx}.kymoOrigDots] = extract_from_channels(params{idx}.kymos, params{idx}.wideKymos, params{idx}.posXUpd, params{idx}.posY, 2, minLen, stdDifPos);
         try
